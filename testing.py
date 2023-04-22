@@ -6,53 +6,64 @@ import numpy as np
 import gymnasium as gym
 from runner import get_offpolicy_runner
 
-env = gym.make('CartPole-v1')
-
 runner = get_offpolicy_runner(
-    env, 
-    freq=256,
-    capacity=100000, 
-    batch_size=64, 
-    train_after=1000)
+	gym.make('CartPole-v1'), 
+	freq=256,
+	capacity=100000, 
+	batch_size=64, 
+	train_after=1000)
 
-class Critic(nn.Module):
-	def __init__(self, state_dim, action_dims):
-		super(Critic, self).__init__()
+class Q_duelling(nn.Module):
+	def __init__(self, state_dim, action_dim, dueling):
+		super(Q_duelling, self).__init__()
+		self.dueling = dueling
+
 		self.l1 = nn.Linear(state_dim, 256)
-		self.l2 = nn.Linear(256, 256)
-		self.l3 = nn.Linear(256, action_dims)
+
+		self.adv = nn.Sequential(
+			nn.Linear(256, 256),
+			nn.ReLU(),
+			nn.Linear(256, action_dim)
+		)
+
+		self.val = nn.Sequential(
+			nn.Linear(256, 256),
+			nn.ReLU(),
+			nn.Linear(256, 1)
+		)
 
 	def forward(self, state):
 		q = F.relu(self.l1(state))
-		q = F.relu(self.l2(q))
-		q = self.l3(q)
-		return q
+		v = self.val(q)
+		a = self.adv(q)
 
-net = Critic(4, 2)
+		if self.dueling:
+			return v + (a - a.mean())
+
+		return a
+
+net = Q_duelling(4, 2, False)
 targ_net = copy.deepcopy(net)
 optimizer = th.optim.Adam(net.parameters(), lr=2.3e-3)
-policy = 'argmax'
 
 for t in range(10000):
-    batch = runner.get_batch(net, policy)
+	batch = runner.get_batch(net, 'argmax')
 
-    s, a, r, s_p, d = batch()
+	s, a, r, s_p, d = batch()
 
-    q = net(s)
-    
-    q = q.gather(1, a.long())
+	q = net(s).gather(1, a.long())
 
-    with th.no_grad():
-        q_p = targ_net(s_p).amax(dim = 1).unsqueeze(1)
-        y = r + 0.99 * q_p * (1 - d)
-        
-    loss = F.mse_loss(q, y)
+	with th.no_grad():
+		q_p = targ_net(s_p).amax(dim = 1).unsqueeze(1)
+		y = r + 0.99 * q_p * (1 - d)
+		
+	loss = F.mse_loss(q, y)
 
-    optimizer.zero_grad()
-    loss.backward()
-    th.nn.utils.clip_grad_norm_(net.parameters(), 10)
-    optimizer.step()
+	optimizer.zero_grad()
+	loss.backward()
+	th.nn.utils.clip_grad_norm_(net.parameters(), 10)
+	optimizer.step()
 
-    if t % 20 == 0:        
-        targ_net = copy.deepcopy(net)
-        
+	if t % 10 == 0:        
+		targ_net = copy.deepcopy(net)
+		
