@@ -1,4 +1,28 @@
 from collections import deque
+from typing import NamedTuple
+from gatherer import Collector
+from transitions import TorchTransition
+import sys
+import random
+
+
+def get_offpolicy_runner(
+        env,
+        freq,
+        capacity,
+        batch_size,
+        collector=Collector,
+        train_after=10000):
+    
+    return Runner(
+        env,
+        freq,
+        False,
+        True,
+        capacity,
+        batch_size,
+        collector,
+        train_after)
 
 class Runner():
     def __init__(
@@ -8,8 +32,9 @@ class Runner():
             flush,
             sampler,
             capacity,
-            trajectory,
-            freq
+            batch_size,
+            collector=Collector,
+            train_after=None
         ) -> None:
 
         self.env = env
@@ -17,95 +42,52 @@ class Runner():
         self.flush = flush
         self.sampler = sampler
         self.capacity = capacity
-        self.trajectory = trajectory
-        self.freq = freq      
-        self.train_after = 1000
-        self.buffer = self.flush_buffer()
 
-        # environment init (move to external function)
-        self.state, _ = self._reset()
-        self.warm_start()
+        self.batch_size = batch_size
 
-        pass
+        self.train_after = train_after
 
-    def flush_buffer(
-        self
-        ):
-        self.buffer = deque(maxlen=self.capacity)
-        return self.buffer
+        self.er_buffer = deque(maxlen=self.capacity)
 
-    def warm_start(
-        self
-    ):
-        for _ in range(self.train_after):
-            a = self.env.action_space.sample()
-            s_p, r, d, t, info = self._step(a)
-            self.buffer.append([self.state, a, r, s_p, d])
-            self.state = s_p
-            if d or t:
-                self.state, _ = self._reset()
+        self.collector = collector(env, 100000)
 
-        # return list(self.buffer)
-        pass
+        if self.train_after:
+            self._warm_start(self.train_after)
 
-    def _step(
+
+    def _warm_start(
             self,
-            a):
-        return self.env.step(a)
+            steps
+        ):
 
-    def _reset(
-        self
-    ):
-        return self.env.reset()
-    
-    def agent_step(
-        self,
-        policy,
-        state=None
-    ):
-        if state:
-            pass
+        batch = self.collector.rollout(None, 'random', steps)
 
-        else:
-            state = self.state        
+        if not self.flush:
+            for transition in batch:
+                self.er_buffer.append(transition)
 
-        if policy == 'random':
-            return self.env.action_space.sample()
+        pass
 
     def get_batch(
             self,
             net,
-            policy
-            ):
+            policy,
+        ):
         
         self.net = net
+        
+        batch = self.collector.rollout(net, policy, self.length)
 
-        for _ in range(self.length):
-            a = self.agent_step(policy)
-            s_p, r, d, t, info = self._step(a)
-            self.buffer.append([self.state, a, r, s_p, d])
-            self.state = s_p
-            if d or t:
-                self.state, _ = self._reset()
+        if not self.flush:
+            for transition in batch:
+                self.er_buffer.append(transition)
 
-        batch = self.create_batch()
+            if self.sampler:
+                batch = random.sample(list(self.er_buffer), self.batch_size)
+
+            return self.prep_batch(batch)
 
         return self.prep_batch(batch)
-
-    def create_batch(
-        self,
-        ):
-
-        """
-        either samples or just copies over the batch, handle flushing and sampling here
-        """
-
-        batch = list(self.buffer)
-
-        if self.flush:
-            self.flush_buffer()
-
-        return batch
 
     def prep_batch(
         self,
@@ -116,4 +98,4 @@ class Runner():
         takes the batch (which will be a list of transitons) and processes them to be seperate etc.
         """
 
-        return batch    # try return it as dict maybe? or just something fancier and seperated
+        return TorchTransition(*zip(*batch))    # try return it as dict maybe? or just something fancier and seperated
