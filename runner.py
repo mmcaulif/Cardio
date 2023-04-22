@@ -5,6 +5,8 @@ from transitions import TorchTransition
 import sys
 import random
 
+# https://stackoverflow.com/questions/40181284/how-to-get-random-sample-from-deque-in-python-3
+# faster replay memory
 
 def get_offpolicy_runner(
         env,
