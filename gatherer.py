@@ -42,6 +42,16 @@ class Collector():
             out = self.net(input).detach().numpy()
             return np.argmax(out)
 
+        if policy == 'gaussian':
+            input = th.from_numpy(self.state).float()
+            out = self.net(input)
+
+            mean, std = out[0].detach().numpy(), out[1].detach().numpy()
+
+            noise = np.random.uniform()
+
+            return (np.tanh(mean + (std * noise)) * self.env.action_space.high)
+
         return self.env.action_space.sample()
 
     def rollout(
