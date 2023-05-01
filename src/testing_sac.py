@@ -8,6 +8,7 @@ from runner import get_offpolicy_runner
 
 runner = get_offpolicy_runner(
 	gym.make('Pendulum-v1'), 
+	'random',
 	freq=1,
 	capacity=200000, 
 	batch_size=256, 
@@ -73,7 +74,7 @@ c_optimizer = th.optim.Adam(net.parameters(), lr=1e-3)
 pi_optimizer = th.optim.Adam(policy.parameters(), lr=1e-3)
 
 for t in range(10000):
-	batch = runner.get_batch(policy, 'gaussian')
+	batch = runner.get_batch(policy)
 
 	s, a, r, s_p, d = batch()
 

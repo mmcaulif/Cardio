@@ -2,6 +2,7 @@ from collections import deque
 from typing import NamedTuple
 from gatherer import Collector
 from transitions import TorchTransition
+from policies import REGISTRY as pol_REGISTRY
 import sys
 import random
 
@@ -10,6 +11,7 @@ import random
 
 def get_offpolicy_runner(
         env,
+        policy,
         freq,
         capacity,
         batch_size,
@@ -18,6 +20,7 @@ def get_offpolicy_runner(
     
     return Runner(
         env,
+        policy,
         freq,
         False,
         True,
@@ -30,6 +33,7 @@ class Runner():
     def __init__(
             self,
             env,
+            policy,
             length,
             flush,
             sampler,
@@ -55,6 +59,8 @@ class Runner():
 
         if self.train_after:
             self._warm_start(self.train_after)
+            
+        self.policy = self._set_up_policy(policy)
 
 
     def _warm_start(
@@ -62,7 +68,7 @@ class Runner():
             steps
         ):
 
-        batch = self.collector.rollout(None, 'random', steps)
+        batch = self.collector.rollout(None,  pol_REGISTRY['random'](self.env), steps)
 
         if not self.flush:
             for transition in batch:
@@ -70,15 +76,23 @@ class Runner():
 
         pass
 
+    def _set_up_policy(self, policy):
+        if policy == 'argmax':
+            return pol_REGISTRY['argmax'](self.env)
+        
+        elif policy == 'random':
+            return pol_REGISTRY['random'](self.env)
+
+        pass
+
     def get_batch(
             self,
             net,
-            policy,
         ):
         
         self.net = net
         
-        batch = self.collector.rollout(net, policy, self.length)
+        batch = self.collector.rollout(net, self.policy, self.length)
 
         if not self.flush:
             for transition in batch:

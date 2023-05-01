@@ -37,6 +37,8 @@ class Collector():
         state=None
     ):
         
+        return policy(self.state, self.net)
+        
         if policy == 'argmax':
             input = th.from_numpy(self.state).float()
             out = self.net(input).detach().numpy()
