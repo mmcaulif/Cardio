@@ -16,7 +16,10 @@ class Collector():
         self.state, _ = self._reset()
 
         # metrics
+        self.episodes = 0
+        self.total_steps = 0
         self.ep_rew = 0
+        self.epsiode_window = deque(maxlen=50)
 
         pass
 
@@ -44,13 +47,13 @@ class Collector():
 
         if policy == 'gaussian':
             input = th.from_numpy(self.state).float()
-            out = self.net(input)
+            mean, log_std = self.net(input)
+            std = log_std.exp()
 
-            mean, std = out[0].detach().numpy(), out[1].detach().numpy()
+            dist = th.distributions.Normal(mean, std)
+            a_sampled = th.nn.Tanh()(dist.rsample()).detach()
 
-            noise = np.random.uniform()
-
-            return (np.tanh(mean + (std * noise)) * self.env.action_space.high)
+            return a_sampled.numpy() * self.env.action_space.high + 0
 
         return self.env.action_space.sample()
 
@@ -66,6 +69,7 @@ class Collector():
         buffer = deque()
 
         for _ in range(length):
+            self.total_steps += 1
             a = self.agent_step(policy)
             s_p, r, d, t, info = self._step(a)
 
@@ -75,8 +79,12 @@ class Collector():
             buffer.append([self.state, a, r, s_p, d])
             self.state = s_p
             if d or t:
-                print(self.ep_rew)
+                self.episodes += 1
+                self.epsiode_window.append(self.ep_rew)
                 self.ep_rew = 0
                 self.state, _ = self._reset()
+
+                if self.episodes % 10 == 0:
+                    print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
 
         return list(buffer)

@@ -55,6 +55,7 @@ class Runner():
 
         if self.train_after:
             self._warm_start(self.train_after)
+            print('\n### Warm up finished ###\n')
 
 
     def _warm_start(
