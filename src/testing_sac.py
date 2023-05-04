@@ -7,7 +7,7 @@ import gymnasium as gym
 from runner import get_offpolicy_runner
 
 runner = get_offpolicy_runner(
-	gym.make('Pendulum-v1'), 
+	gym.make('gym_cartpole_continuous:CartPoleContinuous-v1'), 
 	'random',
 	freq=1,
 	capacity=200000, 
