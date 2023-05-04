@@ -59,6 +59,7 @@ class Runner():
 
         if self.train_after:
             self._warm_start(self.train_after)
+            print('\n### Warm up finished ###\n')
             
         self.policy = self._set_up_policy(policy)
 
@@ -82,6 +83,9 @@ class Runner():
         
         elif policy == 'random':
             return pol_REGISTRY['random'](self.env)
+        
+        elif policy == 'gaussian':
+            return pol_REGISTRY['random'](self.env)
 
         pass
 
@@ -99,7 +103,8 @@ class Runner():
                 self.er_buffer.append(transition)
 
             if self.sampler:
-                batch = random.sample(list(self.er_buffer), self.batch_size)
+                k = min(self.batch_size, len(self.er_buffer))
+                batch = random.sample(list(self.er_buffer), k)
 
             return self.prep_batch(batch)
 
