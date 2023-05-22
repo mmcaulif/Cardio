@@ -12,7 +12,7 @@ import random
 def get_offpolicy_runner(
         env,
         policy,
-        freq,
+        length,
         capacity,
         batch_size,
         collector=Collector,
@@ -21,13 +21,28 @@ def get_offpolicy_runner(
     return Runner(
         env,
         policy,
-        freq,
-        False,
+        length,
         True,
         capacity,
         batch_size,
         collector,
         train_after)
+
+def get_onpolicy_runner(
+        env,
+        policy,
+        length,
+        collector=Collector,):
+    
+    return Runner(
+        env,
+        policy,
+        length,
+        False,
+        None,
+        None,
+        collector,
+        0)
 
 class Runner():
     def __init__(
@@ -35,7 +50,6 @@ class Runner():
             env,
             policy,
             length,
-            flush,
             sampler,
             capacity,
             batch_size,
@@ -45,7 +59,6 @@ class Runner():
 
         self.env = env
         self.length = length
-        self.flush = flush
         self.sampler = sampler
         self.capacity = capacity
 
@@ -71,23 +84,14 @@ class Runner():
 
         batch = self.collector.rollout(None,  pol_REGISTRY['random'](self.env), steps)
 
-        if not self.flush:
+        if self.sampler:
             for transition in batch:
                 self.er_buffer.append(transition)
 
         pass
 
     def _set_up_policy(self, policy):
-        if policy == 'argmax':
-            return pol_REGISTRY['argmax'](self.env)
-        
-        elif policy == 'random':
-            return pol_REGISTRY['random'](self.env)
-        
-        elif policy == 'gaussian':
-            return pol_REGISTRY['random'](self.env)
-
-        pass
+        return pol_REGISTRY[policy](self.env)
 
     def get_batch(
             self,
@@ -98,13 +102,12 @@ class Runner():
         
         batch = self.collector.rollout(net, self.policy, self.length)
 
-        if not self.flush:
+        if self.sampler:
             for transition in batch:
                 self.er_buffer.append(transition)
 
-            if self.sampler:
-                k = min(self.batch_size, len(self.er_buffer))
-                batch = random.sample(list(self.er_buffer), k)
+            k = min(self.batch_size, len(self.er_buffer))
+            batch = random.sample(list(self.er_buffer), k)
 
             return self.prep_batch(batch)
 
