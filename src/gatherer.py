@@ -70,6 +70,14 @@ class Collector():
 
         buffer = deque()
 
+        if length == -1:
+            ret_when_term = True
+            length += 1000000
+
+        else: 
+            ret_when_term = False
+        
+
         for _ in range(length):
             self.total_steps += 1
             a = self.agent_step(policy)
@@ -88,5 +96,8 @@ class Collector():
 
                 if self.episodes % 10 == 0:
                     print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
+
+                if ret_when_term:
+                    return list(buffer)
 
         return list(buffer)
