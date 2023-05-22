@@ -2,6 +2,7 @@ from collections import deque
 from typing import NamedTuple
 from gatherer import Collector
 from transitions import TorchTransition
+from policies import REGISTRY as pol_REGISTRY
 import sys
 import random
 
@@ -10,7 +11,8 @@ import random
 
 def get_offpolicy_runner(
         env,
-        freq,
+        policy,
+        length,
         capacity,
         batch_size,
         collector=Collector,
@@ -18,20 +20,36 @@ def get_offpolicy_runner(
     
     return Runner(
         env,
-        freq,
-        False,
+        policy,
+        length,
         True,
         capacity,
         batch_size,
         collector,
         train_after)
 
+def get_onpolicy_runner(
+        env,
+        policy,
+        length,
+        collector=Collector,):
+    
+    return Runner(
+        env,
+        policy,
+        length,
+        False,
+        None,
+        None,
+        collector,
+        0)
+
 class Runner():
     def __init__(
             self,
             env,
+            policy,
             length,
-            flush,
             sampler,
             capacity,
             batch_size,
@@ -41,7 +59,6 @@ class Runner():
 
         self.env = env
         self.length = length
-        self.flush = flush
         self.sampler = sampler
         self.capacity = capacity
 
@@ -55,6 +72,9 @@ class Runner():
 
         if self.train_after:
             self._warm_start(self.train_after)
+            print('\n### Warm up finished ###\n')
+            
+        self.policy = self._set_up_policy(policy)
 
 
     def _warm_start(
@@ -62,30 +82,32 @@ class Runner():
             steps
         ):
 
-        batch = self.collector.rollout(None, 'random', steps)
+        batch = self.collector.rollout(None,  pol_REGISTRY['random'](self.env), steps)
 
-        if not self.flush:
+        if self.sampler:
             for transition in batch:
                 self.er_buffer.append(transition)
 
         pass
 
+    def _set_up_policy(self, policy):
+        return pol_REGISTRY[policy](self.env)
+
     def get_batch(
             self,
             net,
-            policy,
         ):
         
         self.net = net
         
-        batch = self.collector.rollout(net, policy, self.length)
+        batch = self.collector.rollout(net, self.policy, self.length)
 
-        if not self.flush:
+        if self.sampler:
             for transition in batch:
                 self.er_buffer.append(transition)
 
-            if self.sampler:
-                batch = random.sample(list(self.er_buffer), self.batch_size)
+            k = min(self.batch_size, len(self.er_buffer))
+            batch = random.sample(list(self.er_buffer), k)
 
             return self.prep_batch(batch)
 

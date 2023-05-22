@@ -8,6 +8,7 @@ from runner import get_offpolicy_runner
 
 runner = get_offpolicy_runner(
 	gym.make('CartPole-v1'), 
+	'argmax',
 	freq=256,
 	capacity=100000, 
 	batch_size=64, 
@@ -47,7 +48,7 @@ targ_net = copy.deepcopy(net)
 optimizer = th.optim.Adam(net.parameters(), lr=2.3e-3)
 
 for t in range(10000):
-	batch = runner.get_batch(net, 'argmax')
+	batch = runner.get_batch(net)
 
 	s, a, r, s_p, d = batch()
 

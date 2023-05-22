@@ -1,0 +1,30 @@
+import torch as th
+import numpy as np
+
+# should make as classes with __call__ functions
+
+class Random_policy():
+    def __init__(self, env):
+        self.env = env        
+        
+    def __call__(self, state):
+        return self.env.action_space.sample()
+    
+class Epsilon_argmax_policy(Random_policy):
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, state, net, epsilon=None):
+        input = th.from_numpy(state).float()
+        out = net(input).detach().numpy()
+        return np.argmax(out)
+
+def gaussian_policy(net, state, env):
+    input = th.from_numpy(state).float()
+    out = net(input)
+
+    mean, std = out[0].detach().numpy(), out[1].detach().numpy()
+
+    noise = np.random.uniform()
+
+    return (np.tanh(mean + (std * noise)) * env.action_space.high)
