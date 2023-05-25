@@ -38,45 +38,27 @@ class Collector():
         self,
         policy,
         state=None
-    ):
-        
+    ):        
         return policy(self.state, self.net)
-        
-        if policy == 'argmax':
-            input = th.from_numpy(self.state).float()
-            out = self.net(input).detach().numpy()
-            return np.argmax(out)
-
-        if policy == 'gaussian':
-            input = th.from_numpy(self.state).float()
-            out = self.net(input)
-
-            mean, std = out[0].detach().numpy(), out[1].detach().numpy()
-
-            noise = np.random.uniform()
-
-            return (np.tanh(mean + (std * noise)) * self.env.action_space.high)
-
-        return self.env.action_space.sample()
 
     def rollout(
         self,
         net,
         policy,
-        length
+        length,
+        n_step
     ):
         
         self.net = net
 
-        buffer = deque()
+        gather_buffer = deque()
+        step_buffer = deque(maxlen=n_step)
 
         if length == -1:
             ret_when_term = True
             length += 1000000
-
         else: 
-            ret_when_term = False
-        
+            ret_when_term = False        
 
         for _ in range(length):
             self.total_steps += 1
@@ -86,18 +68,27 @@ class Collector():
             # metrics
             self.ep_rew += r
 
-            buffer.append([self.state, a, r, s_p, d])
+            step_buffer.append([self.state, a, r, s_p, d])
+            if len(step_buffer) == n_step:
+                # print(*list(step_buffer))
+
+                if n_step == 1:
+                    gather_buffer.append(*list(step_buffer))
+                else:
+                    gather_buffer.append(list(step_buffer))
+
             self.state = s_p
             if d or t:
                 self.episodes += 1
                 self.epsiode_window.append(self.ep_rew)
                 self.ep_rew = 0
                 self.state, _ = self._reset()
+                step_buffer = deque(maxlen=n_step)
 
                 if self.episodes % 10 == 0:
                     print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
 
                 if ret_when_term:
-                    return list(buffer)
+                    return list(gather_buffer)
 
-        return list(buffer)
+        return list(gather_buffer)
