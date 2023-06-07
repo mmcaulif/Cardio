@@ -1,7 +1,7 @@
 import torch as th
 import numpy as np
 
-class Random_policy():
+class Base_policy():
     def __init__(self, env):
         self.env = env        
         
@@ -9,7 +9,7 @@ class Random_policy():
         return self.env.action_space.sample()
     
  
-class Epsilon_Deterministic_policy(Random_policy):
+class Epsilon_Deterministic_policy(Base_policy):
     def __init__(self, env):
         super().__init__(env)
         self.eps = 0.9
@@ -34,7 +34,7 @@ class Epsilon_Deterministic_policy(Random_policy):
             return self.env.action_space.sample()
                  
 
-class Epsilon_argmax_policy(Random_policy):
+class Epsilon_argmax_policy(Base_policy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -44,7 +44,7 @@ class Epsilon_argmax_policy(Random_policy):
         return np.argmax(out)
     
 
-class Gaussian_policy(Random_policy):
+class Gaussian_policy(Base_policy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -59,7 +59,7 @@ class Gaussian_policy(Random_policy):
         return a_sampled.numpy() * self.env.action_space.high + 0
 
 
-class Noisy_naf_policy(Random_policy):
+class Noisy_naf_policy(Base_policy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -68,7 +68,7 @@ class Noisy_naf_policy(Random_policy):
         out, _, _, _ = net(input)
         return out.detach().numpy()
 
-class Categorical_policy(Random_policy):
+class Categorical_policy(Base_policy):
     def __init__(self, env):
         super().__init__(env)
 

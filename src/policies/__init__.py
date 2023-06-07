@@ -1,4 +1,4 @@
-from .basic import (Random_policy, 
+from .basic import (Base_policy, 
                     Epsilon_Deterministic_policy, 
                     Epsilon_argmax_policy, 
                     Gaussian_policy, 
@@ -6,7 +6,7 @@ from .basic import (Random_policy,
                     Categorical_policy)
 REGISTRY = {}
 
-REGISTRY["random"] = Random_policy
+REGISTRY["random"] = Base_policy
 REGISTRY["deterministic"] = Epsilon_Deterministic_policy
 REGISTRY["argmax"] = Epsilon_argmax_policy
 REGISTRY["gaussian"] = Gaussian_policy

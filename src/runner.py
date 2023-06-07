@@ -1,8 +1,10 @@
 from collections import deque
-from gatherer import Collector
-from transitions import TorchTransition
-from policies import REGISTRY as pol_REGISTRY
-from policies import Basepolicy
+from typing import NamedTuple
+from .gatherer import Collector
+from .transitions import TorchTransition
+from .policies import REGISTRY as pol_REGISTRY
+from .policies import Base_policy
+import sys
 import random
 import numpy as np
 
@@ -97,7 +99,7 @@ class Runner():
         if isinstance(policy, str):
             return pol_REGISTRY[policy](self.env)
 
-        elif isinstance(policy, Basepolicy):
+        elif isinstance(policy, Base_policy):
             return policy
     
         return 
