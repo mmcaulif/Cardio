@@ -1,10 +1,9 @@
-
+import cardiorl as crl
 import gymnasium as gym
-from src import Runner, get_offpolicy_runner
-from src.policies import Base_policy
+from cardiorl.policies import Base_policy
 
 env = gym.make('CartPole-v1')
-runner = get_offpolicy_runner(
+runner = crl.get_offpolicy_runner(
 	env, 
 	Base_policy(env),
 	length=256,
