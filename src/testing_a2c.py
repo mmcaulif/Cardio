@@ -35,10 +35,11 @@ class Policy(nn.Module):
 			nn.ReLU(),
 			nn.Linear(64, 64),
 			nn.ReLU(),
-			nn.Linear(64, action_dim))
+			nn.Linear(64, action_dim),
+			nn.Softmax())
 
 	def forward(self, state):
-		return F.softmax(self.net(state))
+		return self.net(state)
 
 net = Critic(4)
 policy = Policy(4, 2)
