@@ -8,3 +8,5 @@
     * need to debug and make cleaner, go through documentation
 
 * Parallel gatherer
+
+* Move agent stubs outside of src
