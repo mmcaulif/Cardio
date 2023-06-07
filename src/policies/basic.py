@@ -1,24 +1,6 @@
-from .basic import (Random_policy, 
-                    Epsilon_Deterministic_policy, 
-                    Epsilon_argmax_policy, 
-                    Gaussian_policy, 
-                    Noisy_naf_policy,
-                    Categorical_policy)
-REGISTRY = {}
-
-REGISTRY["random"] = Random_policy
-REGISTRY["deterministic"] = Epsilon_Deterministic_policy
-REGISTRY["argmax"] = Epsilon_argmax_policy
-REGISTRY["gaussian"] = Gaussian_policy
-REGISTRY["naf"] = Noisy_naf_policy
-REGISTRY["categorical"] = Categorical_policy
-
 import torch as th
 import numpy as np
-import random
 
-# should make as classes with __call__ functions
-"""
 class Random_policy():
     def __init__(self, env):
         self.env = env        
@@ -94,5 +76,4 @@ class Categorical_policy(Random_policy):
         input = th.from_numpy(state).float()
         probs = net(input)
         dist = th.distributions.Categorical(probs)
-        return dist.sample().detach().numpy()"""
-
+        return dist.sample().detach().numpy()
