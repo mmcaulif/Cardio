@@ -1,10 +1,10 @@
 from collections import deque
-from typing import NamedTuple
 from gatherer import Collector
 from transitions import TorchTransition
 from policies import REGISTRY as pol_REGISTRY
-import sys
+from policies import Basepolicy
 import random
+import numpy as np
 
 # https://stackoverflow.com/questions/40181284/how-to-get-random-sample-from-deque-in-python-3
 # faster replay memory
@@ -15,6 +15,7 @@ def get_offpolicy_runner(
         length,
         capacity,
         batch_size,
+        n_step=1,
         collector=Collector,
         train_after=10000):
     
@@ -25,6 +26,7 @@ def get_offpolicy_runner(
         True,
         capacity,
         batch_size,
+        n_step,
         collector,
         train_after)
 
@@ -53,6 +55,7 @@ class Runner():
             sampler,
             capacity,
             batch_size,
+            n_step,
             collector=Collector,
             train_after=None
         ) -> None:
@@ -61,8 +64,8 @@ class Runner():
         self.length = length
         self.sampler = sampler
         self.capacity = capacity
-
         self.batch_size = batch_size
+        self.n_step = n_step
 
         self.train_after = train_after
 
@@ -82,7 +85,7 @@ class Runner():
             steps
         ):
 
-        batch = self.collector.rollout(None,  pol_REGISTRY['random'](self.env), steps)
+        batch = self.collector.rollout(None,  pol_REGISTRY['random'](self.env), steps, self.n_step)
 
         if self.sampler:
             for transition in batch:
@@ -91,16 +94,21 @@ class Runner():
         pass
 
     def _set_up_policy(self, policy):
-        return pol_REGISTRY[policy](self.env)
+        if isinstance(policy, str):
+            return pol_REGISTRY[policy](self.env)
+
+        elif isinstance(policy, Basepolicy):
+            return policy
+    
+        return 
 
     def get_batch(
             self,
             net,
         ):
         
-        self.net = net
-        
-        batch = self.collector.rollout(net, self.policy, self.length)
+        self.net = net        
+        batch = self.collector.rollout(net, self.policy, self.length, self.n_step)
 
         if self.sampler:
             for transition in batch:
@@ -109,17 +117,32 @@ class Runner():
             k = min(self.batch_size, len(self.er_buffer))
             batch = random.sample(list(self.er_buffer), k)
 
-            return self.prep_batch(batch)
-
         return self.prep_batch(batch)
 
     def prep_batch(
         self,
         batch
         ):
-
         """
         takes the batch (which will be a list of transitons) and processes them to be seperate etc.
         """
 
-        return TorchTransition(*zip(*batch))    # try return it as dict maybe? or just something fancier and seperated
+        if self.n_step == 1:
+            return TorchTransition(*zip(*batch))    # try return it as dict maybe? or just something fancier and seperated
+        
+        else:
+            processed_batch = []
+            # process the n_step transition
+            for n_step_transition in batch:
+                # print(f"{i}: ", n_step_transition, '\n')
+
+                transition = TorchTransition(*zip(*n_step_transition))
+                s = np.array(transition.s[0], dtype=np.float32)
+                a = transition.a[0]
+                r_list = list(transition.r)
+                s_p = np.array(transition.s_p[-1], dtype=np.float32)
+                d = any(transition.d)
+
+                processed_batch.append([s, a, r_list, s_p, d])
+
+            return TorchTransition(*zip(*processed_batch))
