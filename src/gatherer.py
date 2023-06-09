@@ -1,4 +1,5 @@
 from collections import deque
+from src.policies import Base_policy
 import torch as th
 import numpy as np
 
@@ -13,7 +14,7 @@ class Collector():
         self.capacity = capacity
         
         # environment init (move to function)
-        self.state, _ = self._reset()
+        self.state, _ = env.reset()
 
         # metrics
         self.episodes = 0
@@ -21,25 +22,17 @@ class Collector():
         self.ep_rew = 0
         self.epsiode_window = deque(maxlen=50)
 
-        pass
-
-    def _step(
+    def warmup(            
         self,
-        a
+        net = None,
+        policy = None,
+        length = 0,
+        n_step = 1
     ):
-        return self.env.step(a)
+        if policy == None:
+            policy = Base_policy(self.env)
 
-    def _reset(
-        self
-    ):
-        return self.env.reset()
-    
-    def agent_step(
-        self,
-        policy,
-        state=None
-    ):        
-        return policy(self.state, self.net)
+        return self.rollout(net, policy, length, n_step)
 
     def rollout(
         self,
@@ -50,7 +43,6 @@ class Collector():
     ):
         
         self.net = net
-
         gather_buffer = deque()
         step_buffer = deque(maxlen=n_step)
 
@@ -62,15 +54,14 @@ class Collector():
 
         for _ in range(length):
             self.total_steps += 1
-            a = self.agent_step(policy)
-            s_p, r, d, t, info = self._step(a)
+            a = policy(self.state, self.net)
+            s_p, r, d, t, info = self.env.step(a)
 
             # metrics
             self.ep_rew += r
 
             step_buffer.append([self.state, a, r, s_p, d])
             if len(step_buffer) == n_step:
-                # print(*list(step_buffer))
 
                 if n_step == 1:
                     gather_buffer.append(*list(step_buffer))
@@ -82,7 +73,7 @@ class Collector():
                 self.episodes += 1
                 self.epsiode_window.append(self.ep_rew)
                 self.ep_rew = 0
-                self.state, _ = self._reset()
+                self.state, _ = self.env.reset()
                 step_buffer = deque(maxlen=n_step)
 
                 if self.episodes % 10 == 0:
@@ -91,4 +82,4 @@ class Collector():
                 if ret_when_term:
                     return list(gather_buffer)
 
-        return list(gather_buffer)
+        return list(gather_buffer)   

@@ -76,7 +76,7 @@ class Runner():
         self.collector = collector(env, 100000)
 
         if self.train_after:
-            self._warm_start(self.train_after)
+            self._warm_start(length=self.train_after)
             print('\n### Warm up finished ###\n')
             
         self.policy = self._set_up_policy(policy)
@@ -84,10 +84,12 @@ class Runner():
 
     def _warm_start(
             self,
-            steps
+            net=None,
+            policy=None,
+            length=0,            
         ):
 
-        batch = self.collector.rollout(None,  pol_REGISTRY['random'](self.env), steps, self.n_step)
+        batch = self.collector.warmup(net, policy, length, self.n_step)
 
         if self.sampler:
             for transition in batch:
