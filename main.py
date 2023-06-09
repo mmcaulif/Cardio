@@ -4,11 +4,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import gymnasium as gym
 import numpy as np
-from policies import Basepolicy
-from runner import get_offpolicy_runner
+from src.policies import Base_policy
+from src import get_offpolicy_runner
 
 """
-Duelling Double DQN with n-step returns used for verification of runner
+Duelling Double DQN with n-step returns used for verification of runner functionality
 """
 
 class Q_duelling(nn.Module):
@@ -40,7 +40,7 @@ class Q_duelling(nn.Module):
 
 		return a
 
-class Epsilon_argmax_policy(Basepolicy):
+class Epsilon_argmax_policy(Base_policy):
     def __init__(self, env, eps = 0.0, min_eps = 0.0, ann_coeff = 0.9):
         super().__init__(env)
         self.eps = eps
