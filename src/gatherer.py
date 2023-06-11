@@ -1,17 +1,34 @@
 from collections import deque
-from src.policies import Base_policy
-import torch as th
+from src.policies import BasePolicy
 import numpy as np
 
 class Collector():
     def __init__(
             self,
             env,
-            capacity,
+            rollout_len = 1,
+            warmup_len = 0,
+            n_step = 1,
         ) -> None:
 
         self.env = env
-        self.capacity = capacity
+
+        if False:
+            # https://gymnasium.farama.org/api/vector/#async-vector-env
+            num_envs = 1
+            env_list = [lambda: gym.make("Pendulum-v1", g=9.81)] * num_envs
+            env = gym.vector.AsyncVectorEnv(env_list)
+
+        self.rollout_len = rollout_len        
+
+        if self.rollout_len == -1:
+            self.ret_if_term = True
+            self.rollout_len += 1000000
+        else: 
+            self.ret_if_term = False   
+
+        self.warmup_len = warmup_len
+        self.n_step = n_step
         
         # environment init (move to function)
         self.state, _ = env.reset()
@@ -26,33 +43,49 @@ class Collector():
         self,
         net = None,
         policy = None,
-        length = 0,
-        n_step = 1
     ):
+        
+        # Maybe move this check to the runner?
+        if self.warmup_len == None:
+            return deque()
+        
         if policy == None:
-            policy = Base_policy(self.env)
+            policy = BasePolicy(self.env)
+        
+        self.net = net
+        gather_buffer = deque()
+        step_buffer = deque(maxlen=self.n_step)     
 
-        return self.rollout(net, policy, length, n_step)
+        for _ in range(self.warmup_len):
+            self.total_steps += 1
+            a = policy(self.state, self.net)
+            s_p, r, d, t, info = self.env.step(a)
+
+            step_buffer.append([self.state, a, r, s_p, d])
+            if len(step_buffer) == self.n_step:
+
+                if self.n_step == 1:
+                    gather_buffer.append(*list(step_buffer))
+                else:
+                    gather_buffer.append(list(step_buffer))
+
+            self.state = s_p
+            if d or t:
+                self.state, _ = self.env.reset()
+                step_buffer = deque(maxlen=self.n_step)
+
+        return list(gather_buffer)
 
     def rollout(
         self,
         net,
         policy,
-        length,
-        n_step
-    ):
-        
+    ):        
         self.net = net
         gather_buffer = deque()
-        step_buffer = deque(maxlen=n_step)
+        step_buffer = deque(maxlen=self.n_step)     
 
-        if length == -1:
-            ret_when_term = True
-            length += 1000000
-        else: 
-            ret_when_term = False        
-
-        for _ in range(length):
+        for _ in range(self.rollout_len):
             self.total_steps += 1
             a = policy(self.state, self.net)
             s_p, r, d, t, info = self.env.step(a)
@@ -61,9 +94,9 @@ class Collector():
             self.ep_rew += r
 
             step_buffer.append([self.state, a, r, s_p, d])
-            if len(step_buffer) == n_step:
+            if len(step_buffer) == self.n_step:
 
-                if n_step == 1:
+                if self.n_step == 1:
                     gather_buffer.append(*list(step_buffer))
                 else:
                     gather_buffer.append(list(step_buffer))
@@ -74,12 +107,12 @@ class Collector():
                 self.epsiode_window.append(self.ep_rew)
                 self.ep_rew = 0
                 self.state, _ = self.env.reset()
-                step_buffer = deque(maxlen=n_step)
+                step_buffer = deque(maxlen=self.n_step)
 
                 if self.episodes % 10 == 0:
                     print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
 
-                if ret_when_term:
+                if self.ret_if_term:
                     return list(gather_buffer)
 
         return list(gather_buffer)   

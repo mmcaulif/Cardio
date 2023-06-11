@@ -1,9 +1,8 @@
 from collections import deque
-from typing import NamedTuple
 from .gatherer import Collector
-from .transitions import TorchTransition
+from .transitions import REGISTRY as tran_REGISTRY
 from .policies import REGISTRY as pol_REGISTRY
-from .policies import Base_policy
+from .policies import BasePolicy
 import sys
 import random
 import numpy as np
@@ -52,56 +51,56 @@ class Runner():
     def __init__(
             self,
             env,
-            policy,
-            length,
-            sampler,
-            capacity,
-            batch_size,
-            n_step,
-            collector=Collector,
-            train_after=None
+            policy = None,
+            sampler = False,
+            capacity = None,
+            batch_size = None,
+            collector = None,
         ) -> None:
 
+        """
+        Need to implement default arguments
+        """
+
+        # Can maybe remove environment as an argument of the runner
         self.env = env
-        self.length = length
+
+        # Maybe combine sampler and capacity into one argument?
         self.sampler = sampler
         self.capacity = capacity
         self.batch_size = batch_size
-        self.n_step = n_step
-
-        self.train_after = train_after
 
         self.er_buffer = deque(maxlen=self.capacity)
 
-        self.collector = collector(env, 100000)
+        self.collector = collector
+        self.rollout_len = collector.rollout_len
+        self.warmup_len = collector.warmup_len
+        self.n_step = collector.n_step
 
-        if self.train_after:
-            self._warm_start(length=self.train_after)
-            print('\n### Warm up finished ###\n')
+        self._warm_start()
             
         self.policy = self._set_up_policy(policy)
-
 
     def _warm_start(
             self,
             net=None,
-            policy=None,
-            length=0,            
+            policy=None,           
         ):
 
-        batch = self.collector.warmup(net, policy, length, self.n_step)
+        batch = self.collector.warmup(net, policy)
 
         if self.sampler:
             for transition in batch:
                 self.er_buffer.append(transition)
-
+        
+        print('\n### Warm up finished ###\n')
         pass
 
     def _set_up_policy(self, policy):
         if isinstance(policy, str):
             return pol_REGISTRY[policy](self.env)
 
-        elif isinstance(policy, Base_policy):
+        elif isinstance(policy, BasePolicy):
             return policy
     
         return 
@@ -112,7 +111,7 @@ class Runner():
         ):
         
         self.net = net        
-        batch = self.collector.rollout(net, self.policy, self.length, self.n_step)
+        batch = self.collector.rollout(net, self.policy)
 
         if self.sampler:
             for transition in batch:
@@ -132,21 +131,31 @@ class Runner():
         """
 
         if self.n_step == 1:
-            return TorchTransition(*zip(*batch))    # try return it as dict maybe? or just something fancier and seperated
+            return tran_REGISTRY["pytorch"](*zip(*batch))    # try return it as dict maybe? or just something fancier and seperated
         
         else:
             processed_batch = []
             # process the n_step transition
             for n_step_transition in batch:
-                # print(f"{i}: ", n_step_transition, '\n')
 
-                transition = TorchTransition(*zip(*n_step_transition))
+                """transition = tran_REGISTRY["pytorch"](*zip(*n_step_transition))
                 s = np.array(transition.s[0], dtype=np.float32)
                 a = transition.a[0]
                 r_list = list(transition.r)
                 s_p = np.array(transition.s_p[-1], dtype=np.float32)
+                d = any(transition.d)"""
+
+                transition = tran_REGISTRY["numpy"](*zip(*n_step_transition))
+                s = transition.s[0]
+                a = transition.a[0]
+                r_list = list(transition.r)
+                s_p = transition.s_p[-1]
                 d = any(transition.d)
 
                 processed_batch.append([s, a, r_list, s_p, d])
+                """print([s, a, r_list, s_p, d])
+                import sys
+                sys.exit()"""
 
-            return TorchTransition(*zip(*processed_batch))
+            return tran_REGISTRY["pytorch"](*zip(*processed_batch))
+        
