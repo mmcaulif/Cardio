@@ -4,11 +4,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import gymnasium as gym
 import numpy as np
-from src.policies import Base_policy
-from src import get_offpolicy_runner
+from src.policies import BasePolicy
+from src import Runner
+from src import Collector
+from src.rainbow_naf.noisy_linear import NoisyLinear
 
 """
 Duelling Double DQN with n-step returns used for verification of runner functionality
+-double check NoisyNet implementation
+-should maybe implement distributional q learning and PER to fully make rainbow
+-PER will be interesting, need to figure out how to do it with current design structure
 """
 
 class Q_duelling(nn.Module):
@@ -16,58 +21,51 @@ class Q_duelling(nn.Module):
 		super(Q_duelling, self).__init__()
 		self.dueling = dueling
 
-		self.l1 = nn.Linear(state_dim, 128)
+		self.l1 = NoisyLinear(state_dim, 128)
 
-		self.adv = nn.Sequential(
-			nn.Linear(128, 128),
-			nn.ReLU(),
-			nn.Linear(128, action_dim)
-		)
+		self.a1 = NoisyLinear(128, 128)
+		self.a2 = NoisyLinear(128, action_dim)
 
-		self.val = nn.Sequential(
-			nn.Linear(128, 128),
-			nn.ReLU(),
-			nn.Linear(128, 1)
-		)
+		self.v1 = NoisyLinear(128, 128)
+		self.v2 = NoisyLinear(128, 1)
 
 	def forward(self, state):
 		q = F.relu(self.l1(state))
-		v = self.val(q)
-		a = self.adv(q)
+
+		a = F.relu(self.a1(q))
+		a = self.a2(a)
+
+		v = F.relu(self.v1(q))
+		v = self.v2(v)
 
 		if self.dueling:
 			return v + (a - a.mean())
 
-		return a
-
-class Epsilon_argmax_policy(Base_policy):
-    def __init__(self, env, eps = 0.0, min_eps = 0.0, ann_coeff = 0.9):
-        super().__init__(env)
-        self.eps = eps
-        self.min_eps = min_eps
-        self.ann_coeff = ann_coeff
-
-    def __call__(self, state, net):
-        input = th.from_numpy(state).float()
-
-        if np.random.rand() > self.eps:
-            self.eps = max(self.min_eps, self.eps*self.ann_coeff)   
-            out = net(input).detach().numpy()
-            return np.argmax(out)  
-
-        else:
-            self.eps = max(self.min_eps, self.eps*self.ann_coeff)
-            return self.env.action_space.sample()
+		return a   
+	
+	def reset_noise(self):
+		"""Reset all noisy layers."""
+		self.l1.reset_noise()
+		self.a1.reset_noise()
+		self.a2.reset_noise()
+		self.v1.reset_noise()
+		self.v2.reset_noise()
 
 env = gym.make('CartPole-v1')
-runner = get_offpolicy_runner(
-	env, 
-	Epsilon_argmax_policy(env, 0.5, 0.05, 0.9),
-	length=4,
-	capacity=100000, 
-	batch_size=512, 
-	train_after=100,
-	n_step=3)
+
+runner = Runner(
+	env=env,
+	policy='argmax',	# Epsilon_argmax_policy(env, 0.5, 0.05, 0.9),
+	sampler=True,
+	capacity=100000,
+	batch_size=512,
+	collector=Collector(
+		env=env,
+		rollout_len=4,
+		warmup_len=1000,
+		n_step=3
+	)
+)
 
 net = Q_duelling(4, 2, True)
 targ_net = copy.deepcopy(net)
@@ -99,6 +97,9 @@ for t in range(10000):
 	loss.backward()
 	th.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
 	optimizer.step()
+	
+	net.reset_noise()
+	targ_net.reset_noise()
 
 	if t % target_update == 0:        
 		targ_net = copy.deepcopy(net)
