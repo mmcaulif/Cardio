@@ -52,6 +52,7 @@ pi_optimizer = th.optim.Adam(actor.parameters(), lr=7e-4)
 
 """
 Need to implement parallel environments and better returns estimation!
+-Maybe merge actor and critic into one nn.Module
 """
 
 for rollout_steps in range(50000):
