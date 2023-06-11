@@ -4,18 +4,37 @@ from src.policies import Base_policy
 from minari import DataCollectorV0
 import minari
 import gymnasium as gym
+import d4rl
 
 class OfflineCollector(Collector):
     def __init__(self, env, capacity) -> None:
         super().__init__(env, capacity)
         self.env = env
+        self.warmup()
 
-    def warmup(self, net=None, policy=None, length=1000000, n_step=1):
+    def warmup(self, net=None, policy=None, length=0, n_step=1):
+
+        if isinstance(self.env, gym.Env):
+            return self._warmup_gym(self, net, policy, length, n_step)
+        
+        self._warumup_d4rl()
+
+        return 
+    
+    def _warumup_d4rl(self):
+        dataset = d4rl.qlearning_dataset(self.env)
+        print(dataset)
+
+    def _warmup_gym(self, net=None, policy=None, length=1000000, n_step=1):
 
         if policy == None:
             policy = Base_policy(self.env)
 
-        self.env = DataCollectorV0(self.env, record_infos=False, max_buffer_steps=length)
+        self.env = DataCollectorV0(
+            self.env,
+            record_infos=False,
+            max_buffer_steps=length)
+        
         self.net = net
         gather_buffer = deque()
         step_buffer = deque(maxlen=n_step)
@@ -49,8 +68,11 @@ class OfflineCollector(Collector):
     
     def _set_up_loader(self, data):
         print(len(data))
-        dataset = minari.create_dataset_from_collector_env(dataset_id="CartPole-v1-test-v0", 
-                                                   collector_env=self.env)
+        dataset = minari.create_dataset_from_collector_env(
+            dataset_id="CartPole-v1-test-v0", 
+            collector_env=self.env,
+            author='Manus',
+            author_email='mmcaulif@tcd.ie')
 
 def get_offline_runner(env, capacity):
     return Runner(
@@ -66,10 +88,8 @@ def get_offline_runner(env, capacity):
     )
 
 def main():
-    env = gym.make('CartPole-v1')
+    env = gym.make('maze2d-umaze-v1')
     runner = get_offline_runner(env, 200)
 
-    pass
-
-if __name__ == '__main__':
-    main()
+print('here')
+main()
