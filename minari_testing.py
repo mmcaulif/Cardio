@@ -1,6 +1,6 @@
 from collections import deque
 from src import Collector, Runner
-from src.policies import Base_policy
+from src.policies import BasePolicy
 from minari import DataCollectorV0
 import minari
 import gymnasium as gym
@@ -15,7 +15,7 @@ class OfflineCollector(Collector):
     def warmup(self, net=None, policy=None, length=0, n_step=1):
 
         if isinstance(self.env, gym.Env):
-            return self._warmup_gym(self, net, policy, length, n_step)
+            return self._warmup_gym(net, policy, length, n_step)
         
         self._warumup_d4rl()
 
@@ -28,7 +28,7 @@ class OfflineCollector(Collector):
     def _warmup_gym(self, net=None, policy=None, length=1000000, n_step=1):
 
         if policy == None:
-            policy = Base_policy(self.env)
+            policy = BasePolicy(self.env)
 
         self.env = DataCollectorV0(
             self.env,
@@ -77,7 +77,7 @@ class OfflineCollector(Collector):
 def get_offline_runner(env, capacity):
     return Runner(
         env,
-        Base_policy(env),
+        BasePolicy(env),
         length=1,
         sampler=False,
         capacity=0,
