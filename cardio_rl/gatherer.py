@@ -1,5 +1,5 @@
 from collections import deque
-from src.policies import BasePolicy
+from cardio_rl.policies import BasePolicy
 import numpy as np
 
 class Collector():

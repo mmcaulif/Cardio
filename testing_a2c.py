@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 import gymnasium as gym
-from src import Runner, Collector
+from cardio_rl import Runner, Collector
 
 class Critic(nn.Module):
 	def __init__(self, state_dim):
