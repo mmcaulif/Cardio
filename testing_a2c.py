@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 import gymnasium as gym
-from cardio_rl import Runner, Collector
+from cardio_rl import Runner, VectorCollector
 
 class Critic(nn.Module):
 	def __init__(self, state_dim):
@@ -34,25 +34,28 @@ class Policy(nn.Module):
 	def forward(self, state):
 		return th.exp(self.net(state))
 
-env = gym.vector.make('CartPole-v1')
+env = gym.make('CartPole-v1')
 
 runner = Runner(
 	env=env,
 	policy='categorical',
-	collector=Collector(
+	collector=VectorCollector(
 		env=env,
+		num_envs=4,
 		rollout_len=5,
 	)
 )
 
-net = Critic(4)
+critic = Critic(4)
 actor = Policy(4, 2)
-c_optimizer = th.optim.Adam(net.parameters(), lr=7e-4)
+c_optimizer = th.optim.Adam(critic.parameters(), lr=7e-4)
 pi_optimizer = th.optim.Adam(actor.parameters(), lr=7e-4)
 
 """
-Need to implement parallel environments and better returns estimation!
+Need to implement parallel environments
+-Implement timestep-based logging!
 -Maybe merge actor and critic into one nn.Module
+-debug and inspect returns estimation!
 """
 
 for rollout_steps in range(50000):
@@ -61,24 +64,47 @@ for rollout_steps in range(50000):
 	s, a, r, s_p, d = batch()
 
 	# Need to improve returns estimates with future expected value
-	values = net(s)
+	values = critic(s)
 	returns = th.zeros_like(r)
-	ret = 0
 		
-	for i in reversed(range(len(r))):
-		ret += 0.99 * r[i]
-		ret *= (1 - d[i])
-		returns[i] = ret
+	for t in reversed(range(len(r))):
+		if t == len(r) - 1:			
+			ret = r[t]
+			ret += 0.99 * critic(s_p[-1,]).T	# have shape issues without transposing
+			# can maybe remove the below two lines and move them outside the if statement
+			ret *= (1 - d[t])
+			returns[t] = ret
+
+		else:
+			ret = r[t]
+			ret += 0.99 * returns[t+1]
+			ret *= (1 - d[t])
+			returns[t] = ret
+
+	values = values.flatten()
+	returns = returns.flatten()
+
+	print(returns)
+	import sys
+	sys.exit()
 	
 	loss = F.mse_loss(returns.detach(), values)
 	
 	c_optimizer.zero_grad()
 	loss.backward()
-	th.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
+	th.nn.utils.clip_grad_norm_(critic.parameters(), 0.5)
 	c_optimizer.step()
 	
 	adv = (values - returns).detach()
-	log_probs = Categorical(actor(s)).log_prob(a.squeeze(-1))
+
+	print(adv.shape)
+
+	# I think dimensions are working for the value updates, 
+	# now just need to fix for the policy gradient updates
+
+	log_probs = Categorical(actor(s))
+	
+	log_probs = log_probs.log_prob(a.squeeze(-1))
 
 	policy_loss = -(log_probs * adv).mean()
 

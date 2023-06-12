@@ -20,23 +20,15 @@ class BaseTransition(NamedTuple):
 class TorchTransition(BaseTransition):
 
     def __call__(self):
-
         s = th.from_numpy(np.array(self.s)).float()
-        a = th.from_numpy(np.array(self.a)).float().unsqueeze(1)
-        r = th.FloatTensor(self.r).unsqueeze(1)
+        a = th.from_numpy(np.array(self.a)).unsqueeze(1).float()
+        r = th.from_numpy(np.array(self.r)).unsqueeze(1).float()
         s_p = th.from_numpy(np.array(self.s_p)).float()
-        d = th.IntTensor(self.d).unsqueeze(1)
+        d = th.from_numpy(np.array(self.d)).unsqueeze(1).int()
         return s, a, r, s_p, d
     
 class JaxTransition(BaseTransition):
 
     def __call__(self):
-        return NotImplementedError
-
-        s = th.from_numpy(np.array(self.s)).float()
-        a = th.from_numpy(np.array(self.a)).float().unsqueeze(1)
-        r = th.FloatTensor(self.r).unsqueeze(1)
-        s_p = th.from_numpy(np.array(self.s_p)).float()
-        d = th.IntTensor(self.d).unsqueeze(1)
-        return s, a, r, s_p, d
+        raise NotImplementedError()
     
