@@ -1,17 +1,15 @@
 # GymCardio
 
 ## Immediate to do list
-* Parallel gatherer
 
-* Create package!
+* [ ] Parallel gatherer
 
-* Offline gatherer
-    * on pause until mujoco sorted
+* [ ] Create package!
 
-* refactor gatherer and runner, add default arg values, careful consideration needed
-    * mostly done, just some final decisions to make
+* [ ] Offline gatherer
+  * on pause until mujoco sorted
 
-* Make repo a package (just a setup file for now)
-    * need to debug and make cleaner, go through documentation
+* [ ] Refactor gatherer and runner, add default arg values, careful consideration needed
+  * mostly done, just some final decisions to make
 
-* Move agent stubs outside of src and using package instead of src
+* [ ] Move agent stubs outside of src and using package instead of src
