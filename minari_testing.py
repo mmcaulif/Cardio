@@ -1,6 +1,6 @@
 from collections import deque
-from src import Collector, Runner
-from src.policies import BasePolicy
+from cardio_rl import Collector, Runner
+from cardio_rl.policies import BasePolicy
 from minari import DataCollectorV0
 import minari
 import gymnasium as gym

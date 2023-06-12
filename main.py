@@ -3,11 +3,9 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import gymnasium as gym
-import numpy as np
-from src.policies import BasePolicy
-from src import Runner
-from src import Collector
-from src.rainbow_naf.noisy_linear import NoisyLinear
+from cardio_rl import Runner
+from cardio_rl import Collector
+from cardio_rl.rainbow_naf.noisy_linear import NoisyLinear
 
 """
 Duelling Double DQN with n-step returns used for verification of runner functionality
