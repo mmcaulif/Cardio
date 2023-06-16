@@ -1,8 +1,7 @@
 from collections import deque
 from .gatherer import Collector
 from .transitions import REGISTRY as tran_REGISTRY
-from .policies import REGISTRY as pol_REGISTRY
-from .policies import BasePolicy
+from .policies import BasePolicy, REGISTRY as pol_REGISTRY
 import sys
 import random
 import numpy as np
@@ -131,7 +130,8 @@ class Runner():
         """
 
         if self.n_step == 1:
-            return tran_REGISTRY["pytorch"](*zip(*batch))    # try return it as dict maybe? or just something fancier and seperated
+            # need to add argument for this (instead of querying the regisry each time)!
+            return tran_REGISTRY["pytorch"](*zip(*batch))
         
         else:
             processed_batch = []
