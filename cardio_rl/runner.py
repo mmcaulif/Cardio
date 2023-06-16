@@ -55,6 +55,7 @@ class Runner():
             capacity = None,
             batch_size = None,
             collector = None,
+            backend = 'numpy'
         ) -> None:
 
         """
@@ -75,6 +76,8 @@ class Runner():
         self.rollout_len = collector.rollout_len
         self.warmup_len = collector.warmup_len
         self.n_step = collector.n_step
+
+        self.backend = backend
 
         self._warm_start()
             
@@ -131,7 +134,7 @@ class Runner():
 
         if self.n_step == 1:
             # need to add argument for this (instead of querying the regisry each time)!
-            return tran_REGISTRY["pytorch"](*zip(*batch))
+            return tran_REGISTRY[self.backend](*zip(*batch))
         
         else:
             processed_batch = []

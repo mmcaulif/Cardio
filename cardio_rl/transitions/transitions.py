@@ -1,6 +1,7 @@
 from typing import NamedTuple
 import torch as th
 import numpy as np
+import jax.numpy as jnp
 
 class BaseTransition(NamedTuple):
     s: list  # state
@@ -30,5 +31,10 @@ class TorchTransition(BaseTransition):
 class JaxTransition(BaseTransition):
 
     def __call__(self):
-        raise NotImplementedError()
+        s = jnp.asarray(np.array(self.s))
+        a = jnp.asarray(np.array(self.a))
+        r = jnp.expand_dims(jnp.asarray(np.array(self.r)), -1)
+        s_p = jnp.asarray(np.array(self.s_p))
+        d = jnp.expand_dims(jnp.asarray(np.array(self.d)), -1)
+        return s, a, r, s_p, d
     
