@@ -87,7 +87,7 @@ for steps in range(20000):
 	s, a, r, s_p, d = batch()
 
 	with th.no_grad():
-
+		# create action scaling wrapper for continuous environments
 		alpha, beta = actor(s_p)
 		dist_p = Beta(alpha, beta)
 		x_t = dist_p.rsample()

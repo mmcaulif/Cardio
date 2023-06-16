@@ -34,7 +34,7 @@ class Collector():
         self.episodes = 0
         self.total_steps = 0
         self.ep_rew = 0
-        self.epsiode_window = deque(maxlen=50)
+        self.epsiode_window = deque(maxlen=5)   # normally 50
 
     def warmup(            
         self,
@@ -54,7 +54,7 @@ class Collector():
         step_buffer = deque(maxlen=self.n_step)     
 
         for _ in range(self.warmup_len):
-            self.total_steps += 1
+            # self.total_steps += 1 # figure out whether to include this or not, probs not
             a = policy(self.state, self.net)
             s_p, r, d, t, info = self.env.step(a)
 
@@ -106,8 +106,8 @@ class Collector():
                 self.state, _ = self.env.reset()
                 step_buffer = deque(maxlen=self.n_step)
 
-                if self.episodes % 10 == 0:
-                    print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
+                # if self.episodes % 10 == 0:
+                print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
 
                 if self.ret_if_term:
                     return list(gather_buffer)
@@ -125,9 +125,10 @@ class VectorCollector():
         ) -> None:  
         
         # https://gymnasium.farama.org/api/vector/#async-vector-env            
-        env_list = [lambda: env for _ in range(num_envs)]
+        env_list = [lambda: gym.wrappers.RecordEpisodeStatistics(env) for _ in range(num_envs)]
         # Getting errors when using AsyncVectorEnv
         self.env = gym.vector.SyncVectorEnv(env_list)
+        # self.env = gym.wrappers.RecordEpisodeStatistics(env)
         
         self.state, _ = self.env.reset()        
 
@@ -194,10 +195,15 @@ class VectorCollector():
         for _ in range(self.rollout_len):
             self.total_steps += 1
             a = policy(self.state, self.net)
-            s_p, r, d, t, info = self.env.step(a)
 
-            # metrics
-            self.ep_rew += r
+            s_p, r, d, t, info = self.env.step(a)
+            
+            if info:
+                fin = info['final_info'][0]
+                if fin:
+                    self.ep_rew = 0.1*(fin['episode']['r']) + 0.9*self.ep_rew
+                    # print(self.ep_rew)
+                    # print(fin['episode']['r'])
 
             step_buffer.append([self.state, a, r, s_p, d])
             if len(step_buffer) == self.n_step:
@@ -208,19 +214,5 @@ class VectorCollector():
                     gather_buffer.append(list(step_buffer))
 
             self.state = s_p
-
-            """if d or t:
-                self.episodes += 1
-                self.epsiode_window.append(self.ep_rew)
-                self.ep_rew = 0
-                self.state, _ = self.env.reset()
-                step_buffer = deque(maxlen=self.n_step)
-
-                if self.episodes % 10 == 0:
-                    print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
-
-                # Need to figure out what to do here, add a warning or something
-                if self.ret_if_term:
-                    return list(gather_buffer)"""
 
         return list(gather_buffer)
