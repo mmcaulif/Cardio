@@ -56,7 +56,7 @@ runner = Runner(
 	policy='argmax',	# Epsilon_argmax_policy(env, 0.5, 0.05, 0.9),
 	sampler=True,
 	capacity=100000,
-	batch_size=512,
+	batch_size=64,
 	collector=Collector(
 		env=env,
 		rollout_len=4,
@@ -65,40 +65,40 @@ runner = Runner(
 	)
 )
 
-net = Q_duelling(4, 2, True)
-targ_net = copy.deepcopy(net)
-optimizer = th.optim.Adam(net.parameters(), lr=2.3e-3)
+critic = Q_duelling(4, 2, True)
+targ_net = copy.deepcopy(critic)
+optimizer = th.optim.Adam(critic.parameters(), lr=2.3e-3)
 gamma = 0.99
 target_update = 10
 
 for t in range(10000):
-	batch = runner.get_batch(net)
+	batch = runner.get_batch(critic)
 	s, a, r, s_p, d = batch()
 
 	if runner.n_step !=  1:
-		r_list = r.squeeze(1)
-		r_nstep = th.zeros(len(r))
+		r_nstep = th.zeros([len(r), 1])
 		for n in reversed(range(runner.n_step)):
-			r_nstep += r_list[:,n] * gamma
-		r = r_nstep.unsqueeze(-1)
+			r_nstep += r[:,:,n] * gamma
 
-	q = net(s).gather(1, a.long())
+		r = r_nstep
+
+	q = critic(s).gather(1, a.long())
 
 	with th.no_grad():
-		a_p = net(s_p).argmax(dim=1).unsqueeze(1)		
+		a_p = critic(s_p).argmax(dim=1).unsqueeze(1)		
 		q_p = targ_net(s_p).gather(1, a_p.long())		
-		y = r + gamma * q_p * (1 - d)
+		y = r + pow(gamma, runner.n_step) * q_p * (1 - d)
 
 	loss = F.mse_loss(q, y)
 
 	optimizer.zero_grad()
 	loss.backward()
-	th.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+	th.nn.utils.clip_grad_norm_(critic.parameters(), 1.0)
 	optimizer.step()
 	
-	net.reset_noise()
+	critic.reset_noise()
 	targ_net.reset_noise()
 
 	if t % target_update == 0:        
-		targ_net = copy.deepcopy(net)
+		targ_net = copy.deepcopy(critic)
 		
