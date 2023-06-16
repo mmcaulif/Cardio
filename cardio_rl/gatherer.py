@@ -54,7 +54,7 @@ class Collector():
         step_buffer = deque(maxlen=self.n_step)     
 
         for _ in range(self.warmup_len):
-            # self.total_steps += 1 # figure out whether to include this or not, probs not
+            self.total_steps += 1 # figure out whether to include this or not
             a = policy(self.state, self.net)
             s_p, r, d, t, info = self.env.step(a)
 
