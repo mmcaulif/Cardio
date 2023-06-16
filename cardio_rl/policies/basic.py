@@ -78,6 +78,7 @@ class Noisy_naf_policy(BasePolicy):
         out, _, _, _ = net(input)
         return out.detach().numpy()
 
+
 class Categorical_policy(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
@@ -87,3 +88,21 @@ class Categorical_policy(BasePolicy):
         probs = net(input)
         dist = th.distributions.Categorical(probs)
         return dist.sample().detach().numpy()
+    
+class Beta_policy(BasePolicy):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def scale(self, action):
+        # refactor and verify this works
+        r = self.env.action_space.high - self.env.action_space.low
+        action = action * r
+        m = r/2
+        return action-m
+
+    def __call__(self, state, net):
+        input = th.from_numpy(state).float()
+        alpha, beta = net(input)
+        dist = th.distributions.Beta(alpha, beta)
+        a_sampled = dist.rsample().detach()
+        return self.scale(a_sampled.numpy())
