@@ -106,8 +106,8 @@ class Collector():
                 self.state, _ = self.env.reset()
                 step_buffer = deque(maxlen=self.n_step)
 
-                # if self.episodes % 10 == 0:
-                print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
+                if self.episodes % 10 == 0:
+                    print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
 
                 if self.ret_if_term:
                     return list(gather_buffer)
