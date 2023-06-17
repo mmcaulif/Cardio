@@ -82,7 +82,7 @@ for t in range(10000):
 	with th.no_grad():
 		a_p = critic(s_p).argmax(dim=1).unsqueeze(1)		
 		q_p = targ_critic(s_p).gather(1, a_p.long())		
-		y = r + pow(gamma, runner.n_step) * q_p * (1 - d)
+		y = r + gamma * q_p * (1 - d)
 
 	loss = F.mse_loss(q, y)
 
@@ -91,6 +91,12 @@ for t in range(10000):
 	optimizer.step()
 	
 	### E-step
+
+	"""
+	Temperature goes to Nan, causing qij to go to Nan causing policy to also go to Nan
+	thus issue is likely in my implementation of temperature! 
+	"""
+
 	energies = critic(s).detach()/temperature
 	logits = th.log(energies.mean(-1)).mean(-1)
 	temp_loss = (temperature * (epsilon + logits))
@@ -101,23 +107,23 @@ for t in range(10000):
 
 	q_values = critic(s).detach()
 	qij = F.softmax(q_values/temperature.detach(), dim=-1)
+	print(temperature)
 
 	### M-step
 	probs = actor(s)
-	a_loss = th.mean(th.sum(qij * th.log(probs), dim=-1))
-	kl = th.mean(th.sum(probs * th.log(targ_actor(s).detach()), dim=-1))
+	# check kl div implementation
+	a_loss = th.sum(qij * th.log(probs/qij), dim=-1)
+	a_loss = th.mean(a_loss)
+	# kl = th.mean(th.sum(probs * th.log(targ_actor(s).detach()), dim=-1))
 
-	# actor gradients/params are going to Nan unfortunately,
-	# THINK it is just an issue with your implementation
-	# of KL divergence but honestly it could be 
-	# literally anything :(
-	loss_p = -(a_loss + 0.5 * (0.01 - kl))
+	loss_p = -(a_loss)	#  + 0.5 * (0.01 - kl))
 
 	actor_optimizer.zero_grad()
 	loss_p.backward()
 	th.nn.utils.clip_grad_norm_(actor.parameters(), 0.1)
 	actor_optimizer.step()
 	
-	if t % target_update == 0:        
+	continue
+	if t % 1000 == 0:        
 		targ_critic = copy.deepcopy(critic)
 		targ_actor = copy.deepcopy(actor)	# using the target actor network speeds up the Nan creation
