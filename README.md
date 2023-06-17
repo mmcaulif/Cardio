@@ -2,9 +2,13 @@
 
 ## Immediate to do list
 
-* [ ] Parallel gatherer
+* [ ] Create dummy env for testing logging, collection and sampling!
+
+* [x] Parallel gatherer
+  * think it works, need to debug and implement A2C!
 
 * [ ] Create package!
+  * basic implementation done, need to do PyPi and look into further improvements
 
 * [ ] Offline gatherer
   * on pause until mujoco sorted
