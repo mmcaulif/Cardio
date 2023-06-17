@@ -2,12 +2,12 @@ import copy
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Normal, Beta
-import numpy as np
+from torch.distributions import Beta
 import gymnasium as gym
 
 from cardio_rl import Runner, Collector
 
+# Clone this env for faster testing: https://github.com/mmcaulif/gymnasium-cartpole-continuous
 env = gym.make('Pendulum-v1')
 
 runner = Runner(
