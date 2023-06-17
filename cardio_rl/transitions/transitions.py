@@ -3,6 +3,12 @@ import torch as th
 import numpy as np
 import jax.numpy as jnp
 
+"""
+All transition functions should output each vairable as shape [N, d]
+where N is the batch size and d is the dimension of that specific variable,
+i.e. d = [N, 1], r = [N, 1], s = [N, obs_dimensions]
+"""
+
 class BaseTransition(NamedTuple):
     s: list  # state
     a: float  # action
