@@ -7,19 +7,29 @@ import gymnasium as gym
 
 from cardio_rl import Runner, Collector
 
-# Clone this env for faster testing: https://github.com/mmcaulif/gymnasium-cartpole-continuous
-env = gym.make('Pendulum-v1')
+env = gym.make('LunarLanderContinuous-v2')
+
+"""
+Soft-actor critic with beta policy
+-should create a wrapper that scales every environment's action space to [0,1]
+-evaluate implementation on multiple environments 
+-implement autotuning entropy coefficient
+
+# https://stable-baselines3.readthedocs.io/en/master/modules/sac.html
+# https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
+"""
 
 runner = Runner(
 	env=env,
 	policy='beta',
 	sampler=True,
-	capacity=100000,
+	capacity=1_000_000,
 	batch_size=256,
 	collector=Collector(
 		env=env,
-		warmup_len=100,
-	)
+		warmup_len=10_000,
+	),
+	backend='pytorch'
 )
 
 class Q_critic(nn.Module):
@@ -27,18 +37,18 @@ class Q_critic(nn.Module):
 		super(Q_critic, self).__init__()
 
 		self.net1 = nn.Sequential(
-			nn.Linear(state_dim+action_dim, 256),
+			nn.Linear(state_dim+action_dim, 400),
 			nn.ReLU(),
-			nn.Linear(256, 256),
+			nn.Linear(400, 300),
 			nn.ReLU(),
-			nn.Linear(256, 1))
+			nn.Linear(300, 1))
 		
 		self.net2 = nn.Sequential(
-			nn.Linear(state_dim+action_dim, 256),
+			nn.Linear(state_dim+action_dim, 400),
 			nn.ReLU(),
-			nn.Linear(256, 256),
+			nn.Linear(400, 300),
 			nn.ReLU(),
-			nn.Linear(256, 1))
+			nn.Linear(300, 1))
 
 	def forward(self, state, action):
 		sa = th.concat([state, action], dim=-1)
@@ -50,18 +60,18 @@ class Policy(nn.Module):
 		super(Policy, self).__init__()
 
 		self.net = nn.Sequential(
-			nn.Linear(state_dim, 256),
+			nn.Linear(state_dim, 400),
 			nn.ReLU(),
-			nn.Linear(256, 256),
+			nn.Linear(400, 300),
 			nn.ReLU(),)
 		
 		self.alpha = nn.Sequential(
-			nn.Linear(256, action_dim),
+			nn.Linear(300, action_dim),
 			nn.Softplus()
 		)
 
 		self.beta = nn.Sequential(
-			nn.Linear(256, action_dim),
+			nn.Linear(300, action_dim),
 			nn.Softplus()
 		)
 		
@@ -71,17 +81,16 @@ class Policy(nn.Module):
 		b = self.beta(h)
 		return 1+a, 1+b
 
-critic = Q_critic(3, 1)
-actor = Policy(3, 1)
+critic = Q_critic(8, 2)
+actor = Policy(8, 2)
 targ_critic= copy.deepcopy(critic)
-c_optimizer = th.optim.Adam(critic.parameters(), lr=1e-3)
-a_optimizer = th.optim.Adam(actor.parameters(), lr=1e-3)
+c_optimizer = th.optim.Adam(critic.parameters(), lr=7.3e-4)
+a_optimizer = th.optim.Adam(actor.parameters(), lr=7.3e-4)
 
-ent_coeff = 0.1
+ent_coeff = nn.Parameter(th.tensor([0.2]))
+ent_optim = th.optim.Adam([ent_coeff], lr=7.3e-4)	# check if lr is same as critic and actor
 
-# https://stable-baselines3.readthedocs.io/en/master/modules/sac.html
-
-for steps in range(20000):
+for steps in range(150_000):
 	batch = runner.get_batch(actor)
 
 	s, a, r, s_p, d = batch()
@@ -91,7 +100,7 @@ for steps in range(20000):
 		alpha, beta = actor(s_p)
 		dist_p = Beta(alpha, beta)
 		x_t = dist_p.rsample()
-		a_p = (x_t*4)-2
+		a_p = (x_t*2)-1
 
 		q1_p, q2_p = targ_critic(s_p, a_p)
 
@@ -115,7 +124,7 @@ for steps in range(20000):
 		alpha, beta = actor(s_p)
 		dist = Beta(alpha, beta)
 		x_t = dist.rsample()
-		a_sampled = (x_t*4)-2
+		a_sampled = (x_t*2)-1
 
 		log_prob = dist.log_prob(x_t)
 		log_prob = log_prob.sum(-1, keepdim=True)
@@ -128,4 +137,4 @@ for steps in range(20000):
 		a_optimizer.step()		
 	
 	for targ_params, params in zip(targ_critic.parameters(), critic.parameters()):
-		targ_params.data.copy_(params.data * 0.005 + targ_params.data * (1.0 - 0.005))
+		targ_params.data.copy_(params.data * 0.01 + targ_params.data * (1.0 - 0.01))

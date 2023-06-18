@@ -34,7 +34,7 @@ class Collector():
         self.episodes = 0
         self.total_steps = 0
         self.ep_rew = 0
-        self.epsiode_window = deque(maxlen=5)   # normally 50
+        self.epsiode_window = deque(maxlen=50)
 
     def warmup(            
         self,
