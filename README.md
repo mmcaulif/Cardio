@@ -18,4 +18,10 @@
 
 * [ ] Move agent stubs outside of src and using package instead of src
 
-* [ ] Change logging from episodic to timestep based 
+* [ ] Change logging from episodic to timestep based
+  * include window and print freq arguments to gatherer
+
+* [ ] Sort policies better, i.e. discrete, continuous
+
+* [ ] Benchmark each implementation wrt. SB3 (change logging to timestep based first though)
+ 
