@@ -10,7 +10,7 @@ from cardio_rl.rainbow_naf.noisy_linear import NoisyLinear
 """
 Duelling Double DQN with n-step returns used for verification of runner functionality
 -double check NoisyNet implementation
--should maybe implement distributional q learning and PER to fully make rainbow
+-should maybe implement distributional q-learning (qr or iqn) and PER to fully make rainbow
 -PER will be interesting, need to figure out how to do it with current design structure
 """
 
