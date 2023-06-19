@@ -1,9 +1,14 @@
 # GymCardio
 
 ## Immediate to do list
+* [ ] Change logging from episodic to timestep based
+  * include window and print freq arguments to gatherer
+
+* [ ] Implement 'step_for' function in Collector!
 
 * [ ] Create dummy env for testing logging, collection and sampling!
 
+## Lower priority
 * [x] Parallel gatherer
   * think it works, need to debug and implement A2C!
 
@@ -17,9 +22,6 @@
   * mostly done, just some final decisions to make
 
 * [ ] Move agent stubs outside of src and using package instead of src
-
-* [ ] Change logging from episodic to timestep based
-  * include window and print freq arguments to gatherer
 
 * [ ] Sort policies better, i.e. discrete, continuous
 
