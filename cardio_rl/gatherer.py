@@ -1,5 +1,6 @@
 from collections import deque
 from cardio_rl.policies import BasePolicy
+from cardio_rl.logger import Logger
 import numpy as np
 import gymnasium as gym
 
@@ -10,14 +11,11 @@ class Collector():
             rollout_len = 1,
             warmup_len = 0,
             n_step = 1,
+            logger_kwargs = None
         ) -> None:        
 
         # environment init (move to function)
-        self.env = env
-
-        self.state, _ = self.env.reset()
-        
-
+        self.env = env      
         self.rollout_len = rollout_len        
 
         if self.rollout_len == -1:
@@ -27,14 +25,21 @@ class Collector():
             self.ret_if_term = False   
 
         self.warmup_len = warmup_len
-        self.n_step = n_step
-        
+        self.n_step = n_step      
 
         # metrics
-        self.episodes = 0
-        self.total_steps = 0
-        self.ep_rew = 0
-        self.epsiode_window = deque(maxlen=50)
+        if logger_kwargs == None:
+            # currently these cannot be partially overidden, need to fix!
+            logger_kwargs = {
+                'log_interval': 2000,
+                'episode_window': 50,
+                'tensorboard': False
+            }
+
+        self.logger = Logger(**logger_kwargs)
+
+        # env initialisation
+        self.state, _ = self.env.reset()
 
     def warmup(            
         self,
@@ -54,13 +59,12 @@ class Collector():
         step_buffer = deque(maxlen=self.n_step)     
 
         for _ in range(self.warmup_len):
-            self.total_steps += 1 # figure out whether to include this or not
             a = policy(self.state, self.net)
             s_p, r, d, t, info = self.env.step(a)
+            self.logger.step(r, d)   # figure out whether to include this or not
 
             step_buffer.append([self.state, a, r, s_p, d])
             if len(step_buffer) == self.n_step:
-
                 if self.n_step == 1:
                     gather_buffer.append(*list(step_buffer))
                 else:
@@ -83,12 +87,9 @@ class Collector():
         step_buffer = deque(maxlen=self.n_step)   
 
         for _ in range(self.rollout_len):
-            self.total_steps += 1
             a = policy(self.state, self.net)
             s_p, r, d, t, info = self.env.step(a)
-
-            # metrics
-            self.ep_rew += r
+            self.logger.step(r, d)
 
             step_buffer.append([self.state, a, r, s_p, d])
             if len(step_buffer) == self.n_step:
@@ -100,15 +101,9 @@ class Collector():
 
             self.state = s_p
             if d or t:
-                self.episodes += 1
-                self.epsiode_window.append(self.ep_rew)
-                self.ep_rew = 0
                 self.state, _ = self.env.reset()
                 step_buffer = deque(maxlen=self.n_step)
-
-                if self.episodes % 10 == 0:
-                    print(f"Average reward after {self.episodes} episodes or {self.total_steps} timesteps: {np.mean(self.epsiode_window)}")
-
+                
                 if self.ret_if_term:
                     return list(gather_buffer)
 
