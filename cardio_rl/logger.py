@@ -30,11 +30,11 @@ class Logger():
         self.running_reward = 0
         self.episodic_rewards = deque(maxlen=episode_window)
         
-    def step(self, reward, done):
+    def step(self, reward, done, truncated):
         self.timestep += 1
         self.running_reward += reward
 
-        if done:
+        if done or truncated:
             self.episodes += 1
             self.episodic_rewards.append(self.running_reward)
             self.running_reward = 0

@@ -89,7 +89,8 @@ class Collector():
         for _ in range(self.rollout_len):
             a = policy(self.state, self.net)
             s_p, r, d, t, info = self.env.step(a)
-            self.logger.step(r, d)
+            # d = (d or t)
+            self.logger.step(r, d, t)
 
             step_buffer.append([self.state, a, r, s_p, d])
             if len(step_buffer) == self.n_step:
