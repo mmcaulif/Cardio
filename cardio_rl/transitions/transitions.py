@@ -9,6 +9,14 @@ where N is the batch size and d is the dimension of that specific variable,
 i.e. d = [N, 1], r = [N, 1], s = [N, obs_dimensions]
 """
 
+"""
+Transitions need to be revisited some time later, I got extermely 
+confused when trying to use them so it is likely unintuitive, each batch ends up
+having variables named s,a,r,s_p,d but you need to call the batch function itself to
+convert them to their respective back end? Maybe have the backend converstion as a method
+of the Transition class itself? That could be a good fix
+"""
+
 class BaseTransition(NamedTuple):
     s: list  # state
     a: float  # action
