@@ -1,94 +1,110 @@
+from cardio_rl import Runner, Collector
 import torch as th
+import gymnasium as gym
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
-import gymnasium as gym
-from cardio_rl import Runner, VectorCollector
 
-class Model(nn.Module):
-	def __init__(self, state_dim, action_dim):
-		super(Model, self).__init__()
 
-		self.critic = nn.Sequential(
-			nn.Linear(state_dim, 64),
+class Critic(nn.Module):
+	def __init__(self):
+		super(Critic, self).__init__()
+
+		self.net = nn.Sequential(
+			nn.Linear(4, 64),
 			nn.ReLU(),
 			nn.Linear(64, 64),
 			nn.ReLU(),
 			nn.Linear(64, 1))
 
-		self.actor = nn.Sequential(
-			nn.Linear(state_dim, 64),
+	def forward(self, state):
+		return self.net(state)
+
+class Actor(nn.Module):
+	def __init__(self):
+		super(Actor, self).__init__()
+		
+		self.net = nn.Sequential(
+			nn.Linear(4, 128),
 			nn.ReLU(),
-			nn.Linear(64, 64),
+			nn.Linear(128, 128),
 			nn.ReLU(),
-			nn.Linear(64, action_dim),
-			nn.Softmax(dim=-1))
+			nn.Linear(128, 2),
+			nn.Softmax(dim=-1)
+		)
 
 	def forward(self, state):
-		return self.actor(state)
+		return self.net(state)
 
 env = gym.make('CartPole-v1')
 
 runner = Runner(
 	env=env,
 	policy='categorical',
-	collector=VectorCollector(
+	collector=Collector(
 		env=env,
-		num_envs=8,
-		rollout_len=5,
-	)
+		rollout_len=25,
+		),
+	backend='pytorch'
 )
 
-net = Model(4, 2)
-optimizer = th.optim.RMSprop(net.parameters(), lr=7e-4, eps=1e-5)
+actor = Actor()
+critic = Critic()
+a_optimizer = th.optim.Adam(actor.parameters(), lr=1e-3)
+c_optimizer = th.optim.Adam(critic.parameters(), lr=1e-3)
 
-"""
-Need to implement parallel environments
--Implement timestep-based logging!
--Debug and benchmark, doesn't seem like it works rn 
--Maybe merge actor and critic into one nn.Module
-
-https://github.com/sweetice/Deep-reinforcement-learning-with-pytorch/blob/master/Char04%20A2C/A2C.py
-"""
-
-timesteps = 0
-
-for rollout_steps in range(10_000):
-
-	timesteps += 5*2
-
-	batch = runner.get_batch(net)
-
+for _ in range(100_000):
+	batch = runner.get_batch(actor)
 	s, a, r, s_p, d = batch()
 
-	values = net.critic(s)
-	returns = th.zeros_like(values)
+	"""
+	# Monte Carlo returns
+	running_r = 0
+	returns = th.zeros(len(r))
+	for i, r_val in enumerate(r):
+		running_r *= 0.99
+		running_r += r_val
+		returns[i] = running_r
+	
+	returns = reversed(returns)
+	"""
 
-	ret = th.zeros_like(r)
-	running_r = net.critic(s_p[-1]).squeeze(-1).detach()
+	returns = th.zeros(len(r))
+	running_r = critic(s_p[-1]).squeeze(-1).detach()
 
 	for t in reversed(range(len(r))):
 		running_r = r[t] + 0.99 * running_r * (1 - d[t])
-		ret[t] = running_r
+		returns[t] = running_r
 
+	values = critic(s).squeeze()
 	critic_loss = F.mse_loss(returns, values)
-	
-	adv = (returns - values).squeeze(-1).detach()
 
-	dist = Categorical(net(s))	
-	log_probs = dist.log_prob(a.squeeze(1))
-	ent = dist.entropy().sum(-1).mean()
+	c_optimizer.zero_grad()
+	critic_loss.backward()
+	nn.utils.clip_grad_norm_(critic.parameters(), 0.5)
+	c_optimizer.step()
 
-	policy_loss = -(log_probs * adv.detach()).mean()
+	adv: th.Tensor = (returns - values).detach()
+	norm_adv = (adv - adv.mean()) / (adv.std() + 1e-5)
 
-	if timesteps % 2000 == 0:
-		# Check if the trnopy loss recorded in sb3 is before or after being multiplied by the 
-		# entropy coefficient
-		print(f'{timesteps} = Policy loss: {policy_loss}, Critic loss: {critic_loss}, Entropy loss: {ent}')
+	probs = actor(s)
+	dist = Categorical(probs)
+	policy_loss = -th.mean(dist.log_prob(a.squeeze(-1)) * norm_adv)
 
-	loss = policy_loss +  (0.5 * critic_loss) # - (0.001 * ent) 
+	a_optimizer.zero_grad()
+	policy_loss.backward()
+	nn.utils.clip_grad_norm_(actor.parameters(), 0.5)
+	a_optimizer.step()
+	continue
 
-	optimizer.zero_grad()
-	loss.backward()
-	nn.utils.clip_grad_norm_(net.parameters(), 0.5)
-	optimizer.step()
+	# Below is for Advantage Weighted Regression (need to explore)
+	# https://github.com/jcwleo/awr-pytorch/tree/master
+	for _ in range(10):
+		probs = actor(s)
+		dist = Categorical(probs)
+		policy_loss = -th.mean(dist.log_prob(a.squeeze(-1)) * th.exp(norm_adv/1.0))
+
+		a_optimizer.zero_grad()
+		policy_loss.backward()
+		# nn.utils.clip_grad_norm_(actor.parameters(), 0.5)
+		a_optimizer.step()
