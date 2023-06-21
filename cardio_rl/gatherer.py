@@ -41,6 +41,11 @@ class Collector():
         # env initialisation
         self.state, _ = self.env.reset()
 
+    def _env_step(self, action):
+        s_p, r, d, t, info = self.env.step(action)
+        self.logger.step(r, d, t)
+        return s_p, r, d, t, info
+
     def warmup(            
         self,
         net = None,
@@ -49,7 +54,7 @@ class Collector():
         
         # Maybe move this check to the runner?
         if self.warmup_len == None:
-            return deque()
+            return list(deque())
         
         if policy == None:
             policy = BasePolicy(self.env)
@@ -60,10 +65,9 @@ class Collector():
 
         for _ in range(self.warmup_len):
             a = policy(self.state, self.net)
-            s_p, r, d, t, info = self.env.step(a)
-            self.logger.step(r, d)   # figure out whether to include this or not
+            s_p, r, d, t, *info = self._env_step(a)
 
-            step_buffer.append([self.state, a, r, s_p, d])
+            step_buffer.append([self.state, a, r, s_p, d, *info])
             if len(step_buffer) == self.n_step:
                 if self.n_step == 1:
                     gather_buffer.append(*list(step_buffer))
@@ -88,11 +92,9 @@ class Collector():
 
         for _ in range(self.rollout_len):
             a = policy(self.state, self.net)
-            s_p, r, d, t, info = self.env.step(a)
-            # d = (d or t)
-            self.logger.step(r, d, t)
+            s_p, r, d, t, *info = self._env_step(a)
 
-            step_buffer.append([self.state, a, r, s_p, d])
+            step_buffer.append([self.state, a, r, s_p, d, *info])
             if len(step_buffer) == self.n_step:
 
                 if self.n_step == 1:
@@ -109,7 +111,8 @@ class Collector():
                     return list(gather_buffer)
 
         return list(gather_buffer)
-    
+
+
 class VectorCollector():
     def __init__(
             self,
