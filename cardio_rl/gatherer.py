@@ -28,13 +28,14 @@ class Collector():
         self.n_step = n_step      
 
         # metrics
-        if logger_kwargs == None:
+        if not logger_kwargs:
             # currently these cannot be partially overidden, need to fix!
-            logger_kwargs = {
-                'log_interval': 2000,
-                'episode_window': 50,
-                'tensorboard': False
-            }
+            logger_kwargs = dict(
+                log_interval = 2000,
+                episode_window = 50,
+                tensorboard = False,
+                exp_name = None
+            )
 
         self.logger = Logger(**logger_kwargs)
 
