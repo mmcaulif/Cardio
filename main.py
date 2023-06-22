@@ -45,45 +45,47 @@ class ImplicitQ(nn.Module):
 		
 		return q
 	
+def main():
+	env = gym.make('CartPole-v1')
 
-env = gym.make('CartPole-v1')
-
-runner = Runner(
-	env=env,
-	policy=Epsilon_argmax_policy(env, 0.5, 0.05, 0.9),
-	sampler=True,
-	capacity=100000,
-	batch_size=64,
-	collector=Collector(
+	runner = Runner(
 		env=env,
-		rollout_len=4,
-		warmup_len=1000,
-	),
-	backend='pytorch'
-)
+		policy=Epsilon_argmax_policy(env, 0.5, 0.05, 0.9),
+		sampler=True,
+		capacity=100000,
+		batch_size=64,
+		collector=Collector(
+			env=env,
+			rollout_len=4,
+			warmup_len=1000,
+		),
+		backend='pytorch'
+	)
 
-critic = ImplicitQ(4, 2)
-targ_net: nn.Module = copy.deepcopy(critic)
-optimizer = th.optim.Adam(critic.parameters(), lr=2.3e-3)
-gamma = 0.99
-target_update = 10
+	critic = ImplicitQ(4, 2)
+	targ_net: nn.Module = copy.deepcopy(critic)
+	optimizer = th.optim.Adam(critic.parameters(), lr=2.3e-3)
+	gamma = 0.99
+	target_update = 10
 
-for t in range(10000):
-	batch = runner.get_batch(critic)
-	s, a, r, s_p, d = batch()
+	for t in range(10000):
+		batch = runner.get_batch(critic)
+		s, a, r, s_p, d = batch()
 
-	with th.no_grad():
-		q_p = th.max(targ_net(s_p), keepdim=True, dim=-1).values
-		y = r + gamma * q_p * (1 - d)
+		with th.no_grad():
+			q_p = th.max(targ_net(s_p), keepdim=True, dim=-1).values
+			y = r + gamma * q_p * (1 - d)
 
-	q = critic(s).gather(1, a.long())
+		q = critic(s).gather(1, a.long())
 
-	loss = F.mse_loss(q, y)
+		loss = F.mse_loss(q, y)
 
-	optimizer.zero_grad()
-	loss.backward()
-	optimizer.step()
+		optimizer.zero_grad()
+		loss.backward()
+		optimizer.step()
 
-	if t % target_update == 0:        
-		targ_net = copy.deepcopy(critic)
-		
+		if t % target_update == 0:        
+			targ_net = copy.deepcopy(critic)
+			
+if __name__ == '__main__':
+	main()
