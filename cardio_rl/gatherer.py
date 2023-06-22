@@ -27,17 +27,10 @@ class Collector():
         self.warmup_len = warmup_len
         self.n_step = n_step      
 
-        # metrics
-        if not logger_kwargs:
-            # currently these cannot be partially overidden, need to fix!
-            logger_kwargs = dict(
-                log_interval = 2000,
-                episode_window = 50,
-                tensorboard = False,
-                exp_name = None
-            )
-
-        self.logger = Logger(**logger_kwargs)
+        if logger_kwargs:
+            self.logger = Logger(**logger_kwargs)
+        else:
+            self.logger = Logger()
 
         # env initialisation
         self.state, _ = self.env.reset()

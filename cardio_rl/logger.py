@@ -1,5 +1,6 @@
 from collections import deque
 from torch.utils.tensorboard import SummaryWriter
+import time
 import logging
 import numpy as np
 
@@ -15,10 +16,11 @@ import numpy as np
 class Logger():
     def __init__(
             self,
-            log_interval,
-            episode_window,
-            tensorboard,
-            exp_name
+            log_interval=2000,
+            episode_window=20,
+            tensorboard=False,
+            log_dir=None,
+            exp_name='exp'
         ) -> None:
         
         logging.basicConfig(format='%(asctime)s: %(message)s', datefmt=' %I:%M:%S %p', level=logging.INFO)
@@ -29,9 +31,11 @@ class Logger():
 
         if self.tensorboard:
             dir = 'run/'
-            if exp_name:
-                dir += exp_name + '/'
 
+            if log_dir:
+                dir += log_dir + '/'
+
+            dir += exp_name + str(int(time.time()//1)) + '/'
             self.writer = SummaryWriter(dir)
         
         self.timestep = 0
