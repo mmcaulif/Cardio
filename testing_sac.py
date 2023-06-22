@@ -14,6 +14,7 @@ Soft-actor critic with beta policy
 -should create a wrapper that scales every environment's action space to [0,1]
 -evaluate implementation on multiple environments 
 -implement autotuning entropy coefficient
+^use tensorboard logging and run experiment comparing autotune to no autotune
 
 # https://stable-baselines3.readthedocs.io/en/master/modules/sac.html
 # https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
@@ -28,6 +29,12 @@ runner = Runner(
 	collector=Collector(
 		env=env,
 		warmup_len=10_000,
+		logger_kwargs=dict(
+			log_interval = 1000,
+            episode_window = 50,
+            tensorboard = True,
+	    	exp_name = 'exp1'
+		)
 	),
 	backend='pytorch'
 )
@@ -87,8 +94,16 @@ targ_critic= copy.deepcopy(critic)
 c_optimizer = th.optim.Adam(critic.parameters(), lr=7.3e-4)
 a_optimizer = th.optim.Adam(actor.parameters(), lr=7.3e-4)
 
-ent_coeff = nn.Parameter(th.tensor([0.2]))
+# cleanrl optimises the log of alpha and computes alpha through it each iteration
+#^can apply this to AWAC?
+# also check out what cleanrl implements for atari in SAC: https://docs.cleanrl.dev/rl-algorithms/sac/#implementation-details_1
+"""log_alpha = th.zeros(1, requires_grad=True)
+alpha = log_alpha.exp().item()
+print(alpha)"""
+
+ent_coeff = nn.Parameter(th.tensor([0.2], requires_grad=True))
 ent_optim = th.optim.Adam([ent_coeff], lr=7.3e-4)	# check if lr is same as critic and actor
+H = -2
 
 for steps in range(150_000):
 	batch = runner.get_batch(actor)
@@ -135,6 +150,14 @@ for steps in range(150_000):
 		policy_loss.backward()
 		th.nn.utils.clip_grad_norm_(actor.parameters(), 0.5)
 		a_optimizer.step()		
-	
+
+		if False:
+			ent_loss = -ent_coeff * (log_prob.detach() + H).mean()
+			ent_optim.zero_grad()
+			ent_loss.backward()
+			ent_optim.step()	
+
+			# alpha = log_alpha.exp().item()
+
 	for targ_params, params in zip(targ_critic.parameters(), critic.parameters()):
 		targ_params.data.copy_(params.data * 0.01 + targ_params.data * (1.0 - 0.01))
