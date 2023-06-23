@@ -4,10 +4,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Beta
 import gymnasium as gym
+from gymnasium.wrappers import RescaleAction
 
 from cardio_rl import Runner, Collector
 
-env = gym.make('LunarLanderContinuous-v2')
+env_name = 'LunarLanderContinuous-v2'
+# env_name = 'Pendulum-v1'
+env = gym.make(env_name)
+env = RescaleAction(env, 0, 1)
 
 """
 Soft-actor critic with beta policy
@@ -15,6 +19,7 @@ Soft-actor critic with beta policy
 -evaluate implementation on multiple environments 
 -implement autotuning entropy coefficient
 ^use tensorboard logging and run experiment comparing autotune to no autotune
+-experiment with having alpha as just a nn.Parameter instead of a whole neural net!
 
 # https://stable-baselines3.readthedocs.io/en/master/modules/sac.html
 # https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
@@ -30,10 +35,11 @@ runner = Runner(
 		env=env,
 		warmup_len=10_000,
 		logger_kwargs=dict(
-			log_interval = 1000,
-            episode_window = 50,
+			log_interval = 2000,
+            episode_window = 20,
             tensorboard = True,
-	    	exp_name = 'exp1'
+	    	log_dir = env_name,
+		    exp_name = 'testing_action_wrapper'
 		)
 	),
 	backend='pytorch'
@@ -95,7 +101,7 @@ c_optimizer = th.optim.Adam(critic.parameters(), lr=7.3e-4)
 a_optimizer = th.optim.Adam(actor.parameters(), lr=7.3e-4)
 
 # cleanrl optimises the log of alpha and computes alpha through it each iteration
-#^can apply this to AWAC?
+#^can apply this to AWAC dual variables?
 # also check out what cleanrl implements for atari in SAC: https://docs.cleanrl.dev/rl-algorithms/sac/#implementation-details_1
 """log_alpha = th.zeros(1, requires_grad=True)
 alpha = log_alpha.exp().item()
@@ -105,7 +111,7 @@ ent_coeff = nn.Parameter(th.tensor([0.2], requires_grad=True))
 ent_optim = th.optim.Adam([ent_coeff], lr=7.3e-4)	# check if lr is same as critic and actor
 H = -2
 
-for steps in range(150_000):
+for steps in range(100_000):
 	batch = runner.get_batch(actor)
 
 	s, a, r, s_p, d = batch()
@@ -114,12 +120,11 @@ for steps in range(150_000):
 		# create action scaling wrapper for continuous environments
 		alpha, beta = actor(s_p)
 		dist_p = Beta(alpha, beta)
-		x_t = dist_p.rsample()
-		a_p = (x_t*2)-1
+		a_p = dist_p.rsample()
 
 		q1_p, q2_p = targ_critic(s_p, a_p)
 
-		log_prob = dist_p.log_prob(x_t)
+		log_prob = dist_p.log_prob(a_p)
 		log_prob = log_prob.sum(-1, keepdim=True)
 
 		q_p = th.min(q1_p, q2_p) - (ent_coeff * log_prob)
@@ -138,10 +143,9 @@ for steps in range(150_000):
 	if steps % 2 == 0:
 		alpha, beta = actor(s_p)
 		dist = Beta(alpha, beta)
-		x_t = dist.rsample()
-		a_sampled = (x_t*2)-1
+		a_sampled = dist.rsample()
 
-		log_prob = dist.log_prob(x_t)
+		log_prob = dist.log_prob(a_sampled)
 		log_prob = log_prob.sum(-1, keepdim=True)
 
 		policy_loss =  -(th.min(*critic(s, a_sampled)) - (ent_coeff * log_prob)).mean()

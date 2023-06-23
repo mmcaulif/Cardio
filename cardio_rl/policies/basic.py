@@ -92,17 +92,17 @@ class Categorical_policy(BasePolicy):
 class Beta_policy(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
+        # add assertion for scaled action space
 
-    def scale(self, action):
+    """def scale(self, action):
         # refactor and verify this works
         r = self.env.action_space.high - self.env.action_space.low
         action = action * r
         m = r/2
-        return action-m
+        return action-m"""
 
     def __call__(self, state, net):
         input = th.from_numpy(state).float()
         alpha, beta = net(input)
         dist = th.distributions.Beta(alpha, beta)
-        a_sampled = dist.rsample().detach()
-        return self.scale(a_sampled.numpy())
+        return dist.sample().detach().numpy()
