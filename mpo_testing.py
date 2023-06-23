@@ -58,20 +58,25 @@ runner = Runner(
 	backend='pytorch'
 )
 
-critic = Critic(4, 2)
+critic = Critic(4, 2)	# move to using double duelling dqn
 actor = Actor(4, 2)
 
 targ_critic = copy.deepcopy(critic)
 targ_actor = copy.deepcopy(actor)
 
 lr = 3e-4
+lr = 3e-4
 
+critic_optim = th.optim.Adam(critic.parameters(), lr=lr)
+actor_optim = th.optim.Adam(actor.parameters(), lr=lr)
 critic_optim = th.optim.Adam(critic.parameters(), lr=lr)
 actor_optim = th.optim.Adam(actor.parameters(), lr=lr)
 gamma = 0.99
 
 eps = 0.1
 
+# check init values of lagrangian multipliers, also look into the projection etc.
+eta = nn.Parameter(th.ones(1))
 # check init values of lagrangian multipliers, also look into the projection etc.
 eta = nn.Parameter(th.ones(1))
 eta_optim = th.optim.Adam([eta], lr=lr)
@@ -84,6 +89,7 @@ for t in range(10000):
 	s, a, r, s_p, d = batch()
 
 	### Policy evaluation
+	### Policy evaluation
 	q = critic(s).gather(1, a.long())
 	with th.no_grad():
 		a_p = critic(s_p).argmax(dim=1).unsqueeze(1)		
@@ -93,7 +99,10 @@ for t in range(10000):
 	loss = F.mse_loss(q, y)
 
 	critic_optim.zero_grad()
+	critic_optim.zero_grad()
 	loss.backward()
+	nn.utils.clip_grad_norm_(critic.parameters(), 5.0)
+	critic_optim.step()
 	nn.utils.clip_grad_norm_(critic.parameters(), 5.0)
 	critic_optim.step()
 	
@@ -102,8 +111,12 @@ for t in range(10000):
 		energies = th.exp(critic(s).detach() / eta).mean(-1)
 		logits = th.log(energies).mean()
 		eta_loss = (eta * (eps + logits))
+		energies = th.exp(critic(s).detach() / eta).mean(-1)
+		logits = th.log(energies).mean()
+		eta_loss = (eta * (eps + logits))
 
 		eta_optim.zero_grad()
+		eta_loss.backward()		
 		eta_loss.backward()		
 		eta_optim.step()
 	
