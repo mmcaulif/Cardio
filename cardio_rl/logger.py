@@ -11,6 +11,7 @@ import numpy as np
 
 # https://docs.python.org/3/howto/logging.html
 # https://www.tensorflow.org/tensorboard
+# https://pytorch.org/docs/stable/tensorboard.html
 """
 
 class Logger():
