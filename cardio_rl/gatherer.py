@@ -35,17 +35,18 @@ class Collector():
         # env initialisation
         self.state, _ = self.env.reset()
 
-    def _env_step(self, action):
-        s_p, r, d, t, info = self.env.step(action)
+    def _env_step(self, policy):
+        a = policy(self.state, self.net)
+        s_p, r, d, t, info = self.env.step(a)
         self.logger.step(r, d, t)
-        return s_p, r, d, t, info
+        #      [self.state, a, r, s_p, d, *info]
+        return (self.state, a, r, s_p, d, info), s_p, d, t
 
     def warmup(            
         self,
         net = None,
         policy = None,
-    ):
-        
+    ):        
         # Maybe move this check to the runner?
         if self.warmup_len == None:
             return list(deque())
@@ -58,18 +59,16 @@ class Collector():
         step_buffer = deque(maxlen=self.n_step)     
 
         for _ in range(self.warmup_len):
-            a = policy(self.state, self.net)
-            s_p, r, d, t, *info = self._env_step(a)
-
-            step_buffer.append([self.state, a, r, s_p, d, *info])
+            transition, next_state, done, trun = self._env_step(policy)
+            step_buffer.append(transition)
             if len(step_buffer) == self.n_step:
                 if self.n_step == 1:
                     gather_buffer.append(*list(step_buffer))
                 else:
                     gather_buffer.append(list(step_buffer))
 
-            self.state = s_p
-            if d or t:
+            self.state = next_state
+            if done or trun:
                 self.state, _ = self.env.reset()
                 step_buffer = deque(maxlen=self.n_step)
 
@@ -85,19 +84,16 @@ class Collector():
         step_buffer = deque(maxlen=self.n_step)   
 
         for _ in range(self.rollout_len):
-            a = policy(self.state, self.net)
-            s_p, r, d, t, *info = self._env_step(a)
-
-            step_buffer.append([self.state, a, r, s_p, d, *info])
+            transition, next_state, done, trun = self._env_step(policy)
+            step_buffer.append(transition)
             if len(step_buffer) == self.n_step:
-
                 if self.n_step == 1:
                     gather_buffer.append(*list(step_buffer))
                 else:
                     gather_buffer.append(list(step_buffer))
 
-            self.state = s_p
-            if d or t:
+            self.state = next_state
+            if done or trun:
                 self.state, _ = self.env.reset()
                 step_buffer = deque(maxlen=self.n_step)
                 

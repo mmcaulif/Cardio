@@ -138,27 +138,15 @@ class Runner():
         
         else:
             processed_batch = []
-            # process the n_step transition
             for n_step_transition in batch:
-
-                """transition = tran_REGISTRY["pytorch"](*zip(*n_step_transition))
-                s = np.array(transition.s[0], dtype=np.float32)
-                a = transition.a[0]
-                r_list = list(transition.r)
-                s_p = np.array(transition.s_p[-1], dtype=np.float32)
-                d = any(transition.d)"""
-
                 transition = tran_REGISTRY["numpy"](*zip(*n_step_transition))
                 s = transition.s[0]
                 a = transition.a[0]
                 r_list = list(transition.r)
                 s_p = transition.s_p[-1]
                 d = any(transition.d)
+                i = transition.i
+                processed_batch.append([s, a, r_list, s_p, d, i])
 
-                processed_batch.append([s, a, r_list, s_p, d])
-                """print([s, a, r_list, s_p, d])
-                import sys
-                sys.exit()"""
-
-            return tran_REGISTRY["pytorch"](*zip(*processed_batch))
+            return tran_REGISTRY[self.backend](*zip(*processed_batch))
         
