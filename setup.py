@@ -10,6 +10,7 @@ setup(
     install_requires=[
         "gymnasium==0.28.1",
         "numpy>=1.20",
+        'tensorboard'
     ],
     description = "Cardio RL. In development...",  
     author = 'Manus McAuliffe',
