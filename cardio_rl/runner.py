@@ -1,10 +1,9 @@
 from collections import deque
 from .gatherer import Collector
 from .transitions import REGISTRY as tran_REGISTRY
+from .transitions import BaseTransition
 from .policies import BasePolicy, REGISTRY as pol_REGISTRY
-import sys
 import random
-import numpy as np
 
 # https://stackoverflow.com/questions/40181284/how-to-get-random-sample-from-deque-in-python-3
 # faster replay memory
@@ -82,6 +81,7 @@ class Runner():
         self._warm_start()
             
         self.policy = self._set_up_policy(policy)
+        self.transition = self._set_up_transition(backend)
 
     def _warm_start(
             self,
@@ -104,7 +104,22 @@ class Runner():
 
         elif isinstance(policy, BasePolicy):
             return policy
+
+        # add warning
+        return 
     
+    def _set_up_transition(self, backend):
+        """
+        Maybe change name of backend to transition_type, better discription
+        """
+        if isinstance(backend, str):
+            return tran_REGISTRY[backend]
+
+        # isinstance(A, B) didn't work, this is a temp workaround
+        elif backend.__base__ is BaseTransition:
+            return backend
+
+        # add warning
         return 
 
     def get_batch(
@@ -134,12 +149,14 @@ class Runner():
 
         if self.n_step == 1:
             # need to add argument for this (instead of querying the regisry each time)!
-            return tran_REGISTRY[self.backend](*zip(*batch))
+            #return tran_REGISTRY[self.backend](*zip(*batch))
+            return self.transition(*zip(*batch))
         
         else:
             processed_batch = []
             for n_step_transition in batch:
-                transition = tran_REGISTRY["numpy"](*zip(*n_step_transition))
+                # transition = tran_REGISTRY["numpy"](*zip(*n_step_transition))
+                transition = self.transition(*zip(*n_step_transition))
                 s = transition.s[0]
                 a = transition.a[0]
                 r_list = list(transition.r)
