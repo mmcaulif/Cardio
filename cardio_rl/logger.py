@@ -40,9 +40,10 @@ class Logger():
             # time_key = str(int(time.time()//1))
             
             # Changed to the below to be more in line with Hydra
+            date_key = datetime.now().strftime('%Y-%m-%d')
             time_key = datetime.now().strftime('%H-%M-%S')
 
-            dir += exp_name + '_' + time_key + '/'
+            dir += exp_name + '_' + date_key + '_' + time_key + '/'
             self.writer = SummaryWriter(dir)
         
         self.timestep = 0
