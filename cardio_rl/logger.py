@@ -3,6 +3,7 @@ from torch.utils.tensorboard import SummaryWriter
 import time
 import logging
 import numpy as np
+from datetime import datetime
 
 """
 -Maybe change to Rich Logger
@@ -36,7 +37,12 @@ class Logger():
             if log_dir:
                 dir += log_dir + '/'
 
-            dir += exp_name + str(int(time.time()//1)) + '/'
+            # time_key = str(int(time.time()//1))
+            
+            # Changed to the below to be more in line with Hydra
+            time_key = datetime.now().strftime('%H-%M-%S')
+
+            dir += exp_name + '_' + time_key + '/'
             self.writer = SummaryWriter(dir)
         
         self.timestep = 0
