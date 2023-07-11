@@ -1,15 +1,18 @@
 # GymCardio
 
 ## Immediate to do list
-* [ ] Implement 'step_for' function in Collector!
-
-* [ ] Create dummy env for testing logging, collection and sampling!
-
-* [ ] Revisit A2C implementation, issue might be in the collector?
-
-## Lower priority
 * [ ] Create package!
   * basic implementation done, need to do PyPi and look into further improvements
+
+* [ ] Align VectorCollector with Collector
+  * Revisit A2C implementation
+  * Make Logger compatible with VectorCollector
+
+* [ ] Implement 'reduce' argument for n-step learning that returns unsqueezed vectors (for DRQN)
+
+* [ ] Makes sure vector collector work as intended for off-policy methods and n-step collector work as intended for on-policy methods etc.
+
+## Lower priority
 
 * [ ] Offline gatherer
   * on pause until mujoco sorted
@@ -29,3 +32,7 @@
 
 * [x] Change logging from episodic to timestep based
   * include window and log_interval arguments to gatherer
+
+* [x] Implement 'step_for' function in Collector!
+
+* [x] Create dummy env for testing logging, collection and sampling!
