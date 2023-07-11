@@ -32,7 +32,7 @@ class Logger():
         self.tensorboard = tensorboard
 
         if self.tensorboard:
-            dir = 'run/'
+            dir = ''
 
             if log_dir:
                 dir += log_dir + '/'

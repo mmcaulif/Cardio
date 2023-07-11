@@ -4,6 +4,7 @@ from .transitions import REGISTRY as tran_REGISTRY
 from .transitions import BaseTransition
 from .policies import BasePolicy, REGISTRY as pol_REGISTRY
 import random
+import logging
 
 # https://stackoverflow.com/questions/40181284/how-to-get-random-sample-from-deque-in-python-3
 # faster replay memory
@@ -95,7 +96,7 @@ class Runner():
             for transition in batch:
                 self.er_buffer.append(transition)
         
-        print('\n### Warm up finished ###\n')
+        logging.info('### Warm up finished ###')
         pass
 
     def _set_up_policy(self, policy):
