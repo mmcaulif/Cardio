@@ -1,12 +1,12 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
     name = 'cardio_rl',
-    packages=['cardio_rl'],
+    packages=find_packages(),
     install_requires=[
         "numpy>=1.21.0",
         "gymnasium>=0.28.0",
@@ -19,7 +19,7 @@ setup(
     license = 'MIT',
     long_description=read('README.md'),
     long_description_content_type="text/markdown",
-    version = '0.0.3',
+    version = '0.0.4',
     python_requires=">=3.7",
     
     # PyPI package information.
