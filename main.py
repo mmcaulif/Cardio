@@ -70,7 +70,7 @@ def main():
 
 	for t in range(10000):
 		batch = runner.get_batch(critic)
-		s, a, r, s_p, d = batch()
+		s, a, r, s_p, d, _ = batch()
 
 		with th.no_grad():
 			q_p = th.max(targ_net(s_p), keepdim=True, dim=-1).values
