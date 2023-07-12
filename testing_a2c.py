@@ -1,4 +1,4 @@
-from cardio_rl import Runner, Collector
+from cardio_rl import Runner, VectorCollector
 import torch as th
 import gymnasium as gym
 import torch.nn as nn
@@ -41,37 +41,33 @@ env = gym.make('CartPole-v1')
 runner = Runner(
 	env=env,
 	policy='categorical',
-	collector=Collector(
+	collector=VectorCollector(
 		env=env,
-		rollout_len=25,
-		),
+		num_envs=4,
+		rollout_len=15,
+		logger_kwargs=dict(
+			log_interval=1_000,
+			episode_window=500
+		)
+	),
 	backend='pytorch'
 )
 
 actor = Actor()
 critic = Critic()
-a_optimizer = th.optim.Adam(actor.parameters(), lr=1e-3)
-c_optimizer = th.optim.Adam(critic.parameters(), lr=1e-3)
+a_optimizer = th.optim.RMSprop(actor.parameters(), lr=0.0007, eps=1e-5)
+c_optimizer = th.optim.RMSprop(critic.parameters(), lr=0.0007, eps=1e-5)
 
 for _ in range(100_000):
 	batch = runner.get_batch(actor)
-	s, a, r, s_p, d = batch()
+	s, a, r, s_p, d, _ = batch()
 
-	"""
-	# Monte Carlo returns
-	running_r = 0
-	returns = th.zeros(len(r))
-	for i, r_val in enumerate(r):
-		running_r *= 0.99
-		running_r += r_val
-		returns[i] = running_r
-	
-	returns = reversed(returns)
-	"""
+	r = r.squeeze(-2)
+	a = a.squeeze(-2)
+	d = d.squeeze(-2)
 
-	returns = th.zeros(len(r))
+	returns = th.zeros_like(r)
 	running_r = critic(s_p[-1]).squeeze(-1).detach()
-
 	for t in reversed(range(len(r))):
 		running_r = r[t] + 0.99 * running_r * (1 - d[t])
 		returns[t] = running_r
@@ -85,11 +81,12 @@ for _ in range(100_000):
 	c_optimizer.step()
 
 	adv: th.Tensor = (returns - values).detach()
-	norm_adv = (adv - adv.mean()) / (adv.std() + 1e-5)
+
+	# adv = ((adv - adv.mean()) / (adv.std() + 1e-5)).detach()
 
 	probs = actor(s)
 	dist = Categorical(probs)
-	policy_loss = -th.mean(dist.log_prob(a.squeeze(-1)) * norm_adv)
+	policy_loss = -th.mean(dist.log_prob(a) * adv)
 
 	a_optimizer.zero_grad()
 	policy_loss.backward()
