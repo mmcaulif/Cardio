@@ -8,8 +8,8 @@ setup(
     name = 'cardio_rl',
     packages=['cardio_rl'],
     install_requires=[
-        "gymnasium==0.28.1",
-        "numpy>=1.20",
+        "numpy>=1.21.0",
+        "gymnasium>=0.28.0",
         'tensorboard'
     ],
     description = "Cardio RL. In development...",  
@@ -19,7 +19,7 @@ setup(
     license = 'MIT',
     long_description=read('README.md'),
     long_description_content_type="text/markdown",
-    version = '0.0.0',
+    version = '0.0.3',
     python_requires=">=3.7",
     
     # PyPI package information.
