@@ -25,7 +25,7 @@ class Collector():
             self.ret_if_term = False   
 
         self.warmup_len = warmup_len
-        self.n_step = n_step      
+        self.n_step = n_step    
 
         if logger_kwargs:
             self.logger = Logger(**logger_kwargs)
@@ -33,13 +33,14 @@ class Collector():
             self.logger = Logger()
 
         # env initialisation
+        self.step_buffer = deque(maxlen=self.n_step)
         self.state, _ = self.env.reset()
 
     def _env_step(self, policy):
         a = policy(self.state, self.net)
         s_p, r, d, t, info = self.env.step(a)
         self.logger.step(r, d, t)
-        #      [self.state, a, r, s_p, d, *info]
+        d = d or t
         return (self.state, a, r, s_p, d, info), s_p, d, t
 
     def warmup(            
@@ -56,21 +57,21 @@ class Collector():
         
         self.net = net
         gather_buffer = deque()
-        step_buffer = deque(maxlen=self.n_step)     
+        self.step_buffer = deque(maxlen=self.n_step)     
 
         for _ in range(self.warmup_len):
             transition, next_state, done, trun = self._env_step(policy)
-            step_buffer.append(transition)
-            if len(step_buffer) == self.n_step:
+            self.step_buffer.append(transition)
+            if len(self.step_buffer) == self.n_step:
                 if self.n_step == 1:
-                    gather_buffer.append(*list(step_buffer))
+                    gather_buffer.append(*list(self.step_buffer))
                 else:
-                    gather_buffer.append(list(step_buffer))
+                    gather_buffer.append(list(self.step_buffer))
 
             self.state = next_state
             if done or trun:
                 self.state, _ = self.env.reset()
-                step_buffer = deque(maxlen=self.n_step)
+                self.step_buffer = deque(maxlen=self.n_step)
 
         return list(gather_buffer)
 
@@ -80,22 +81,21 @@ class Collector():
         policy,
     ):        
         self.net = net
-        gather_buffer = deque()
-        step_buffer = deque(maxlen=self.n_step)   
+        gather_buffer = deque()   
 
         for _ in range(self.rollout_len):
             transition, next_state, done, trun = self._env_step(policy)
-            step_buffer.append(transition)
-            if len(step_buffer) == self.n_step:
+            self.step_buffer.append(transition)
+            if len(self.step_buffer) == self.n_step:
                 if self.n_step == 1:
-                    gather_buffer.append(*list(step_buffer))
+                    gather_buffer.append(*list(self.step_buffer))
                 else:
-                    gather_buffer.append(list(step_buffer))
+                    gather_buffer.append(list(self.step_buffer))
 
             self.state = next_state
             if done or trun:
                 self.state, _ = self.env.reset()
-                step_buffer = deque(maxlen=self.n_step)
+                self.step_buffer = deque(maxlen=self.n_step)
                 
                 if self.ret_if_term:
                     return list(gather_buffer)
@@ -111,6 +111,7 @@ class VectorCollector():
             rollout_len = 1,
             warmup_len = 0,
             n_step = 1,
+            logger_kwargs = None
         ) -> None:  
         
         # https://gymnasium.farama.org/api/vector/#async-vector-env            
@@ -133,10 +134,21 @@ class VectorCollector():
         self.n_step = n_step        
 
         # metrics
-        self.episodes = 0
-        self.total_steps = 0
-        self.ep_rew = 0
-        self.epsiode_window = deque(maxlen=50)
+        if logger_kwargs:
+            self.logger = Logger(n_envs=num_envs, **logger_kwargs)
+        else:
+            self.logger = Logger(n_envs=num_envs)
+
+    def _env_step(self, policy):
+        a = policy(self.state, self.net)
+        s_p, r, d, t, info = self.env.step(a)
+        self.logger.vector_step(r, d, t)
+        d_combined = [False] * len(d)
+
+        for i in range(len(d_combined)):
+            d_combined[i] = d[i] or t[i]
+            
+        return (self.state, a, r, s_p, d_combined, info), s_p, d, t
 
     def warmup(            
         self,
@@ -182,26 +194,14 @@ class VectorCollector():
         step_buffer = deque(maxlen=self.n_step)   
 
         for _ in range(self.rollout_len):
-            self.total_steps += 1
-            a = policy(self.state, self.net)
-
-            s_p, r, d, t, info = self.env.step(a)
-            
-            if info:
-                fin = info['final_info'][0]
-                if fin:
-                    self.ep_rew = 0.1*(fin['episode']['r']) + 0.9*self.ep_rew
-                    # print(self.ep_rew)
-                    # print(fin['episode']['r'])
-
-            step_buffer.append([self.state, a, r, s_p, d])
+            transition, next_state, _, _ = self._env_step(policy)
+            step_buffer.append(transition)
             if len(step_buffer) == self.n_step:
-
                 if self.n_step == 1:
                     gather_buffer.append(*list(step_buffer))
                 else:
                     gather_buffer.append(list(step_buffer))
 
-            self.state = s_p
+            self.state = next_state
 
         return list(gather_buffer)

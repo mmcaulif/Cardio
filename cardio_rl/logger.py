@@ -18,6 +18,7 @@ from datetime import datetime
 class Logger():
     def __init__(
             self,
+            n_envs = 1,
             log_interval=2000,
             episode_window=20,
             tensorboard=False,
@@ -26,7 +27,7 @@ class Logger():
         ) -> None:
         
         logging.basicConfig(format='%(asctime)s: %(message)s', datefmt=' %I:%M:%S %p', level=logging.INFO)
-
+        self.n_envs = n_envs
         self.log_interval = log_interval
         # self.episode_window = episode_window
         self.tensorboard = tensorboard
@@ -48,7 +49,11 @@ class Logger():
         
         self.timestep = 0
         self.episodes = 0
-        self.running_reward = 0
+        if n_envs == 1:
+            self.running_reward = 0
+        else:
+            self.running_reward = np.zeros(n_envs)
+
         self.episodic_rewards = deque(maxlen=episode_window)
         
     def step(self, reward, done, truncated):
@@ -66,7 +71,17 @@ class Logger():
             if self.tensorboard:
                 self.writer.add_scalar('Avg. reward', np.mean(self.episodic_rewards), self.timestep)
 
+    def vector_step(self, rewards, dones, truns):
+        self.timestep += self.n_envs
 
+        self.running_reward += rewards
 
+        for i, (done, truncated) in enumerate(zip(dones, truns)):
+            if done or truncated:
+                self.episodes += 1
+                self.episodic_rewards.append(self.running_reward[i])
+                self.running_reward[i] = 0
 
+        if (self.timestep//self.n_envs) % self.log_interval == 0:
+            logging.info(f'Timesteps: {self.timestep}, Episodes: {self.episodes}, Avg. reward is {np.mean(self.episodic_rewards)}')
 

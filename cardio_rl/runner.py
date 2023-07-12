@@ -55,6 +55,7 @@ class Runner():
             capacity = None,
             batch_size = None,
             collector = None,
+            reduce=True,
             backend = 'numpy'
         ) -> None:
 
@@ -77,6 +78,7 @@ class Runner():
         self.warmup_len = collector.warmup_len
         self.n_step = collector.n_step
 
+        self.reduce = reduce
         self.backend = backend
 
         self._warm_start()
@@ -149,14 +151,19 @@ class Runner():
         """
 
         if self.n_step == 1:
-            # need to add argument for this (instead of querying the regisry each time)!
-            #return tran_REGISTRY[self.backend](*zip(*batch))
             return self.transition(*zip(*batch))
+        
+        elif self.reduce == False:
+            processed_batch = []
+            for n_step_transition in batch:
+                transition = self.transition(*zip(*n_step_transition))
+                processed_batch.append([*transition])
+
+            return self.transition(*zip(*processed_batch))
         
         else:
             processed_batch = []
             for n_step_transition in batch:
-                # transition = tran_REGISTRY["numpy"](*zip(*n_step_transition))
                 transition = self.transition(*zip(*n_step_transition))
                 s = transition.s[0]
                 a = transition.a[0]
@@ -166,5 +173,5 @@ class Runner():
                 i = transition.i
                 processed_batch.append([s, a, r_list, s_p, d, i])
 
-            return tran_REGISTRY[self.backend](*zip(*processed_batch))
+            return self.transition(*zip(*processed_batch))
         
