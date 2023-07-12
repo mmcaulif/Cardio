@@ -7,8 +7,7 @@
 * [ ] Align VectorCollector with Collector
   * Revisit A2C implementation
   * Make Logger compatible with VectorCollector
-
-* [ ] Implement 'reduce' argument for n-step learning that returns unsqueezed vectors (for DRQN)
+  * Learning doesnt seem to line up with stable baselines3 need to debug all aspects (collector, value estimation and logger)
 
 * [ ] Makes sure vector collector work as intended for off-policy methods and n-step collector work as intended for on-policy methods etc.
 
@@ -36,3 +35,5 @@
 * [x] Implement 'step_for' function in Collector!
 
 * [x] Create dummy env for testing logging, collection and sampling!
+
+* [x] Implement 'reduce' argument for n-step learning that returns unsqueezed vectors (for DRQN)
