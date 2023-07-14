@@ -7,34 +7,26 @@ class BasePolicy():
         
     def __call__(self, state, net):
         return self.env.action_space.sample()
+    
+    def reset(self):
+        # for policies that require resets, like NoisyNet or OuNoise
+        raise NotImplementedError
         
  
-class Epsilon_Deterministic_policy(BasePolicy):
+class WhitenoiseDeterministic(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
-        self.eps = 0.9
-        self.noise = True 
         
     def __call__(self, state, net):
-        input = th.from_numpy(state).float()
-
-        if np.random.rand() > self.eps:
-            self.eps = max(0.05, self.eps*0.99)   
-            out = net(input)         
-
-            if self.noise:
-                mean = th.zeros_like(out)
-                noise = th.normal(mean=mean, std=0.1).clamp(-0.5, 0.5)
-                out = (out + noise)
-        
-            return out.clamp(-1, 1).detach().numpy()
-
-        else:
-            self.eps = max(0.1, self.eps*0.999)
-            return self.env.action_space.sample()
+        input = th.from_numpy(state).float()  
+        out = net(input)         
+        mean = th.zeros_like(out)
+        noise = th.normal(mean=mean, std=0.1).clamp(-0.5, 0.5)
+        out = (out + noise)    
+        return out.clamp(-1, 1).detach().numpy()
                  
 
-class Epsilon_argmax_policy(BasePolicy):
+class EpsilonArgmax(BasePolicy):
     def __init__(self, env, eps = 0.0, min_eps = 0.0, ann_coeff = 0.9):
         super().__init__(env)
         self.eps = eps
@@ -54,7 +46,7 @@ class Epsilon_argmax_policy(BasePolicy):
             return self.env.action_space.sample()
 
 
-class Gaussian_policy(BasePolicy):
+class Gaussian(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -69,7 +61,7 @@ class Gaussian_policy(BasePolicy):
         return a_sampled.numpy() * self.env.action_space.high + 0
 
 
-class Noisy_naf_policy(BasePolicy):
+class NoisyNaf(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -79,7 +71,7 @@ class Noisy_naf_policy(BasePolicy):
         return out.detach().numpy()
 
 
-class Categorical_policy(BasePolicy):
+class Categorical(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -89,17 +81,9 @@ class Categorical_policy(BasePolicy):
         dist = th.distributions.Categorical(probs)
         return dist.sample().detach().numpy()
     
-class Beta_policy(BasePolicy):
+class Beta(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
-        # add assertion for scaled action space
-
-    """def scale(self, action):
-        # refactor and verify this works
-        r = self.env.action_space.high - self.env.action_space.low
-        action = action * r
-        m = r/2
-        return action-m"""
 
     def __call__(self, state, net):
         input = th.from_numpy(state).float()

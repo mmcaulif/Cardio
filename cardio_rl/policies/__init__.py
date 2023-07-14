@@ -1,17 +1,19 @@
 from .basic import (BasePolicy, 
-                    Epsilon_Deterministic_policy, 
-                    Epsilon_argmax_policy, 
-                    Gaussian_policy, 
-                    Noisy_naf_policy,
-                    Categorical_policy,
-                    Beta_policy)
+                    WhitenoiseDeterministic, 
+                    EpsilonArgmax, 
+                    Gaussian, 
+                    NoisyNaf,
+                    Categorical,
+                    Beta)
 
 REGISTRY = {}
 
 REGISTRY["random"] = BasePolicy
-REGISTRY["deterministic"] = Epsilon_Deterministic_policy
-REGISTRY["argmax"] = Epsilon_argmax_policy
-REGISTRY["gaussian"] = Gaussian_policy
-REGISTRY["naf"] = Noisy_naf_policy
-REGISTRY["categorical"] = Categorical_policy
-REGISTRY["beta"] = Beta_policy
+REGISTRY["whitenoise"] = WhitenoiseDeterministic
+REGISTRY["pinknoise"] = None
+REGISTRY["ounoise"] = None
+REGISTRY["argmax"] = EpsilonArgmax
+REGISTRY["gaussian"] = Gaussian
+REGISTRY["naf"] = NoisyNaf
+REGISTRY["categorical"] = Categorical
+REGISTRY["beta"] = Beta
