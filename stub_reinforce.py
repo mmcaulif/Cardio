@@ -4,6 +4,7 @@ import gymnasium as gym
 import torch.nn as nn
 from torch.distributions import Categorical
 
+
 class Actor(nn.Module):
 	def __init__(self):
 		super(Actor, self).__init__()
@@ -28,32 +29,31 @@ runner = Runner(
 	collector=Collector(
 		env=env,
 		rollout_len=-1,
-		),
+	),
 	backend='pytorch'
 )
 
 actor = Actor()
 optimizer = th.optim.Adam(actor.parameters(), lr=2e-3)
-baseline = 50
 
-for _ in range(3_000):
+for _ in range(1_000):
 	batch = runner.get_batch(actor)
-	s, a, r, s_p, d = batch()
+	s, a, r, s_p, d, _ = batch()
 
+	returns = th.zeros_like(r)
 	running_r = 0
-	returns = th.zeros(len(r))
-	for i, r_val in enumerate(r):
-		running_r *= 0.99
-		running_r += r_val
-		returns[i] = running_r
-	
-	returns = reversed(returns)
+	for t in reversed(range(len(r))):
+		running_r = r[t] + 0.99 * running_r
+		returns[t] = running_r
+
+	returns = (returns - returns.mean()) / returns.std()
 
 	probs = actor(s)
 	dist = Categorical(probs)
-	loss = -th.mean(dist.log_prob(a.squeeze(-1)) * (returns-baseline))
+	log_probs = dist.log_prob(a.squeeze(-1))
+	policy_loss = -th.mean(log_probs * returns.squeeze(-1))
 
 	optimizer.zero_grad()
-	loss.backward()
+	policy_loss.backward()
 	nn.utils.clip_grad_norm_(actor.parameters(), 0.5)
-	optimizer.step()
+	optimizer.step()	
