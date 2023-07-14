@@ -4,7 +4,6 @@ import gymnasium as gym
 import torch.nn as nn
 from torch.distributions import Categorical
 
-
 class Actor(nn.Module):
 	def __init__(self):
 		super(Actor, self).__init__()
@@ -50,8 +49,7 @@ for _ in range(1_000):
 
 	probs = actor(s)
 	dist = Categorical(probs)
-	log_probs = dist.log_prob(a.squeeze(-1))
-	policy_loss = -th.mean(log_probs * returns.squeeze(-1))
+	policy_loss = -th.mean(dist.log_prob(a.squeeze(-1)) * returns.squeeze(-1))
 
 	optimizer.zero_grad()
 	policy_loss.backward()
