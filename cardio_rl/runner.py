@@ -9,43 +9,6 @@ import logging
 # https://stackoverflow.com/questions/40181284/how-to-get-random-sample-from-deque-in-python-3
 # faster replay memory
 
-def get_offpolicy_runner(
-        env,
-        policy,
-        length,
-        capacity,
-        batch_size,
-        n_step=1,
-        collector=Collector,
-        train_after=10000):
-    
-    return Runner(
-        env,
-        policy,
-        length,
-        True,
-        capacity,
-        batch_size,
-        n_step,
-        collector,
-        train_after)
-
-def get_onpolicy_runner(
-        env,
-        policy,
-        length,
-        collector=Collector,):
-    
-    return Runner(
-        env,
-        policy,
-        length,
-        False,
-        None,
-        None,
-        collector,
-        0)
-
 class Runner():
     def __init__(
             self,
