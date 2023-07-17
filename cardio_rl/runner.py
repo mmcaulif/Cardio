@@ -44,9 +44,8 @@ class Runner():
         self.reduce = reduce
         self.backend = backend
 
-        self._warm_start()
-            
-        self.policy = self._set_up_policy(policy)
+        self.collector.init_policy(self._set_up_policy(policy)) 
+        self._warm_start()            
         self.transition = self._set_up_transition(backend)
 
     def _warm_start(
@@ -55,7 +54,7 @@ class Runner():
             policy=None,           
         ):
 
-        batch = self.collector.warmup(net, policy)
+        batch = self.collector.warmup(net)
 
         if self.sampler:
             for transition in batch:
@@ -94,7 +93,7 @@ class Runner():
         ):
         
         self.net = net        
-        batch = self.collector.rollout(net, self.policy)
+        batch = self.collector.rollout(net)
 
         if self.sampler:
             for transition in batch:

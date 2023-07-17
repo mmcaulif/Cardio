@@ -2,15 +2,19 @@ import torch as th
 import numpy as np
 
 class BasePolicy():
-    def __init__(self, env):
+    def __init__(self, env, recurrent=False, hidden_dims=0):
         self.env = env        
+        self.recurrent = recurrent
+        self.hidden_dims = hidden_dims
+        self.hidden = th.zeros(hidden_dims)
         
     def __call__(self, state, net):
         return self.env.action_space.sample()
     
     def reset(self):
+        self.hidden = th.zeros(self.hidden_dims)
         # for policies that require resets, like NoisyNet or OuNoise
-        raise NotImplementedError
+        # raise NotImplementedError
         
  
 class WhitenoiseDeterministic(BasePolicy):
@@ -27,8 +31,8 @@ class WhitenoiseDeterministic(BasePolicy):
                  
 
 class EpsilonArgmax(BasePolicy):
-    def __init__(self, env, eps = 0.0, min_eps = 0.0, ann_coeff = 0.9):
-        super().__init__(env)
+    def __init__(self, env, eps=0.0, min_eps=0.0, ann_coeff=0.9, recurrent=False, hidden_dims=0):
+        super().__init__(env, recurrent, hidden_dims)
         self.eps = eps
         self.min_eps = min_eps
         self.ann_coeff = ann_coeff

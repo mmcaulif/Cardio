@@ -36,6 +36,9 @@ class Collector():
         self.step_buffer = deque(maxlen=self.n_step)
         self.state, _ = self.env.reset()
 
+    def init_policy(self, policy):
+        self.policy = policy
+
     def _env_step(self, policy):
         a = policy(self.state, self.net)
         s_p, r, d, t, info = self.env.step(a)
@@ -46,21 +49,19 @@ class Collector():
     def warmup(            
         self,
         net = None,
-        policy = None,
     ):        
         # Maybe move this check to the runner?
         if self.warmup_len == None:
             return list(deque())
         
-        if policy == None:
-            policy = BasePolicy(self.env)
+        warmup_policy = BasePolicy(self.env)
         
         self.net = net
         gather_buffer = deque()
         self.step_buffer = deque(maxlen=self.n_step)     
 
         for _ in range(self.warmup_len):
-            transition, next_state, done, trun = self._env_step(policy)
+            transition, next_state, done, trun = self._env_step(warmup_policy)
             self.step_buffer.append(transition)
             if len(self.step_buffer) == self.n_step:
                 if self.n_step == 1:
@@ -72,19 +73,19 @@ class Collector():
             if done or trun:
                 self.state, _ = self.env.reset()
                 self.step_buffer = deque(maxlen=self.n_step)
+                self.policy.reset()
 
         return list(gather_buffer)
 
     def rollout(
         self,
         net,
-        policy,
     ):        
         self.net = net
         gather_buffer = deque()   
 
         for _ in range(self.rollout_len):
-            transition, next_state, done, trun = self._env_step(policy)
+            transition, next_state, done, trun = self._env_step(self.policy)
             self.step_buffer.append(transition)
             if len(self.step_buffer) == self.n_step:
                 if self.n_step == 1:
@@ -96,7 +97,7 @@ class Collector():
             if done or trun:
                 self.state, _ = self.env.reset()
                 self.step_buffer = deque(maxlen=self.n_step)
-                
+                self.policy.reset()
                 if self.ret_if_term:
                     return list(gather_buffer)
 
@@ -139,6 +140,9 @@ class VectorCollector():
         else:
             self.logger = Logger(n_envs=num_envs)
 
+    def init_policy(self, policy):
+        self.policy = policy
+
     def _env_step(self, policy):
         a = policy(self.state, self.net)
         s_p, r, d, t, info = self.env.step(a)
@@ -160,8 +164,7 @@ class VectorCollector():
         if self.warmup_len == None:
             return deque()
         
-        if policy == None:
-            policy = BasePolicy(self.env)
+        warmup_policy = BasePolicy(self.env)
         
         self.net = net
         gather_buffer = deque()
