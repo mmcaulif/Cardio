@@ -74,7 +74,7 @@ target_update = 10
 
 for t in range(5000):
 	batch = runner.get_batch(critic)
-	s, a, r, s_p, d = batch()
+	s, a, r, s_p, d, _ = batch()
 
 	if runner.n_step !=  1:
 		r_nstep = th.zeros([len(r), 1])
