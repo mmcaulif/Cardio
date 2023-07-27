@@ -39,8 +39,11 @@ class Collector():
     def init_policy(self, policy):
         self.policy = policy
 
-    def _env_step(self, policy):
-        a = policy(self.state, self.net)
+    def _env_step(self, policy=None, warmup=False):
+        if warmup:
+            a = self.env.action_space.sample()
+        else:
+            a = policy(self.state, self.net)
         s_p, r, d, t, info = self.env.step(a)
         self.logger.step(r, d, t)
         d = d or t
@@ -54,14 +57,12 @@ class Collector():
         if self.warmup_len == None:
             return list(deque())
         
-        warmup_policy = BasePolicy(self.env)
-        
         self.net = net
         gather_buffer = deque()
         self.step_buffer = deque(maxlen=self.n_step)     
 
         for _ in range(self.warmup_len):
-            transition, next_state, done, trun = self._env_step(warmup_policy)
+            transition, next_state, done, trun = self._env_step(self.policy, warmup=True)
             self.step_buffer.append(transition)
             if len(self.step_buffer) == self.n_step:
                 if self.n_step == 1:
@@ -73,7 +74,6 @@ class Collector():
             if done or trun:
                 self.state, _ = self.env.reset()
                 self.step_buffer = deque(maxlen=self.n_step)
-                self.policy.reset()
 
         return list(gather_buffer)
 
