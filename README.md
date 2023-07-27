@@ -4,6 +4,10 @@
 * [ ] Create package!
   * basic implementation done, need to do PyPi and look into further improvements
 
+* [ ] Implement multibatch sampling for off-policy runner
+
+* [ ] Add episode length to logger and use the same names as SB3 for easy integration!
+
 * [ ] Align VectorCollector with Collector
   * Revisit A2C implementation
   * Make Logger compatible with VectorCollector
