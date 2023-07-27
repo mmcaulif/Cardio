@@ -44,7 +44,9 @@ class Runner():
         self.reduce = reduce
         self.backend = backend
 
-        self.collector.init_policy(self._set_up_policy(policy)) 
+        
+        self.policy = self._set_up_policy(policy)
+        self.collector.init_policy(self.policy) 
         self._warm_start()            
         self.transition = self._set_up_transition(backend)
 
