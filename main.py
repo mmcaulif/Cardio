@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import gymnasium as gym
 from cardio_rl import Runner
 from cardio_rl import Collector
-from cardio_rl.policies import Epsilon_argmax_policy
+from cardio_rl.policies import EpsilonArgmax
 
 """
 A simple DQN implementation!
@@ -41,7 +41,7 @@ class ImplicitQ(nn.Module):
 		q = self.l3(q)
 
 		if reduce:
-			return th.mean(q, dim=-2)
+			q = th.mean(q, dim=-2)
 		
 		return q
 	
@@ -50,7 +50,7 @@ def main():
 
 	runner = Runner(
 		env=env,
-		policy=Epsilon_argmax_policy(env, 0.5, 0.05, 0.9),
+		policy=EpsilonArgmax(env, 0.5, 0.05, 0.9),
 		sampler=True,
 		capacity=100000,
 		batch_size=64,
