@@ -6,16 +6,15 @@ class BasePolicy():
         self.env = env        
         self.recurrent = recurrent
         self.hidden_dims = hidden_dims
-        self.hidden = th.zeros(hidden_dims)
+        self.hidden = th.zeros(1, hidden_dims)
         
     def __call__(self, state, net):
         return self.env.action_space.sample()
     
     def reset(self):
-        self.hidden = th.zeros(self.hidden_dims)
+        self.hidden = th.zeros(1, self.hidden_dims)
         # for policies that require resets, like NoisyNet or OuNoise
         # raise NotImplementedError
-        
  
 class WhitenoiseDeterministic(BasePolicy):
     def __init__(self, env):
@@ -25,7 +24,7 @@ class WhitenoiseDeterministic(BasePolicy):
         input = th.from_numpy(state).float()  
         out = net(input)         
         mean = th.zeros_like(out)
-        noise = th.normal(mean=mean, std=0.1).clamp(-0.5, 0.5)
+        noise = th.normal(mean=mean, std=0.1)   # .clamp(-0.5, 0.5) # unsure if necessary... need to check other implementations
         out = (out + noise)    
         return out.clamp(-1, 1).detach().numpy()
                  
@@ -42,7 +41,12 @@ class EpsilonArgmax(BasePolicy):
 
         if np.random.rand() > self.eps:
             self.eps = max(self.min_eps, self.eps*self.ann_coeff)   
-            out = net(input).detach().numpy()
+            if self.recurrent:
+                out, self.hidden = net(input, hidden=self.hidden)
+                out = out.detach().numpy()
+            else: 
+                out = net(input).detach().numpy()
+
             return np.argmax(out)  
 
         else:
