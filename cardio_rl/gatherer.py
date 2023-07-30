@@ -11,6 +11,7 @@ class Collector():
             rollout_len = 1,
             warmup_len = 0,
             n_step = 1,
+            take_every = 1,
             logger_kwargs = None
         ) -> None:        
 
@@ -25,7 +26,9 @@ class Collector():
             self.ret_if_term = False   
 
         self.warmup_len = warmup_len
-        self.n_step = n_step    
+        self.n_step = n_step   
+        self.take_every = take_every 
+        self.take_count = 0
 
         if logger_kwargs:
             self.logger = Logger(**logger_kwargs)
@@ -64,11 +67,16 @@ class Collector():
         for _ in range(self.warmup_len):
             transition, next_state, done, trun = self._env_step(self.policy, warmup=True)
             self.step_buffer.append(transition)
+            
             if len(self.step_buffer) == self.n_step:
-                if self.n_step == 1:
-                    gather_buffer.append(*list(self.step_buffer))
-                else:
-                    gather_buffer.append(list(self.step_buffer))
+                
+                if self.take_count % self.take_every == 0:                    
+                    if self.n_step == 1:
+                        gather_buffer.append(*list(self.step_buffer))
+                    else:
+                        gather_buffer.append(list(self.step_buffer))
+ 
+                self.take_count += 1
 
             self.state = next_state
             if done or trun:
@@ -88,10 +96,14 @@ class Collector():
             transition, next_state, done, trun = self._env_step(self.policy)
             self.step_buffer.append(transition)
             if len(self.step_buffer) == self.n_step:
-                if self.n_step == 1:
-                    gather_buffer.append(*list(self.step_buffer))
-                else:
-                    gather_buffer.append(list(self.step_buffer))
+                
+                if self.take_count % self.take_every == 0:
+                    if self.n_step == 1:
+                        gather_buffer.append(*list(self.step_buffer))
+                    else:
+                        gather_buffer.append(list(self.step_buffer))
+ 
+                self.take_count += 1
 
             self.state = next_state
             if done or trun:
