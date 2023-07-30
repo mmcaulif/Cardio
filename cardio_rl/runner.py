@@ -17,6 +17,7 @@ class Runner():
             sampler = False,
             capacity = None,
             batch_size = None,
+            n_batches = 1,
             collector = None,
             reduce=True,
             backend = 'numpy'
@@ -33,6 +34,7 @@ class Runner():
         self.sampler = sampler
         self.capacity = capacity
         self.batch_size = batch_size
+        self.n_batches = n_batches
 
         self.er_buffer = deque(maxlen=self.capacity)
 
@@ -95,16 +97,27 @@ class Runner():
         ):
         
         self.net = net        
-        batch = self.collector.rollout(net)
+        rollout_batch = self.collector.rollout(net)
 
-        if self.sampler:
-            for transition in batch:
+        if not self.sampler:            
+            return self.prep_batch(rollout_batch)
+
+        else:
+            for transition in rollout_batch:
                 self.er_buffer.append(transition)
 
             k = min(self.batch_size, len(self.er_buffer))
-            batch = random.sample(list(self.er_buffer), k)
+            
+            if self.n_batches == 1:
+                return self.prep_batch(random.sample(list(self.er_buffer), k))
 
-        return self.prep_batch(batch)
+            else:
+                batch_samples = []
+                for _ in self.n_batches:
+                    batch_samples.append(self.prep_batch(random.sample(list(self.er_buffer), k))) 
+
+                return batch_samples
+
 
     def prep_batch(
         self,
