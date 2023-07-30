@@ -4,16 +4,14 @@
 * [ ] Create package!
   * basic implementation done, need to do PyPi and look into further improvements
 
-* [ ] Implement multibatch sampling for off-policy runner
-
-* [ ] Add episode length to logger and use the same names as SB3 for easy integration!
-
 * [ ] Align VectorCollector with Collector
   * Revisit A2C implementation
   * Make Logger compatible with VectorCollector
   * Learning doesnt seem to line up with stable baselines3 need to debug all aspects (collector, value estimation and logger)
 
 * [ ] Makes sure vector collector work as intended for off-policy methods and n-step collector work as intended for on-policy methods etc.
+
+* [ ] Remove warmup method in gatherer and make it a special call of the rollout method
 
 ## Lower priority
 
@@ -31,6 +29,10 @@
 * [ ] Benchmark each implementation wrt. SB3 (change logging to timestep based first though)
  
 ## Completed
+* [x] Implement multibatch sampling for off-policy runner
+
+* [x] Add episode length to logger and use the same names as SB3 for easy integration!
+
 * [x] Parallel gatherer
 
 * [x] Change logging from episodic to timestep based
