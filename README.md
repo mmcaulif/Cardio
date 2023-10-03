@@ -4,14 +4,17 @@
 * [ ] Create package!
   * basic implementation done, need to do PyPi and look into further improvements
 
+* [ ] Implement replay buffer class and move IET work into Cardio ecosystem
+
+* [ ] Remove warmup method in gatherer and make it a special call of the rollout method
+
+## Vectorised env work
 * [ ] Align VectorCollector with Collector
   * Revisit A2C implementation
   * Make Logger compatible with VectorCollector
   * Learning doesnt seem to line up with stable baselines3 need to debug all aspects (collector, value estimation and logger)
 
 * [ ] Makes sure vector collector work as intended for off-policy methods and n-step collector work as intended for on-policy methods etc.
-
-* [ ] Remove warmup method in gatherer and make it a special call of the rollout method
 
 ## Lower priority
 

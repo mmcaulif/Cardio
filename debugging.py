@@ -31,26 +31,24 @@ Need to consider options/possibilities...
 runner = Runner(
 	env=env,
 	policy='random',
-    # sampler=True,
+    sampler=True,
     capacity=1_000,
-    batch_size=1,
+    batch_size=2,
 	collector=Collector(
 		env=env,
-		rollout_len=4,
+		rollout_len=2,
+        warmup_len=6,
+        n_step=4,
+        take_every=2,
 		),
+	reduce=False,
 	backend='pytorch'
 )
 
 batch: NamedTuple = runner.get_batch(net=None)
-"""print(batch)
-print(len(runner.er_buffer))
-exit()
-
-print(batch.s)
-
-batch_dict = batch
-print(batch_dict)"""
 
 # Needing to call batch as a function is awkward and unnecessary, should try find a workaround
+print(len(runner.er_buffer))
+# exit()
 s, a, *_ = batch()
 print(s, a)
