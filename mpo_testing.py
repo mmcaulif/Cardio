@@ -8,7 +8,7 @@ from cardio_rl import Collector
 
 """
 To do:
--figure out how many e-pochs for E and M step
+-figure out how many e-pochs to do for E and M step
 -look into what hyperparams to use, maybe good time to try optuna
 -look into Acme impl. 
 Resources:

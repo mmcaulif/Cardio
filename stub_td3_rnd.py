@@ -13,26 +13,26 @@ class RndWhitenoiseDeterministic(BasePolicy):
 		super().__init__(env)
 		# architecture can maybe be improved on
 		self.rnd_net = nn.Sequential(
-			nn.Linear(obs_dims, 32),
+			nn.Linear(obs_dims, 16),
 			nn.Tanh(),
-			nn.Linear(32, 32),
+			nn.Linear(16, 16),
 			nn.Tanh(),
-			nn.Linear(32, output_dims),
+			nn.Linear(16, output_dims),
 		)
 
 		self.targ_net = nn.Sequential(
-			nn.Linear(obs_dims, 32),
+			nn.Linear(obs_dims, 16),
 			nn.Tanh(),
-			nn.Linear(32, 32),
+			nn.Linear(16, 16),
 			nn.Tanh(),
-			nn.Linear(32, output_dims),
+			nn.Linear(16, output_dims),
 		)
 		
 	def __call__(self, state, net):
 		input = th.from_numpy(state).float()  
 		out = net(input)         
 		mean = th.zeros_like(out)
-		noise = th.normal(mean=mean, std=0.1)   # .clamp(-0.5, 0.5) # unsure if necessary... need to check other implementations
+		noise = th.normal(mean=mean, std=0.1).clamp(-0.5, 0.5)
 		out = (out + noise)    
 		return out.clamp(-1, 1).detach().numpy()
 	
@@ -61,9 +61,9 @@ class RndCollector(Collector):
 
 		return (self.state, a, [r_e, r_i], s_p, d, info), s_p, d, t
 
-# env_name = 'MountainCarContinuous-v0'
+env_name = 'MountainCarContinuous-v0'
 # env_name = 'Pendulum-v1'
-env_name = 'LunarLanderContinuous-v2'
+# env_name = 'LunarLanderContinuous-v2'
 env = gym.make(env_name)
 env = RescaleAction(env, -1.0, 1.0)
 
@@ -71,16 +71,18 @@ beta_rnd = 0.1
 
 runner = Runner(
 	env=env,
-	policy=RndWhitenoiseDeterministic(env, obs_dims=8, output_dims=16),
+	policy=RndWhitenoiseDeterministic(env, obs_dims=2, output_dims=16),
 	sampler=True,
-	capacity=200_000,
-	batch_size=100,
+	capacity=1_000_000,
+	batch_size=512,
+	n_batches=32,
 	collector=RndCollector(
 		env=env,
-		warmup_len=10_000,
+		rollout_len=32,
+		warmup_len=0,
 		logger_kwargs=dict(
-			log_interval = 5_000,
-			episode_window=40,
+			log_interval=5_000,
+			episode_window=20,
 			tensorboard=True,
             log_dir='run',
 			exp_name = env_name + f'_RND_separate_nets_beta{beta_rnd}'
@@ -94,18 +96,26 @@ class Q_critic(nn.Module):
 		super(Q_critic, self).__init__()
 
 		self.net1 = nn.Sequential(
-			nn.Linear(state_dim+action_dim, 400),
+			nn.Linear(state_dim+action_dim, 64),
+			nn.Dropout(0.01),
+			nn.LayerNorm(64),
 			nn.ReLU(),
-			nn.Linear(400, 300),
+			nn.Linear(64, 64),
+			nn.Dropout(0.01),
+			nn.LayerNorm(64),
 			nn.ReLU(),
-			nn.Linear(300, 1))
+			nn.Linear(64, 1))
 		
 		self.net2 = nn.Sequential(
-			nn.Linear(state_dim+action_dim, 400),
+			nn.Linear(state_dim+action_dim, 64),
+			nn.Dropout(0.01),
+			nn.LayerNorm(64),
 			nn.ReLU(),
-			nn.Linear(400, 300),
+			nn.Linear(64, 64),
+			nn.Dropout(0.01),
+			nn.LayerNorm(64),
 			nn.ReLU(),
-			nn.Linear(300, 1))
+			nn.Linear(64, 1))
 
 	def forward(self, state, action):
 		sa = th.concat([state, action], dim=-1)
@@ -116,20 +126,20 @@ class Policy(nn.Module):
 		super(Policy, self).__init__()
 
 		self.net = nn.Sequential(
-			nn.Linear(state_dim, 400),
+			nn.Linear(state_dim, 64),
 			nn.ReLU(),
-			nn.Linear(400, 300),
+			nn.Linear(64, 64),
 			nn.ReLU(),
-			nn.Linear(300, action_dim),
+			nn.Linear(64, action_dim),
 			nn.Tanh())
 		
 	def forward(self, state):
 		return self.net(state)
 
 # https://stable-baselines3.readthedocs.io/en/master/modules/ddpg.html
-critic = Q_critic(8, 2)
-int_critic = Q_critic(8, 2)
-actor = Policy(8, 2)
+critic = Q_critic(2, 1)
+int_critic = Q_critic(2, 1)
+actor = Policy(2, 1)
 targ_critic = copy.deepcopy(critic)
 int_targ_critic = copy.deepcopy(int_critic)
 targ_actor = copy.deepcopy(actor)
@@ -137,55 +147,57 @@ c_optimizer = th.optim.Adam(list(critic.parameters()) + list(int_critic.paramete
 a_optimizer = th.optim.Adam(actor.parameters(), lr=1e-3)
 rnd_optimizer = th.optim.Adam(runner.policy.rnd_net.parameters(), lr=1e-3)
 
-for steps in range(150_000):
-	batch = runner.get_batch(actor)
+tau = 0.01
 
-	s, a, r, s_p, d, _ = batch()
-	
-	r_e, r_i = r[:, :, 0], r[:, :, 1]
-
-	with th.no_grad():
-		a_p = targ_actor(s_p)
-
-		noise = th.normal(mean=th.zeros_like(a_p), std=0.2).clamp(-0.5, 0.5)		
-		a_p = (a_p + noise).clamp(-1, 1)
-
-		q_p = th.min(*targ_critic(s_p, a_p))
-		y = r_e + 0.98 * q_p * (1 - d)
-
-		i_q_p = th.min(*int_targ_critic(s_p, a_p))
-		i_y = r_i + 0.95 * q_p * (1 - d)
-
-	q1, q2 = critic(s, a.squeeze(1))
-	i_q1, i_q2 = int_critic(s, a.squeeze(1))
+for steps in range(120_000):
+	all_batches = runner.get_batch(actor)
+	for batch in all_batches:
+		s, a, r, s_p, d, _ = batch()
 		
-	critic_loss = (F.mse_loss(q1, y) + F.mse_loss(q2, y)) + (F.mse_loss(i_q1, i_y) + F.mse_loss(i_q2, i_y))
+		r_e, r_i = r[:, :, 0], r[:, :, 1]
 
-	c_optimizer.zero_grad()
-	critic_loss.backward()
-	c_optimizer.step()
+		with th.no_grad():
+			a_p = targ_actor(s_p)
 
-	pred = runner.policy.rnd_net(s_p)
-	targ = runner.policy.targ_net(s_p).detach()
+			noise = th.normal(mean=th.zeros_like(a_p), std=0.2).clamp(-0.5, 0.5)		
+			a_p = (a_p + noise).clamp(-1, 1)
 
-	rnd_loss = F.mse_loss(pred, targ)
+			q_p = th.min(*targ_critic(s_p, a_p))
+			y = r_e + 0.9999 * q_p * (1 - d)
 
-	rnd_optimizer.zero_grad()
-	rnd_loss.backward()
-	rnd_optimizer.step()
+			i_q_p = th.min(*int_targ_critic(s_p, a_p))
+			i_y = r_i + 0.99 * q_p * (1 - d)
 
-	if steps % 2 == 0:
-		policy_loss = -(th.min(*critic(s_p, actor(s_p))) + beta_rnd * th.min(*int_critic(s_p, actor(s_p)))).mean()
+		q1, q2 = critic(s, a.squeeze(1))
+		i_q1, i_q2 = int_critic(s, a.squeeze(1))
+			
+		critic_loss = (F.mse_loss(q1, y) + F.mse_loss(q2, y)) + (F.mse_loss(i_q1, i_y) + F.mse_loss(i_q2, i_y))
 
-		a_optimizer.zero_grad()
-		policy_loss.backward()
-		a_optimizer.step()	
+		c_optimizer.zero_grad()
+		critic_loss.backward()
+		c_optimizer.step()
 
-		for targ_params, params in zip(targ_critic.parameters(), critic.parameters()):
-			targ_params.data.copy_(params.data * 0.005 + targ_params.data * (1.0 - 0.005))
+		pred = runner.policy.rnd_net(s_p)
+		targ = runner.policy.targ_net(s_p).detach()
 
-		for targ_params, params in zip(int_targ_critic.parameters(), int_critic.parameters()):
-			targ_params.data.copy_(params.data * 0.005 + targ_params.data * (1.0 - 0.005))
+		rnd_loss = F.mse_loss(pred, targ)
 
-		for targ_params, params in zip(targ_actor.parameters(), actor.parameters()):
-			targ_params.data.copy_(params.data * 0.005 + targ_params.data * (1.0 - 0.005))
+		rnd_optimizer.zero_grad()
+		rnd_loss.backward()
+		rnd_optimizer.step()
+
+		if steps % 2 == 0:
+			policy_loss = -(th.min(*critic(s_p, actor(s_p))) + beta_rnd * th.min(*int_critic(s_p, actor(s_p)))).mean()
+
+			a_optimizer.zero_grad()
+			policy_loss.backward()
+			a_optimizer.step()	
+
+			for targ_params, params in zip(targ_critic.parameters(), critic.parameters()):
+				targ_params.data.copy_(params.data * tau + targ_params.data * (1.0 - tau))
+
+			for targ_params, params in zip(int_targ_critic.parameters(), int_critic.parameters()):
+				targ_params.data.copy_(params.data * tau + targ_params.data * (1.0 - tau))
+
+			for targ_params, params in zip(targ_actor.parameters(), actor.parameters()):
+				targ_params.data.copy_(params.data * tau + targ_params.data * (1.0 - tau))

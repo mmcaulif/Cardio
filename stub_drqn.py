@@ -43,7 +43,8 @@ def main():
 			env=env,
 			rollout_len=4,
 			warmup_len=10_000,
-			n_step=32
+			n_step=16,
+			take_every=8,
 		),
 		reduce=False,
 		backend='pytorch'
