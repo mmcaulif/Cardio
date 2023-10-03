@@ -113,7 +113,7 @@ class Runner():
 
             else:
                 batch_samples = []
-                for _ in self.n_batches:
+                for _ in range(self.n_batches):
                     batch_samples.append(self.prep_batch(random.sample(list(self.er_buffer), k))) 
 
                 return batch_samples
