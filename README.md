@@ -4,7 +4,7 @@
 * [ ] Create package!
   * basic implementation done, need to do PyPi and look into further improvements
 
-* [ ] Implement replay buffer class and move IET work into Cardio ecosystem
+* [x] Implement replay buffer class and move IET work into Cardio ecosystem
 
 * [ ] Remove warmup method in gatherer and make it a special call of the rollout method
 
