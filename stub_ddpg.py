@@ -4,10 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
-
 from cardio_rl import Runner, Collector
 
-env_name = 'MountainCarContinuous-v0'
+env_name = 'Pendulum-v1'
 env = gym.make(env_name)
 env = RescaleAction(env, -1.0, 1.0)
 
@@ -22,7 +21,7 @@ runner = Runner(
 		warmup_len=100,
 		logger_kwargs=dict(
 			log_dir = env_name,
-			log_interval = 10_000
+			log_interval = 1_000
 		)
 	),
 	backend='pytorch'
@@ -59,17 +58,15 @@ class Policy(nn.Module):
 		return self.net(state)
 
 # https://stable-baselines3.readthedocs.io/en/master/modules/ddpg.html
-critic = Q_critic(2, 1)
-actor = Policy(2, 1)
+critic = Q_critic(3, 1)
+actor = Policy(3, 1)
 targ_critic = copy.deepcopy(critic)
 targ_actor = copy.deepcopy(actor)
 c_optimizer = th.optim.Adam(critic.parameters(), lr=1e-3)
 a_optimizer = th.optim.Adam(actor.parameters(), lr=1e-3)
 
 for steps in range(300_000):
-	batch = runner.get_batch(actor)
-
-	s, a, r, s_p, d, _ = batch()
+	s, a, r, s_p, d, _ = runner.get_batch(actor)
 
 	with th.no_grad():
 		a_p = targ_actor(s_p)
