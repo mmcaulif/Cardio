@@ -1,10 +1,8 @@
-from collections import deque
-from .gatherer import Collector
+import logging
 from .transitions import REGISTRY as tran_REGISTRY
 from .transitions import BaseTransition
+from .buffers.er_buffer import ErTable
 from .policies import BasePolicy, REGISTRY as pol_REGISTRY
-import random
-import logging
 
 # https://stackoverflow.com/questions/40181284/how-to-get-random-sample-from-deque-in-python-3
 # faster replay memory
@@ -20,7 +18,8 @@ class Runner():
             n_batches = 1,
             collector = None,
             reduce=True,
-            backend = 'numpy'
+            backend = 'numpy',
+            er_buffer = None
         ) -> None:
 
         """
@@ -32,11 +31,14 @@ class Runner():
 
         # Maybe combine sampler and capacity into one argument?
         self.sampler = sampler
-        self.capacity = capacity
         self.batch_size = batch_size
         self.n_batches = n_batches
 
-        self.er_buffer = deque(maxlen=self.capacity)
+        if er_buffer == None:
+            transition = self._set_up_transition(backend)
+            self.er_buffer = ErTable(capacity, transition)
+        else:
+            self.er_buffer = er_buffer
 
         self.collector = collector
         self.rollout_len = collector.rollout_len
@@ -45,24 +47,21 @@ class Runner():
 
         self.reduce = reduce
         self.backend = backend
-
         
         self.policy = self._set_up_policy(policy)
         self.collector.init_policy(self.policy) 
         self._warm_start()            
-        self.transition = self._set_up_transition(backend)
 
     def _warm_start(
             self,
-            net=None,
-            policy=None,           
+            net=None,          
         ):
 
         batch = self.collector.warmup(net)
 
         if self.sampler:
             for transition in batch:
-                self.er_buffer.append(transition)
+                self.er_buffer.store(transition)
         
         logging.info('### Warm up finished ###')
         pass
@@ -74,8 +73,9 @@ class Runner():
         elif isinstance(policy, BasePolicy):
             return policy
 
-        # add warning
-        return 
+        else:
+            # add warning
+            return 
     
     def _set_up_transition(self, backend):
         """
@@ -88,8 +88,9 @@ class Runner():
         elif backend.__base__ is BaseTransition:
             return backend
 
-        # add warning
-        return 
+        else:
+            # add warning
+            return 
 
     def get_batch(
             self,
@@ -104,17 +105,17 @@ class Runner():
 
         else:
             for transition in rollout_batch:
-                self.er_buffer.append(transition)
+                self.er_buffer.store(transition)
 
             k = min(self.batch_size, len(self.er_buffer))
             
-            if self.n_batches == 1:
-                return self.prep_batch(random.sample(list(self.er_buffer), k))
+            if self.n_batches == 1:		
+                return self.prep_batch(self.er_buffer.sample(k))
 
             else:
                 batch_samples = []
                 for _ in range(self.n_batches):
-                    batch_samples.append(self.prep_batch(random.sample(list(self.er_buffer), k))) 
+                    batch_samples.append(self.prep_batch(self.er_buffer.sample(k))) 
 
                 return batch_samples
 
@@ -126,28 +127,29 @@ class Runner():
         """
         takes the batch (which will be a list of transitons) and processes them to be seperate etc.
         """
+        # need to redo after implementing replay buffer class
 
         if self.n_step == 1:
-            return self.transition(*zip(*batch))
-        
+            return batch
+
         elif self.reduce == False:
             processed_batch = []
             for n_step_transition in batch:
-                transition = self.transition(*zip(*n_step_transition))
+                transition = n_step_transition
                 processed_batch.append([*transition])
 
-            return self.transition(*zip(*processed_batch))
+            return processed_batch
         
         else:
             processed_batch = []
             for n_step_transition in batch:
-                transition = self.transition(*zip(*n_step_transition))
-                s = transition.s[0]
-                a = transition.a[0]
-                r_list = list(transition.r)
-                s_p = transition.s_p[-1]
-                d = any(transition.d)
-                i = transition.i
+                s, a, r, s_p, d, i = n_step_transition
+                s = s[0]
+                a = a[0]
+                r_list = list(r)
+                s_p = s_p[-1]
+                d = any(d)
+                i = i
                 processed_batch.append([s, a, r_list, s_p, d, i])
 
             return self.transition(*zip(*processed_batch))
