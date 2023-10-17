@@ -1,47 +1,37 @@
-# from .basic_policies import Epsilon_argmax_policy 
-
 import torch as th
 import numpy as np
-import random
 
-# should make as classes with __call__ functions
-
-class Basepolicy():
-    def __init__(self, env):
+class BasePolicy():
+    def __init__(self, env, recurrent=False, hidden_dims=0):
         self.env = env        
+        self.recurrent = recurrent
+        self.hidden_dims = hidden_dims
+        self.hidden = th.zeros(1, hidden_dims)
         
     def __call__(self, state, net):
         return self.env.action_space.sample()
     
+    def reset(self):
+        self.hidden = th.zeros(1, self.hidden_dims)
+        # for policies that require resets, like NoisyNet or OuNoise
+        # raise NotImplementedError
  
-class Epsilon_Deterministic_policy(Basepolicy):
+class WhitenoiseDeterministic(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
-        self.eps = 0.9
-        self.noise = True 
         
     def __call__(self, state, net):
-        input = th.from_numpy(state).float()
-
-        if np.random.rand() > self.eps:
-            self.eps = max(0.05, self.eps*0.99)   
-            out = net(input)         
-
-            if self.noise:
-                mean = th.zeros_like(out)
-                noise = th.normal(mean=mean, std=0.1).clamp(-0.5, 0.5)
-                out = (out + noise)
-        
-            return out.clamp(-1, 1).detach().numpy()
-
-        else:
-            self.eps = max(0.1, self.eps*0.999)
-            return self.env.action_space.sample()
+        input = th.from_numpy(state).float()  
+        out = net(input)         
+        mean = th.zeros_like(out)
+        noise = th.normal(mean=mean, std=0.1)   # .clamp(-0.5, 0.5) # unsure if necessary... need to check other implementations
+        out = (out + noise)    
+        return out.clamp(-1, 1).detach().numpy()
                  
 
-class Epsilon_argmax_policy(Basepolicy):
-    def __init__(self, env, eps = 0.0, min_eps = 0.0, ann_coeff = 0.9):
-        super().__init__(env)
+class EpsilonArgmax(BasePolicy):
+    def __init__(self, env, eps=0.0, min_eps=0.0, ann_coeff=0.9, recurrent=False, hidden_dims=0):
+        super().__init__(env, recurrent, hidden_dims)
         self.eps = eps
         self.min_eps = min_eps
         self.ann_coeff = ann_coeff
@@ -51,16 +41,20 @@ class Epsilon_argmax_policy(Basepolicy):
 
         if np.random.rand() > self.eps:
             self.eps = max(self.min_eps, self.eps*self.ann_coeff)   
-            out = net(input).detach().numpy()
+            if self.recurrent:
+                out, self.hidden = net(input, hidden=self.hidden)
+                out = out.detach().numpy()
+            else: 
+                out = net(input).detach().numpy()
+
             return np.argmax(out)  
 
         else:
             self.eps = max(self.min_eps, self.eps*self.ann_coeff)
             return self.env.action_space.sample()
-        
-    
 
-class Gaussian_policy(Basepolicy):
+
+class Gaussian(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -75,7 +69,7 @@ class Gaussian_policy(Basepolicy):
         return a_sampled.numpy() * self.env.action_space.high + 0
 
 
-class Noisy_naf_policy(Basepolicy):
+class NoisyNaf(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -84,7 +78,8 @@ class Noisy_naf_policy(Basepolicy):
         out, _, _, _ = net(input)
         return out.detach().numpy()
 
-class Categorical_policy(Basepolicy):
+
+class Categorical(BasePolicy):
     def __init__(self, env):
         super().__init__(env)
 
@@ -93,12 +88,13 @@ class Categorical_policy(Basepolicy):
         probs = net(input)
         dist = th.distributions.Categorical(probs)
         return dist.sample().detach().numpy()
+    
+class Beta(BasePolicy):
+    def __init__(self, env):
+        super().__init__(env)
 
-REGISTRY = {}
-
-REGISTRY["random"] = Basepolicy
-REGISTRY["epsilon_deterministic"] = Epsilon_Deterministic_policy
-REGISTRY["epsilon_argmax"] = Epsilon_argmax_policy
-REGISTRY["gaussian"] = Gaussian_policy
-REGISTRY["naf"] = Noisy_naf_policy
-REGISTRY["categorical"] = Categorical_policy
+    def __call__(self, state, net):
+        input = th.from_numpy(state).float()
+        alpha, beta = net(input)
+        dist = th.distributions.Beta(alpha, beta)
+        return dist.sample().detach().numpy()
