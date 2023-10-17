@@ -14,13 +14,13 @@ class Runner():
             self,
             env: Env,
             policy: BasePolicy = None,
-            capacity: int = None,
+            capacity: int = 1_000_000,
             er_buffer: ErTable = None,
             batch_size: int = 100,
             collector: Collector = Collector(),
             n_batches: int = 1,
-            reduce=True,
-            backend = 'numpy',
+            reduce: bool = True,
+            backend: str = 'numpy',
         ) -> None:
 
         # Can maybe remove environment as an argument of the runner

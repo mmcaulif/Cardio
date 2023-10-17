@@ -16,10 +16,7 @@ runner = Runner(
 	capacity=1_000_000,
 	collector=Collector(
 		warmup_len=100,
-		logger_kwargs=dict(
-			log_interval = 1_000
-			# log_dir = env_name,
-		)
+		logger_kwargs=dict(log_interval=1_000)
 	),
 	backend='pytorch'
 )
