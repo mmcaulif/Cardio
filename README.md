@@ -1,4 +1,12 @@
 # GymCardio
+Cardio offers to replace much of the boiler plate code in deep reinforcement learnign algorithms; namely the data gathering and environment interaction, but also providing pre-written policies and replay buffers, all while aiming to do so in a modular fashion and allow users to implement their own algorithms or improvements to existing algorithms.
+
+The purpose of this library was initially to speed up my own self-implemented versions of algorithms and reducing the code overhead while also reducing the actual number of lines written per script for each algorithm. You'll often find that the actual algorithm details often corresponds to very little code and handling of the environment and buffer causes even simple implementations to feel somewhat bloated. Thus cardio hopes to allow for simple, easy to read, one file implementations. In an effort to showcase the library I have included a number of 'stubs' that are just that.
+
+This is still heavily a work in progress and even many of the (poorly organised) stubs do not work with the current versions of the runner. Going forward I will be chipping away at streamlining, organising and documenting this repository when I get the chance!
+
+# Cardio basics
+This section will be overhauled at a later date, but now the gist of Cardio is the Runner class that gives you a simple interface that wraps the environment and then with one method, will step through the environment, collect transitions, and process them in your defined way. The runner supports n-step transitions, custom policies and custom processing. Currently the runner class is biased with off-policy algorithms in mind (altough fully supporting on-policy approaches too) but going forward it will be better balanced between the two.
 
 ## Immediate to do list
 * [ ] Create package!
@@ -17,7 +25,6 @@
 * [ ] Makes sure vector collector work as intended for off-policy methods and n-step collector work as intended for on-policy methods etc.
 
 ## Lower priority
-
 * [ ] Offline gatherer
   * on pause until mujoco sorted
 
