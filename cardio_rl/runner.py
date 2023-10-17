@@ -34,7 +34,7 @@ class Runner():
             transition = self._set_up_transition(backend)
             self.er_buffer = ErTable(capacity, transition)
             self.sampler = True
-        elif capacity == None:            
+        elif er_buffer == None and capacity == None:            
             self.sampler = False
         else:
             self.er_buffer = er_buffer

@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
 from cardio_rl import Runner, Collector
-from cardio_rl.buffers.iet_buffer import IeTable
+from iet_buffer import IeTable
 
 
 class Q_critic(nn.Module):
@@ -104,16 +104,12 @@ s_t, _ = env.reset()
 runner = Runner(
 	env=env,
 	policy='whitenoise',
-	sampler=True,
-	# capacity=1_000_000,
-	batch_size=100,	# batch_size needs to exceed value of k_events
 	collector=Collector(
-		env=env,
 		warmup_len=10_000,
 		logger_kwargs=dict(
 			log_interval = 5_000,
 			episode_window=50,
-            tensorboard=True,
+            # tensorboard=True,
 			log_dir = 'implicit_event_tables/tb_logs/' + env_name,
 		    exp_name = f'ngu_embedding_cap200k_iet_k{k_events}_int{interval}_warm{iet_warmup}'
 		)

@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
 from cardio_rl import Runner, Collector
-from cardio_rl.buffers.iet_buffer import IeTable
 
 
 class Q_critic(nn.Module):
@@ -56,11 +55,8 @@ action_dim = env.action_space.shape[0]
 runner = Runner(
 	env=env,
 	policy='whitenoise',
-	sampler=True,
 	capacity=200_000,
-	batch_size=100,	# batch_size needs to exceed value of k_events
 	collector=Collector(
-		env=env,
 		warmup_len=10_000,
 		logger_kwargs=dict(
 			log_interval = 5_000,
