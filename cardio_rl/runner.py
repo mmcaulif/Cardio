@@ -1,8 +1,10 @@
 import logging
+from gymnasium import Env
 from .transitions import REGISTRY as tran_REGISTRY
 from .transitions import BaseTransition
 from .buffers.er_buffer import ErTable
 from .policies import BasePolicy, REGISTRY as pol_REGISTRY
+from cardio_rl.gatherer import Collector
 
 # https://stackoverflow.com/questions/40181284/how-to-get-random-sample-from-deque-in-python-3
 # faster replay memory
@@ -10,35 +12,33 @@ from .policies import BasePolicy, REGISTRY as pol_REGISTRY
 class Runner():
     def __init__(
             self,
-            env,
-            policy = None,
-            sampler = False,
-            capacity = None,
-            batch_size = None,
-            n_batches = 1,
-            collector = None,
+            env: Env,
+            policy: BasePolicy = None,
+            capacity: int = None,
+            er_buffer: ErTable = None,
+            batch_size: int = 100,
+            collector: Collector = Collector(),
+            n_batches: int = 1,
             reduce=True,
             backend = 'numpy',
-            er_buffer = None
         ) -> None:
-
-        """
-        Need to implement default arguments
-        """
 
         # Can maybe remove environment as an argument of the runner
         self.env = env
 
         # Maybe combine sampler and capacity into one argument?
-        self.sampler = sampler
         self.batch_size = batch_size
         self.n_batches = n_batches
 
-        if er_buffer == None:
+        if er_buffer == None and capacity != None:
             transition = self._set_up_transition(backend)
             self.er_buffer = ErTable(capacity, transition)
+            self.sampler = True
+        elif capacity == None:            
+            self.sampler = False
         else:
             self.er_buffer = er_buffer
+            self.sampler = True
 
         self.collector = collector
         self.rollout_len = collector.rollout_len
@@ -46,10 +46,11 @@ class Runner():
         self.n_step = collector.n_step
 
         self.reduce = reduce
-        self.backend = backend
-        
+        self.backend = backend        
+
         self.policy = self._set_up_policy(policy)
-        self.collector.init_policy(self.policy) 
+        self.collector._init_policy(self.policy)
+        self.collector._init_env(self.env)
         self._warm_start()            
 
     def _warm_start(

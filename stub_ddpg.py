@@ -13,15 +13,12 @@ env = RescaleAction(env, -1.0, 1.0)
 runner = Runner(
 	env=env,
 	policy='whitenoise',
-	sampler=True,
 	capacity=1_000_000,
-	batch_size=100,
 	collector=Collector(
-		env=env,
 		warmup_len=100,
 		logger_kwargs=dict(
-			log_dir = env_name,
 			log_interval = 1_000
+			# log_dir = env_name,
 		)
 	),
 	backend='pytorch'

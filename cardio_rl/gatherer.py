@@ -1,4 +1,5 @@
 from collections import deque
+from gymnasium import Env
 from cardio_rl.policies import BasePolicy
 from cardio_rl.logger import Logger
 import numpy as np
@@ -7,16 +8,17 @@ import gymnasium as gym
 class Collector():
     def __init__(
             self,
-            env,
-            rollout_len = 1,
-            warmup_len = 0,
-            n_step = 1,
-            take_every = 1,
-            logger_kwargs = None
+            rollout_len: int = 1,
+            warmup_len: int = 1_000,
+            n_step: int = 1,
+            take_every: int = 1,
+            logger_kwargs = dict(
+                    log_interval = 5_000,
+                    episode_window=50,
+                    tensorboard=False,
+                )
         ) -> None:        
 
-        # environment init (move to function)
-        self.env = env      
         self.rollout_len = rollout_len        
 
         if self.rollout_len == -1:
@@ -37,9 +39,12 @@ class Collector():
 
         # env initialisation
         self.step_buffer = deque(maxlen=self.n_step)
+    
+    def _init_env(self, env: Env):
+        self.env = env
         self.state, _ = self.env.reset()
 
-    def init_policy(self, policy):
+    def _init_policy(self, policy):
         self.policy = policy
 
     def _env_step(self, policy=None, warmup=False):

@@ -69,7 +69,7 @@ class Logger():
             logging.info(f'Timesteps: {self.timestep}, Episodes: {self.episodes}, Avg. reward is {np.mean(self.episodic_rewards)}')
 
             if self.tensorboard:
-                self.writer.add_scalar('Avg. reward', np.mean(self.episodic_rewards), self.timestep)
+                self.writer.add_scalar('rollout/ep_rew_mean', np.mean(self.episodic_rewards), self.timestep)
 
     def vector_step(self, rewards, dones, truns):
         self.timestep += self.n_envs
