@@ -9,6 +9,12 @@ This is still heavily a work in progress and even many of the (poorly organised)
 This section will be overhauled at a later date, but now the gist of Cardio is the Runner class that gives you a simple interface that wraps the environment and then with one method, will step through the environment, collect transitions, and process them in your defined way. The runner supports n-step transitions, custom policies and custom processing. Currently the runner class is biased with off-policy algorithms in mind (altough fully supporting on-policy approaches too) but going forward it will be better balanced between the two.
 
 ## Immediate to do list
+* [ ] Add timing information to logger
+
+* [ ] Minor refactor to gatherer and runner, add default arg values, careful consideration needed
+  * mostly done, just some final decisions to make
+  * change collector name to gatherer, idk why its different
+
 * [ ] Create package!
   * basic implementation done, need to do PyPi and look into further improvements
 
@@ -28,11 +34,7 @@ This section will be overhauled at a later date, but now the gist of Cardio is t
 * [ ] Offline gatherer
   * on pause until mujoco sorted
 
-* [ ] Minor refactor to gatherer and runner, add default arg values, careful consideration needed
-  * mostly done, just some final decisions to make
-  * change collector name to gatherer, idk why its different
-
-* [ ] Move agent stubs outside of src and using package instead of src
+* [ ] Move agent stubs into own folder and refactor each one
 
 * [ ] Sort policies better, i.e. discrete, continuous
 
