@@ -5,7 +5,7 @@ from stable_baselines3.common.noise import NormalActionNoise
 from gymnasium.wrappers import RescaleAction
 
 
-env_name = 'LunarLanderContinuous-v2'
+env_name = 'BipedalWalker-v3'
 env = gym.make(env_name)
 env = RescaleAction(env, -1.0, 1.0)
 
@@ -39,11 +39,11 @@ model = TD3(
     learning_rate=1e-3,
     policy_kwargs=dict(net_arch=[400, 300]),
     stats_window_size=50,
-    tensorboard_log='implicit_event_tables/tb_logs/')
+    tensorboard_log=f'implicit_event_tables/tb_logs/{env_name}/')
 
 model.learn(
-    total_timesteps=160_000,
-    log_interval=10,
-    tb_log_name='sb3_td3_benchmark',
+    total_timesteps=500_000,
+    log_interval=3,
+    tb_log_name='sb3_td3_benchmark_long_cap200k',
     progress_bar=True
     )
