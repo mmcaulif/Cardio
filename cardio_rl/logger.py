@@ -1,6 +1,6 @@
 from collections import deque
 from torch.utils.tensorboard import SummaryWriter
-import time
+from tqdm.contrib.logging import logging_redirect_tqdm
 import logging
 import numpy as np
 from datetime import datetime
@@ -55,6 +55,9 @@ class Logger():
             self.running_reward = np.zeros(n_envs)
 
         self.episodic_rewards = deque(maxlen=episode_window)
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
         
     def step(self, reward, done, truncated):
         self.timestep += 1
@@ -66,7 +69,8 @@ class Logger():
             self.running_reward = 0
 
         if self.timestep % self.log_interval == 0:
-            logging.info(f'Timesteps: {self.timestep}, Episodes: {self.episodes}, Avg. reward is {np.mean(self.episodic_rewards)}')
+            with logging_redirect_tqdm():
+                self.logger.info(f'Timesteps: {self.timestep}, Episodes: {self.episodes}, Avg. reward is {np.mean(self.episodic_rewards)}')
 
             if self.tensorboard:
                 self.writer.add_scalar('rollout/ep_rew_mean', np.mean(self.episodic_rewards), self.timestep)
@@ -83,5 +87,5 @@ class Logger():
                 self.running_reward[i] = 0
 
         if (self.timestep//self.n_envs) % self.log_interval == 0:
-            logging.info(f'Timesteps: {self.timestep}, Episodes: {self.episodes}, Avg. reward is {np.mean(self.episodic_rewards)}')
+            self.logger.info(f'Timesteps: {self.timestep}, Episodes: {self.episodes}, Avg. reward is {np.mean(self.episodic_rewards)}')
 
