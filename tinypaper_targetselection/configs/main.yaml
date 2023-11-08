@@ -1,3 +1,6 @@
+defaults:
+  - dqn_minatar
+
 hydra:
   run:
     dir:  /home/manus/GitHub/GymCardio/tinypaper_targetselection/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}

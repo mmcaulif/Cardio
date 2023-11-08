@@ -19,8 +19,8 @@ class Logger():
     def __init__(
             self,
             n_envs = 1,
-            log_interval=2000,
-            episode_window=20,
+            log_interval=5000,
+            episode_window=50,
             tensorboard=False,
             log_dir=None,
             exp_name='exp'
