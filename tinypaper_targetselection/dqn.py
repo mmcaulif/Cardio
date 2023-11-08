@@ -10,7 +10,7 @@ from cardio_rl.policies import EpsilonArgmax
 from tinypaper_targetselection.models import QNetConv, QNetMLP
 
 
-def dqn_trial(cfg, env, grad_steps):
+def dqn_trial(cfg, env, logger_dict, grad_steps):
 
 	runner = Runner(
 		env=env,
@@ -19,11 +19,7 @@ def dqn_trial(cfg, env, grad_steps):
 		collector=Collector(
 			rollout_len=cfg.train_freq,
 			warmup_len=cfg.warmup,
-			logger_kwargs=dict(
-				tensorboard=cfg.tensorboard,
-				log_dir='tb_logs/',
-				exp_name=f'{cfg.env_name.replace("/", "-")}_targsel{cfg.target_selection}'
-				)
+			logger_kwargs=logger_dict
 		),
 		backend='pytorch'
 	)
@@ -32,15 +28,21 @@ def dqn_trial(cfg, env, grad_steps):
 	targ_critic: nn.Module = copy.deepcopy(critic)
 
 	if 'MinAtar' in cfg.env_name:
-		# Optimiser from MinAtar paper
+		# Conv network and optimiser from MinAtar paper
+		critic = QNetConv(env.game.state_shape()[2], 128, env.action_space.n)
+		targ_critic: nn.Module = copy.deepcopy(critic)
 		optimizer = th.optim.RMSprop(critic.parameters(), lr=cfg.learning_rate, alpha=0.95, centered=True, eps=0.01)
 	else:
+		critic = QNetConv(env.observation_space.shape[0], 65, env.action_space.n)
+		targ_critic: nn.Module = copy.deepcopy(critic)
 		optimizer = None
 
 	for t in trange(grad_steps):
 
 		if cfg.target_selection:
 			batch = runner.get_batch(targ_critic)
+		else:
+			batch = runner.get_batch(critic)
 
 
 		s, a, r, s_p, d, _ = batch
@@ -62,5 +64,10 @@ def dqn_trial(cfg, env, grad_steps):
 		th.nn.utils.clip_grad_norm_(critic.parameters(), 10.0)
 		optimizer.step()
 
-		if t % cfg.target_update == 0:        
+		if cfg.target_update >= 1.0 and t % cfg.target_update == 0:        
 			targ_critic = copy.deepcopy(critic)
+
+		elif 1.0 > cfg.target_update >= 0.0:
+			tau = cfg.target_update
+			for targ_params, params in zip(targ_critic.parameters(), critic.parameters()):
+				targ_params.data.copy_(params.data * tau + targ_params.data * (1.0 - tau))

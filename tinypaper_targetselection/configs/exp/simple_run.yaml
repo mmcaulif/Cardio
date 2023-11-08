@@ -1,6 +1,3 @@
-defaults:
-  - main@_here_
-
 env_steps: 100_000
 n_trials: 1
 tensorboard: False

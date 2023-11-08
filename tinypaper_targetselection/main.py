@@ -6,20 +6,6 @@ from rich import print as rprint
 from gymnasium.wrappers import TransformObservation
 from dqn import dqn_trial
 
-"""
-Small code for tiny paper submission for target network action selection to combat policy churn
-Example DQN: https://github.com/kenjyoung/MinAtar/blob/master/examples/dqn.py
-MinAtar paper: https://arxiv.org/pdf/1903.03176.pdf
-[x] Install MinAtar 
-[x] Setup conv net architecture for Q-func
-[x] List hyperparams
-[ ] Create config (base config + override configs per algorithm + environment (1 for MinAtar, 1 for LunarLander))!
-[ ] Decoupel main and trial function
-[ ] Run experiments (DQN first)!
-
-Next:
-[ ] Do the same for SAC and TD3
-"""
 
 ALGOS = {'DQN': dqn_trial}
 
@@ -27,20 +13,25 @@ ALGOS = {'DQN': dqn_trial}
 def main(cfg):
 	rprint(OmegaConf.to_yaml(cfg))
 
-	env = gym.make(cfg.env_name, disable_env_checker=True)
+	grad_steps = ((cfg.exp.env_steps - cfg.alg.warmup)// cfg.alg.train_freq)
 
-	if 'MinAtar' in cfg.env_name:
-		extract_obs = lambda s: (th.from_numpy(s).permute(2, 0, 1)).unsqueeze(0).float().detach().numpy()
-		env = TransformObservation(env, extract_obs)
+	trial = ALGOS[cfg.alg.algorithm]
 
-	grad_steps = ((cfg.env_steps - cfg.warmup)// cfg.train_freq)
+	for i in range(cfg.exp.n_trials):
 
-	trial = ALGOS[cfg.algorithm]
+		env = gym.make(cfg.alg.env_name, disable_env_checker=True)
 
-	exit()
+		if 'MinAtar' in cfg.alg.env_name:
+			extract_obs = lambda s: (th.from_numpy(s).permute(2, 0, 1)).unsqueeze(0).float().detach().numpy()
+			env = TransformObservation(env, extract_obs)
 
-	for _ in range(cfg.n_trials):
-		trial(cfg, env, grad_steps)
+		logger_dict = dict(
+			tensorboard=cfg.exp.tensorboard,
+			log_dir=f'tb_logs/{cfg.alg.env_name.replace("/", "-")}/',
+			exp_name=f'targsel_{cfg.alg.target_selection}_{i+1}'
+		)
+		
+		trial(cfg.alg, env, logger_dict, grad_steps)
 		
 			
 if __name__ == '__main__':

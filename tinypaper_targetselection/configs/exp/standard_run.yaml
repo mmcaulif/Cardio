@@ -1,0 +1,3 @@
+env_steps: 1_000_000
+n_trials: 3
+tensorboard: True

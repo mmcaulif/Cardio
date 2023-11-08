@@ -1,5 +1,6 @@
 defaults:
-  - dqn_minatar
+  - alg: dqn_minatar
+  - exp: standard_run
 
 hydra:
   run:
