@@ -23,7 +23,6 @@ class BaseTransition(NamedTuple):
     r: float    # reward
     s_p: list   # next state
     d: int  # done
-    i: dict #info
     
     def __call__(self):
         s = self.s
@@ -31,8 +30,7 @@ class BaseTransition(NamedTuple):
         r = self.r
         s_p = self.s_p
         d = self.d
-        i = self.i
-        return s, a, r, s_p, d, i
+        return s, a, r, s_p, d
 
 class TorchTransition(BaseTransition):
     def __call__(self):
@@ -41,7 +39,7 @@ class TorchTransition(BaseTransition):
         r = th.from_numpy(np.array(self.r)).unsqueeze(1).float()
         s_p = th.from_numpy(np.array(self.s_p)).float()
         d = th.from_numpy(np.array(self.d)).unsqueeze(1).int()
-        return s, a, r, s_p, d, self.i
+        return s, a, r, s_p, d
     
 class JaxTransition(BaseTransition):
     def __call__(self):
@@ -50,5 +48,5 @@ class JaxTransition(BaseTransition):
         r = jnp.expand_dims(jnp.asarray(np.array(self.r)), -1)
         s_p = jnp.asarray(np.array(self.s_p))
         d = jnp.expand_dims(jnp.asarray(np.array(self.d)), -1)
-        return s, a, r, s_p, d, self.i
+        return s, a, r, s_p, d
     

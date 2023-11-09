@@ -55,7 +55,7 @@ class Collector():
         s_p, r, d, t, info = self.env.step(a)
         self.logger.step(r, d, t)
         d = d or t
-        return (self.state, a, r, s_p, d, info), s_p, d, t
+        return (self.state, a, r, s_p, d), s_p, d, t
 
     def warmup(            
         self,
