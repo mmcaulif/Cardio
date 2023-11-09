@@ -1,3 +1,4 @@
 env_steps: 5_000_000
 n_trials: 5
 tensorboard: True
+name: run
