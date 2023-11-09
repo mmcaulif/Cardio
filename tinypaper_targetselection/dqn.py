@@ -6,6 +6,7 @@ from tqdm import trange
 from cardio_rl import Runner
 from cardio_rl import Collector
 from cardio_rl.policies import EpsilonArgmax
+from cardio_rl.buffers.circular_buffer import CircErTable
 
 from tinypaper_targetselection.models import QNetConv, QNetMLP
 
@@ -14,7 +15,8 @@ def dqn_trial(cfg, env, logger_dict, grad_steps):
 
 	runner = Runner(
 		env=env,
-		policy=EpsilonArgmax(env, 1.0, 0.1, 0.999954),	# 0.999954 reaches 0.1 after ~100,000 timesteps
+		policy=EpsilonArgmax(env, 1.0, 0.1, 100_000),
+		er_buffer=CircErTable(env, cfg.buffer_size),
 		batch_size=cfg.batch_size,
 		collector=Collector(
 			rollout_len=cfg.train_freq,
@@ -24,17 +26,16 @@ def dqn_trial(cfg, env, logger_dict, grad_steps):
 		backend='pytorch'
 	)
 
-	critic = QNetConv(env.game.state_shape()[2], 128, env.action_space.n)
-	targ_critic: nn.Module = copy.deepcopy(critic)
-
 	if 'MinAtar' in cfg.env_name:
 		# Conv network and optimiser from MinAtar paper
 		critic = QNetConv(env.game.state_shape()[2], 128, env.action_space.n)
-		targ_critic: nn.Module = copy.deepcopy(critic)
+		targ_critic: nn.Module = QNetConv(env.game.state_shape()[2], 128, env.action_space.n)
+		targ_critic.load_state_dict(critic.state_dict())
 		optimizer = th.optim.RMSprop(critic.parameters(), lr=cfg.learning_rate, alpha=0.95, centered=True, eps=0.01)
 	else:
-		critic = QNetConv(env.observation_space.shape[0], 65, env.action_space.n)
-		targ_critic: nn.Module = copy.deepcopy(critic)
+		critic = QNetConv(env.observation_space.shape[0], 256, env.action_space.n)
+		targ_critic: nn.Module = QNetConv(env.observation_space.shape[0], 64, env.action_space.n)
+		targ_critic.load_state_dict(critic.state_dict())
 		optimizer = None
 
 	for t in trange(grad_steps):
@@ -44,8 +45,7 @@ def dqn_trial(cfg, env, logger_dict, grad_steps):
 		else:
 			batch = runner.get_batch(critic)
 
-
-		s, a, r, s_p, d, _ = batch
+		s, a, r, s_p, d = batch
 
 		s, s_p = s.squeeze(1), s_p.squeeze(1)
 
@@ -61,13 +61,12 @@ def dqn_trial(cfg, env, logger_dict, grad_steps):
 
 		optimizer.zero_grad()
 		loss.backward()
-		th.nn.utils.clip_grad_norm_(critic.parameters(), 10.0)
+		# th.nn.utils.clip_grad_norm_(critic.parameters(), 10.0)
 		optimizer.step()
 
-		if cfg.target_update >= 1.0 and t % cfg.target_update == 0:        
-			targ_critic = copy.deepcopy(critic)
+		if cfg.target_update >= 1.0 and t % cfg.target_update == 0:
+			targ_critic.load_state_dict(critic.state_dict())
 
-		elif 1.0 > cfg.target_update >= 0.0:
-			tau = cfg.target_update
+		elif 1.0 > cfg.target_update:
 			for targ_params, params in zip(targ_critic.parameters(), critic.parameters()):
-				targ_params.data.copy_(params.data * tau + targ_params.data * (1.0 - tau))
+				targ_params.data.copy_(params.data * cfg.target_update + targ_params.data * (1.0 - cfg.target_update))
