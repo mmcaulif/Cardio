@@ -3,7 +3,7 @@ algorithm: DQN
 
 # Algorithm hyperparameters
 batch_size: 32
-buffer_size: 100_00
+buffer_size: 100_000
 target_update: 1_000  # 0.005 # >1 for hard updates, <1 for soft
 train_freq: 1
 warmup: 5000

@@ -1,4 +1,4 @@
 env_steps: 1_000_000
 n_trials: 1
 tensorboard: False
-
+name: run

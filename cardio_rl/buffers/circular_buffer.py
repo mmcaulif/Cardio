@@ -10,13 +10,13 @@ class CircErTable:
 		obs_dims = obs_space.shape
 
 		act_space = env.action_space
-		act_dims = act_space._shape[0]
+		"""Add check for continuous action space"""
 
 		self.pos = 0
 		self.capacity = capacity
 		self.full = False
 		self.states =  np.zeros((self.capacity, *obs_dims), dtype=obs_space.dtype)
-		self.actions = np.zeros((self.capacity, act_dims), dtype=act_space.dtype)
+		self.actions = np.zeros((self.capacity), dtype=act_space.dtype)
 		self.rewards = np.zeros((self.capacity))
 		self.next_states = np.zeros((self.capacity, *obs_dims), dtype=obs_space.dtype)
 		self.dones = np.zeros((self.capacity))

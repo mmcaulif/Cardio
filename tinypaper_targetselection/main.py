@@ -1,11 +1,12 @@
 import torch as th
+import numpy as np
 import gymnasium as gym
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from rich import print as rprint
 from gymnasium.wrappers import TransformObservation
 from dqn import dqn_trial
-
+from wrapper import TransformObsWrapper
 
 ALGOS = {'DQN': dqn_trial}
 
@@ -22,13 +23,13 @@ def main(cfg):
 		env = gym.make(cfg.alg.env_name, disable_env_checker=True)
 
 		if 'MinAtar' in cfg.alg.env_name:
-			extract_obs = lambda s: (th.from_numpy(s).permute(2, 0, 1)).unsqueeze(0).float().detach().numpy()
-			env = TransformObservation(env, extract_obs)
+			env = TransformObsWrapper(env)
 
 		logger_dict = dict(
+			log_interval=10_000,
 			tensorboard=cfg.exp.tensorboard,
 			log_dir=f'tb_logs/{cfg.alg.env_name.replace("/", "-")}/',
-			exp_name=f'targsel_{cfg.alg.target_selection}_{i+1}'
+			exp_name=f'{cfg.exp.name}_targsel_{cfg.alg.target_selection}_{i+1}'
 		)
 		
 		trial(cfg.alg, env, logger_dict, grad_steps)
