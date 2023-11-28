@@ -10,17 +10,38 @@ This section will be overhauled at a later date, but now the gist of Cardio is t
 
 ## Immediate to do list
 * [ ] Add timing information to logger
+  * [x] Current time
+  * [ ] Running average of FPS
 
 * [ ] Minor refactor to gatherer and runner, add default arg values, careful consideration needed
-  * mostly done, just some final decisions to make
-  * change collector name to gatherer, idk why its different
+  * [x] change collector name to gatherer, idk why its different
+  * still not confident on all changes and structure
 
 * [ ] Create package!
-  * basic implementation done, need to do PyPi and look into further improvements
+  * [x] basic implementation done
+  * [ ] need to do PyPi and look into further improvements
 
-* [x] Implement replay buffer class and move IET work into Cardio ecosystem
+* [ ] Implement replay buffer class and move IET work into Cardio ecosystem
+  * [ ] change IET work to use circular buffer
 
-* [ ] Remove warmup method in gatherer and make it a special call of the rollout method
+* [x] Remove warmup method in gatherer and make it a special call of the rollout method
+
+* [ ] Implement Cardio Module that everything else inherits from using step and reset methods
+  * [ ] Change all policies to use .step method and make BasePolicy inherit from Module
+    * [ ] Add reset and end_rollout methods to BasePolicy that is called by runner
+
+* [ ] Make circular buffer the default buffer across the board, get rid of old buffer (or make it a base class)
+
+* [ ] Add checks and resizing stuff to buffer
+  * [ ] Reimplement n-step returns in Runner
+
+* [x] Add all action spaces to circular buffer
+
+* [ ] Investigate if epsilon argmax works as intended (i.e. for DQN)
+
+* [ ] Benchmark and debug after restructuring
+
+* [ ] Cleaner passing of rollout step and warmup length handling
 
 ## Vectorised env work
 * [ ] Align VectorCollector with Collector

@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
-from cardio_rl import Runner, Collector
+from cardio_rl import Runner, Gatherer
 from iet_buffer import IeTable
 
 
@@ -104,7 +104,7 @@ s_t, _ = env.reset()
 runner = Runner(
 	env=env,
 	policy='whitenoise',
-	collector=Collector(
+	collector=Gatherer(
 		warmup_len=10_000,
 		logger_kwargs=dict(
 			log_interval = 5_000,
@@ -126,7 +126,7 @@ c_optimizer = th.optim.Adam(critic.parameters(), lr=1e-3)
 a_optimizer = th.optim.Adam(actor.parameters(), lr=1e-3)
 
 for steps in range(490_000):
-	s, a, r, s_p, d, _ = runner.get_batch(actor)
+	s, a, r, s_p, d, _ = runner.step(actor)
 
 	with th.no_grad():
 		a_p = targ_actor(s_p)

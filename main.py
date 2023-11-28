@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import gymnasium as gym
 from cardio_rl import Runner
-from cardio_rl import Collector
+from cardio_rl import Gatherer
 from cardio_rl.policies import EpsilonArgmax
 
 """
@@ -54,7 +54,7 @@ def main():
 		sampler=True,
 		capacity=100000,
 		batch_size=64,
-		collector=Collector(
+		collector=Gatherer(
 			env=env,
 			rollout_len=4,
 			warmup_len=1000,
@@ -69,7 +69,7 @@ def main():
 	target_update = 10
 
 	for t in range(10000):
-		batch = runner.get_batch(critic)
+		batch = runner.step(critic)
 		s, a, r, s_p, d, _ = batch()
 
 		with th.no_grad():

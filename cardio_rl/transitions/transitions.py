@@ -35,7 +35,7 @@ class BaseTransition(NamedTuple):
 class TorchTransition(BaseTransition):
     def __call__(self):
         s = th.from_numpy(np.array(self.s)).float()
-        a = th.from_numpy(np.array(self.a)).unsqueeze(1).float()
+        a = th.from_numpy(np.array(self.a)).float()
         r = th.from_numpy(np.array(self.r)).unsqueeze(1).float()
         s_p = th.from_numpy(np.array(self.s_p)).float()
         d = th.from_numpy(np.array(self.d)).unsqueeze(1).int()

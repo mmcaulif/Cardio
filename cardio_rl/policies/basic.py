@@ -9,7 +9,7 @@ class BasePolicy():
         self.hidden = th.zeros(1, hidden_dims)
         
     def __call__(self, state, net):
-        return self.env.action_space.sample()
+        return np.expand_dims(self.env.action_space.sample(), 0)
     
     def reset(self):
         self.hidden = th.zeros(1, self.hidden_dims)

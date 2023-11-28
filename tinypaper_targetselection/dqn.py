@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import trange
 from cardio_rl import Runner
-from cardio_rl import Collector
+from cardio_rl import Gatherer
 from cardio_rl.policies import EpsilonArgmax
 from cardio_rl.buffers.circular_buffer import CircErTable
 
@@ -18,7 +18,7 @@ def dqn_trial(cfg, env, logger_dict, grad_steps):
 		policy=EpsilonArgmax(env, 1.0, 0.1, 100_000),
 		er_buffer=CircErTable(env, cfg.buffer_size),
 		batch_size=cfg.batch_size,
-		collector=Collector(
+		collector=Gatherer(
 			rollout_len=cfg.train_freq,
 			warmup_len=cfg.warmup,
 			logger_kwargs=logger_dict
@@ -41,9 +41,9 @@ def dqn_trial(cfg, env, logger_dict, grad_steps):
 	for t in trange(grad_steps):
 
 		if cfg.target_selection:
-			batch = runner.get_batch(targ_critic)
+			batch = runner.step(targ_critic)
 		else:
-			batch = runner.get_batch(critic)
+			batch = runner.step(critic)
 
 		s, a, r, s_p, d = batch
 

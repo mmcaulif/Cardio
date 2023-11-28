@@ -1,2 +1,2 @@
-from .gatherer import Collector, VectorCollector
+from .gatherer import Gatherer  # , VectorCollector
 from .runner import Runner
