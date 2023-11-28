@@ -75,9 +75,9 @@ action_dim = env.action_space.shape[0]
 emb_net = NguEncoder(observation_dim, action_dim)
 
 k_events = 4
-interval = 50
+interval = 25
 implicit_event_table = IeTable(network=emb_net, capacity=200_000, k_events=k_events, cluster_interval=interval)
-iet_warmup = 100
+iet_warmup = 1_000
 
 emb_optimizer = th.optim.Adam(implicit_event_table.network.parameters(), lr=1e-3)
 
@@ -109,7 +109,7 @@ runner = Runner(
 		logger_kwargs=dict(
 			log_interval = 5_000,
 			episode_window=50,
-            # tensorboard=True,
+            tensorboard=True,
 			log_dir = 'implicit_event_tables/tb_logs/' + env_name,
 		    exp_name = f'ngu_embedding_cap200k_iet_k{k_events}_int{interval}_warm{iet_warmup}'
 		)
@@ -125,7 +125,7 @@ targ_actor = copy.deepcopy(actor)
 c_optimizer = th.optim.Adam(critic.parameters(), lr=1e-3)
 a_optimizer = th.optim.Adam(actor.parameters(), lr=1e-3)
 
-for steps in range(590_000):
+for steps in range(490_000):
 	s, a, r, s_p, d, _ = runner.get_batch(actor)
 
 	with th.no_grad():

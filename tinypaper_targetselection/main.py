@@ -28,7 +28,7 @@ def main(cfg):
 		logger_dict = dict(
 			log_interval=10_000,
 			tensorboard=cfg.exp.tensorboard,
-			log_dir=f'tb_logs/{cfg.alg.env_name.replace("/", "-")}/',
+			log_dir=f'tb_logs/{cfg.exp.exp_dir}/{cfg.alg.env_name.replace("/", "-")}/',
 			exp_name=f'{cfg.exp.name}_targsel_{cfg.alg.target_selection}_{i+1}'
 		)
 		

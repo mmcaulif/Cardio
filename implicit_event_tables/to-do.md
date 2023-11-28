@@ -6,6 +6,9 @@
     * [x] Siamese action regression network (only state)
     * [ ] VAE (can be everything)
     * [ ] TD7-like (state and action)
+* [ ] Convert IeTable to circular buffers for speed etc.
+* [ ] Move to using discrete environments?
 
 # Notes
 * Platueaing could be due to replay buffer being too large, SB3 uses a size of 200,000 for BipedalWalker, test this hypothesis with SB3
+* Look into more inverse dynamics models for tuple encoding: https://arxiv.org/pdf/2210.05805.pdf , https://arxiv.org/pdf/1705.05363.pdf

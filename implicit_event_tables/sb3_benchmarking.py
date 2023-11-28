@@ -37,7 +37,7 @@ model = TD3(
     buffer_size=200_000,
     learning_starts=10_000,
     learning_rate=1e-3,
-    policy_kwargs=dict(net_arch=[400, 300]),
+    policy_kwargs={'net_arch': [400, 300]},
     stats_window_size=50,
     tensorboard_log=f'implicit_event_tables/tb_logs/{env_name}/')
 

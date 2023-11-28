@@ -1,4 +1,5 @@
 env_steps: 3_000_000
 n_trials: 3
 tensorboard: True
+exp_dir: large_run
 name: run

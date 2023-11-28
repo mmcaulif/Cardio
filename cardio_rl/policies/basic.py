@@ -30,28 +30,32 @@ class WhitenoiseDeterministic(BasePolicy):
                  
 
 class EpsilonArgmax(BasePolicy):
-    def __init__(self, env, eps=0.0, min_eps=0.0, ann_coeff=0.9, recurrent=False, hidden_dims=0):
+    def __init__(self, env, eps=0.0, min_eps=0.0, ann=0.9, recurrent=False, hidden_dims=0):
         super().__init__(env, recurrent, hidden_dims)
         self.eps = eps
         self.min_eps = min_eps
-        self.ann_coeff = ann_coeff
+
+        if isinstance(ann, int):
+            self.ann_coeff = min_eps ** (1/ann)
+        else:
+            self.ann_coeff = ann
 
     def __call__(self, state, net):
-        input = th.from_numpy(state).float()
-
         if np.random.rand() > self.eps:
-            self.eps = max(self.min_eps, self.eps*self.ann_coeff)   
+            input = th.from_numpy(state).unsqueeze(0).float()
             if self.recurrent:
                 out, self.hidden = net(input, hidden=self.hidden)
                 out = out.detach().numpy()
             else: 
                 out = net(input).detach().numpy()
 
-            return np.argmax(out)  
+            action = np.argmax(out)  
 
         else:
-            self.eps = max(self.min_eps, self.eps*self.ann_coeff)
-            return self.env.action_space.sample()
+            action =  self.env.action_space.sample()
+
+        self.eps = max(self.min_eps, self.eps*self.ann_coeff)
+        return action
 
 
 class Gaussian(BasePolicy):

@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from cardio_rl.transitions import TorchTransition
 from cardio_rl.buffers.er_buffer import ErTable
+from collections import deque
 
 
 class IeTable:
@@ -12,7 +13,7 @@ class IeTable:
 		self.tables = [ErTable(capacity//k_events, transition_func) for _ in range(k_events)]
 		self.buffer = ErTable(capacity, transition_func)
 		self.k_events = k_events
-		self.all_encoded_transitions = []
+		self.all_encoded_transitions = deque(maxlen=capacity)	# []
 		self.encoder = lambda x: x
 		self.cluster_interval = cluster_interval
 		self.percent = percent
