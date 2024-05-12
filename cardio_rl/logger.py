@@ -1,21 +1,13 @@
 from collections import deque
+import time
 from torch.utils.tensorboard import SummaryWriter
 from tqdm.contrib.logging import logging_redirect_tqdm
 import logging
 import numpy as np
 from datetime import datetime
 
-"""
--Maybe change to Rich Logger
--implement tensorboard next
--make logger compatible with VectorCollector next
 
-# https://docs.python.org/3/howto/logging.html
-# https://www.tensorflow.org/tensorboard
-# https://pytorch.org/docs/stable/tensorboard.html
-"""
-
-class Logger():
+class Logger:
     def __init__(
             self,
             n_envs = 1,
@@ -25,11 +17,9 @@ class Logger():
             log_dir=None,
             exp_name='exp'
         ) -> None:
-        
-        logging.basicConfig(format='%(asctime)s: %(message)s', datefmt=' %I:%M:%S %p', level=logging.INFO)
+
         self.n_envs = n_envs
         self.log_interval = log_interval
-        # self.episode_window = episode_window
         self.tensorboard = tensorboard
 
         if self.tensorboard:
@@ -38,9 +28,6 @@ class Logger():
             if log_dir:
                 dir += log_dir + '/'
 
-            # time_key = str(int(time.time()//1))
-            
-            # Changed to the below to be more in line with Hydra
             date_key = datetime.now().strftime('%Y-%m-%d')
             time_key = datetime.now().strftime('%H-%M-%S')
 
@@ -49,15 +36,20 @@ class Logger():
         
         self.timestep = 0
         self.episodes = 0
-        if n_envs == 1:
-            self.running_reward = 0
-        else:
-            self.running_reward = np.zeros(n_envs)
-
+        self.initial_time = time.time()
+        self.prev_time = 0
+        
+        self.running_reward = 0
         self.episodic_rewards = deque(maxlen=episode_window)
 
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
+        logging.basicConfig(
+            format='%(asctime)s: %(message)s', 
+            datefmt=' %I:%M:%S %p', 
+            level=logging.INFO,
+            # handlers=[RichHandler()]
+        )
+
+        self.logger = logging.getLogger()
         
     def step(self, reward, done, truncated):
         self.timestep += 1
@@ -69,23 +61,22 @@ class Logger():
             self.running_reward = 0
 
         if self.timestep % self.log_interval == 0:
+            total_time = time.time() - self.initial_time
+            d_time = total_time - self.prev_time
+            fps = self.log_interval/d_time
+
+            metrics = {
+                'Timesteps': self.timestep,
+                'Episodes': self.episodes,
+                'Episodic reward': np.mean(self.episodic_rewards),
+                'Time passed': round(total_time, 2),
+                "Env steps per second": int(fps),
+            }
+            self.prev_time = total_time
+
             with logging_redirect_tqdm():
-                self.logger.info(f'Timesteps: {self.timestep}, Episodes: {self.episodes}, Avg. reward is {np.mean(self.episodic_rewards)}')
+                self.logger.info(metrics)
 
             if self.tensorboard:
+                # Figure out how to write metrics dictionary
                 self.writer.add_scalar('rollout/ep_rew_mean', np.mean(self.episodic_rewards), self.timestep)
-
-    def vector_step(self, rewards, dones, truns):
-        self.timestep += self.n_envs
-
-        self.running_reward += rewards
-
-        for i, (done, truncated) in enumerate(zip(dones, truns)):
-            if done or truncated:
-                self.episodes += 1
-                self.episodic_rewards.append(self.running_reward[i])
-                self.running_reward[i] = 0
-
-        if (self.timestep//self.n_envs) % self.log_interval == 0:
-            self.logger.info(f'Timesteps: {self.timestep}, Episodes: {self.episodes}, Avg. reward is {np.mean(self.episodic_rewards)}')
-

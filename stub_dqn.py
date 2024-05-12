@@ -1,23 +1,10 @@
-import copy
+import numpy as np
+import cardio_rl as crl
+import gymnasium as gym
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-import envpool
-from cardio_rl import Runner, Gatherer
 
-env = envpool.make_gymnasium('CartPole-v1')
-
-runner = Runner(
-	env=env,
-	policy='argmax',
-	batch_size=256,
-	collector=Gatherer(
-		rollout_len=4,
-		warmup_len=10_000,
-		logger_kwargs=dict(log_interval=5_000)
-	),
-	backend='pytorch'
-)
 
 class Q_critic(nn.Module):
 	def __init__(self, state_dim, action_dim):
@@ -35,30 +22,56 @@ class Q_critic(nn.Module):
 		q = self.net(state)
 		return q
 
-critic = Q_critic(4, 2)
-targ_critic = Q_critic(4, 2)
-targ_critic.load_state_dict(critic.state_dict())
-optimizer = th.optim.Adam(critic.parameters(), lr=1e-3)
 
-for steps in range(300_000):
-	batches = runner(critic)
+class DQN(crl.Agent):
+	def __init__(self):
+		self.critic = Q_critic(4, 2)
+		self.targ_critic = Q_critic(4, 2)
+		self.targ_critic.load_state_dict(self.critic.state_dict())
+		self.update_count = 0
+		self.optimizer = th.optim.Adam(self.critic.parameters(), lr=1e-4)
 
-	for batch in batches:
+		self.eps = 0.9
+		self.min_eps = 0.05
+		schedule_steps = 5000 
+		self.ann_coeff = self.min_eps ** (1/schedule_steps)
+		
+	def update(self, data):
+		s, a, r, s_p, d = data
+		q = self.critic(s).gather(1, a.long())
+		
+		a_p = self.critic(s_p).argmax(dim=1, keepdim=True)
+		q_p = self.targ_critic(s_p).gather(1, a_p.long())
+		y = r + 0.99 * q_p * (1 - d)
 
-		s, a, r, s_p, d = batch
-
-		q = critic(s).gather(1, a.long())
-
-		with th.no_grad():
-			a_p = critic(s_p).argmax(dim=1, keepdim=True)
-			q_p = targ_critic(s_p).gather(1, a_p.long())
-			y = r + 0.99 * q_p * (1 - d)
-
-		loss = F.mse_loss(q, y)
-
-		optimizer.zero_grad()
+		loss = F.mse_loss(q, y.detach())
+		self.optimizer.zero_grad()
 		loss.backward()
-		optimizer.step()
+		self.optimizer.step()
 
-		if steps % 250 == 0:
-			targ_critic.load_state_dict(critic.state_dict())
+		self.update_count += 1
+		if self.update_count % 1_000 == 0:
+			self.targ_critic.load_state_dict(self.critic.state_dict())
+
+	def step(self, state):
+		if np.random.rand() > self.eps:
+			input = th.from_numpy(state).unsqueeze(0).float()
+			action = self.critic(input).argmax().detach().numpy()
+		else:
+			action =  self.env.action_space.sample()
+		
+		self.eps = max(self.min_eps, self.eps*self.ann_coeff)
+		return action, {}
+		
+
+def main():
+	runner = crl.OffPolicyRunner(
+		env=gym.make("CartPole-v1"),
+		agent=DQN(),
+		rollout_len=4,
+		batch_size=32,
+	)
+	runner.run(500_000)
+
+if __name__ == '__main__':
+	main()

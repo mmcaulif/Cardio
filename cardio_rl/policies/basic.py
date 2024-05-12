@@ -9,6 +9,7 @@ class BasePolicy():
         self.hidden = th.zeros(1, hidden_dims)
         
     def __call__(self, state, net):
+        return self.env.action_space.sample()
         return np.expand_dims(self.env.action_space.sample(), 0)
     
     def reset(self):
@@ -43,11 +44,8 @@ class EpsilonArgmax(BasePolicy):
     def __call__(self, state, net):
         if np.random.rand() > self.eps:
             input = th.from_numpy(state).unsqueeze(0).float()
-            if self.recurrent:
-                out, self.hidden = net(input, hidden=self.hidden)
-                out = out.detach().numpy()
-            else: 
-                out = net(input).detach().numpy()
+            
+            out = net(input).detach().numpy()
 
             action = np.argmax(out)  
 

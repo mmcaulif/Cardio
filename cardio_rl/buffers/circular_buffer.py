@@ -1,11 +1,16 @@
 import random
 import numpy as np
 from gymnasium import spaces
-from cardio_rl.transitions import TorchTransition
+from cardio_rl.transitions import torch_transition
 
+"""
+-Add sampling priorities and update functions
+-Add extensibility for extras (initialised as a dictionary with the shape for the valuea and name as key)
+	-Will likely require moving to pytree based system
+"""
 
-class CircErTable:
-	def __init__(self, env, capacity=1_000_000, transition_func=TorchTransition):
+class ReplayBuffer:
+	def __init__(self, env, capacity=1_000_000, transition_func=torch_transition, extras={}):
 
 		obs_space = env.observation_space
 		obs_dims = obs_space.shape
@@ -28,9 +33,6 @@ class CircErTable:
 		self.transition_func = transition_func
 	
 	def __len__(self):
-		"""
-		:return: The current size of the buffer
-		"""
 		if self.full:
 			return self.capacity
 		return self.pos
@@ -57,5 +59,4 @@ class CircErTable:
 		next_states = self.next_states[batch_inds]
 		dones = self.dones[batch_inds]
 		
-		batch = self.transition_func(states, actions, rewards, next_states, dones)
-		return batch()
+		return self.transition_func(states, actions, rewards, next_states, dones)
