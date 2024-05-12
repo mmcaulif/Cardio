@@ -10,8 +10,16 @@ setup(
     install_requires=[
         "numpy>=1.21.0",
         "gymnasium>=0.28.0",
-        'tensorboard'
+        'tensorboard',
+        'tqdm'
     ],
+    extras_require={
+        'exp': [
+            # Optional dependencies for testing go here
+            'hydra-core',
+            'rich',
+        ]
+    },
     description = "Cardio RL. In development...",  
     author = 'Manus McAuliffe',
     url = 'https://github.com/mmcaulif/GymCardio',
