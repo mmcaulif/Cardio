@@ -8,10 +8,46 @@ This is still heavily a work in progress and even many of the (poorly organised)
 # Cardio basics
 This section will be overhauled at a later date, but now the gist of Cardio is the Runner class that gives you a simple interface that wraps the environment and then with one method, will step through the environment, collect transitions, and process them in your defined way. The runner supports n-step transitions, custom policies and custom processing. Currently the runner class is biased with off-policy algorithms in mind (altough fully supporting on-policy approaches too) but going forward it will be better balanced between the two.
 
-## Immediate to do list
-* [ ] Add timing information to logger
+# Big Refactor and prerequisites for release
+
+__TLDR summary of tasks:__
+1. create a base transition dict/dataclass/tree
+2. write a replay buffee that uses these
+3. extend that to the internals of the gatherer
+
+Think of the replay buffer and internal buffers as just larger/longer versions of the transition tree datatype, akin to TorchRL
+
+* [ ] Refactor Gatherer and Runners, keep minimalist and introduce an agent class
+  * [x] Get rid of the use of "__call__" methods for runner etc. use .step() and .run() instead
+  * [ ] Add efficient appending to replay buffer (specified below, implement a pytree replay buffer)
+  * [x] Cleaner passing of rollout step and warmup length handling
+  * [ ] Review Gatherer inner workings and runner inner workings (consider moving to pytrees)
+
+* [ ] Improve logging
   * [x] Current time
-  * [ ] Running average of FPS
+  * [x] Env steps per second
+  * [ ] Make logger/metrics system extensible (use dictionaries to pass around)
+  * [ ] Rich logging, make it pretty and formatted well!!!
+  * [ ] Explore of logging could be done outside the gatherer (as its very nested)
+  * [ ] Figure out a way to make logging extensible and customisable
+
+* [ ] Improve extensibility
+  * [ ] Agents should be able to use and save extras (such as log probs)
+    * add indeces sampled to batch data outputted
+  * [ ] Implement a pytree based replay buffer with saving of multiple transitions in parallel
+    * this ties into the above with using pytree's internally within the gatherer
+  * [ ] Consider different popular algorithms and how they could be implemented easily
+
+* [ ] Make library presentable
+  * [ ] Jax based agent stubs
+  * [ ] Linting and typing
+  * [ ] Readme and docs, look at stoix for inspo
+
+__Focus on getting some form of Cardio as a finished deliverable__
+
+## To do list
+
+* [ ] Make default research template via make, conda, hydra, optuna etc.
 
 * [ ] Minor refactor to gatherer and runner, add default arg values, careful consideration needed
   * [x] change collector name to gatherer, idk why its different
@@ -20,15 +56,13 @@ This section will be overhauled at a later date, but now the gist of Cardio is t
 * [ ] Create package!
   * [x] basic implementation done
   * [ ] need to do PyPi and look into further improvements
+  * [ ] documentation, contribution guide, linting etc.
 
 * [ ] Implement replay buffer class and move IET work into Cardio ecosystem
+  * [ ] Implement PER
   * [ ] change IET work to use circular buffer
 
 * [x] Remove warmup method in gatherer and make it a special call of the rollout method
-
-* [ ] Implement Cardio Module that everything else inherits from using step and reset methods
-  * [ ] Change all policies to use .step method and make BasePolicy inherit from Module
-    * [ ] Add reset and end_rollout methods to BasePolicy that is called by runner
 
 * [ ] Make circular buffer the default buffer across the board, get rid of old buffer (or make it a base class)
 
@@ -41,7 +75,6 @@ This section will be overhauled at a later date, but now the gist of Cardio is t
 
 * [ ] Benchmark and debug after restructuring
 
-* [ ] Cleaner passing of rollout step and warmup length handling
 
 ## Vectorised env work
 * [ ] Align VectorCollector with Collector
@@ -58,6 +91,7 @@ This section will be overhauled at a later date, but now the gist of Cardio is t
 * [ ] Move agent stubs into own folder and refactor each one
 
 * [ ] Sort policies better, i.e. discrete, continuous
+  * [ ] Deprecated as moving towards an agent class
 
 * [ ] Benchmark each implementation wrt. SB3 (change logging to timestep based first though)
  
