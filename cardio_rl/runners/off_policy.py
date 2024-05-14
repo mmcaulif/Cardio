@@ -2,16 +2,17 @@ import logging
 from typing import Optional
 from gymnasium import Env
 from cardio_rl.agent import Agent
-from cardio_rl.buffers.circular_buffer import ReplayBuffer
+from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.gatherer import Gatherer
 from cardio_rl.runners import BaseRunner
+
 
 class OffPolicyRunner(BaseRunner):
     def __init__(
         self,
         env: Env,
         agent: Agent,
-        er_buffer: Optional[ReplayBuffer] = None,
+        extra_specs: dict = {},
         capacity: Optional[int] = 1_000_000,
         rollout_len: int = 1,
         batch_size: int = 100,
@@ -20,10 +21,7 @@ class OffPolicyRunner(BaseRunner):
         n_batches: int = 1,
     ) -> None:
         
-        if er_buffer == None and capacity != None:
-            self.er_buffer = ReplayBuffer(env, capacity)
-        else:
-            self.er_buffer = er_buffer
+        self.buffer = TreeBuffer(env, capacity, extra_specs)
 
         self.rollout_len = rollout_len
         self.batch_size = batch_size
@@ -36,7 +34,7 @@ class OffPolicyRunner(BaseRunner):
         # Need to figure out whether to perform a random policy or not during warmup
         batch = self.collector.step(self.agent, self.warmup_len)
         for transition in batch:
-            self.er_buffer.store(self.prep_batch(transition))
+            self.buffer.store(self.prep_batch(transition))
         
         logging.info('### Warm up finished ###')
 
@@ -45,14 +43,14 @@ class OffPolicyRunner(BaseRunner):
 
         for transition in rollout_batch:
             # Remove for loops when storing multiple transitions
-            self.er_buffer.store(self.prep_batch(transition))
+            self.buffer.store(self.prep_batch(transition))
 
-        k = min(self.batch_size, len(self.er_buffer))
+        k = min(self.batch_size, len(self.buffer))
 
         if self.n_batches == 1:
-            batch_samples = self.er_buffer.sample(k)
+            batch_samples = self.buffer.sample(k)
         else:
-            batch_samples = [self.er_buffer.sample(k) for _ in range(self.n_batches)]
+            batch_samples = [self.buffer.sample(k) for _ in range(self.n_batches)]
 
         return batch_samples
 

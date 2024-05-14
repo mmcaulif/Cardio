@@ -1,6 +1,7 @@
 from collections import deque
 from typing import Optional
 from gymnasium import Env
+import numpy as np
 from cardio_rl.logger import Logger
 from cardio_rl.agent import Agent
 
@@ -28,7 +29,7 @@ class Gatherer:
         self.env = env
         self.state, _ = self.env.reset()
 
-    def _env_step(self, agent: Agent, s):
+    def _env_step(self, agent: Agent, s: np.array):
         a, ext = agent.step(s)
         s_p, r, d, t, _ = self.env.step(a)
         self.logger.step(r, d, t)
@@ -37,18 +38,20 @@ class Gatherer:
         """
         In the interest of making it easier in cardio to track and pass different features and values
         between components it could be good to move towards a dictionary/dataclass approach for 
-        timesteps. Using pytree utils this could be relatively straightforward and extensible.
+        timesteps. Using pytree utils this could be relatively straight forward and extensible.
+
+        update: this is now partially implemented but needs to be fully extended to allow for n-step etc.
+        """
 
         transition = {
             's': s, 
             'a': a, 
             'r': r, 
             's_p': s_p,
-            'd': d}
+            'd': d
+        }
+        ext = agent.view(transition, ext)
         transition.update(ext)
-        """
-        
-        transition = (s, a, r, s_p, d)
 
         return transition, s_p, d, t
 

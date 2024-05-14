@@ -36,15 +36,30 @@ class DQN(crl.Agent):
 		self.min_eps = 0.05
 		schedule_steps = 5000 
 		self.ann_coeff = self.min_eps ** (1/schedule_steps)
+
+	def view(self, transition: dict, extras: dict):
+		transition = jax.tree.map(crl.transitions.to_torch, transition)
+
+		q = self.critic(transition['s']).gather(0, transition['a'].long())
+
+		a_p = self.critic(transition['s_p']).argmax(dim=0, keepdim=True)
+		q_p = self.targ_critic(transition['s_p']).gather(0, a_p.long())
+		y = transition['r'] + 0.99 * q_p * (1 - transition['d'])
+
+		error = q - y
+		extras.update({'error': error.detach().numpy()})
+		return extras 
 		
 	def update(self, data):
 		data = jax.tree.map(crl.transitions.to_torch, data)
 		s, a, r, s_p, d = data['s'], data['a'], data['r'], data['s_p'], data['d']
 
-		q = self.critic(s).gather(-1, a.long())
+		print(data['error'])
+
+		q = self.critic(s).gather(1, a.long())
 		
-		a_p = self.critic(s_p).argmax(-1, keepdim=True)
-		q_p = self.targ_critic(s_p).gather(-1, a_p.long())
+		a_p = self.critic(s_p).argmax(dim=1, keepdim=True)
+		q_p = self.targ_critic(s_p).gather(1, a_p.long())
 		y = r + 0.99 * q_p * (1 - d)
 
 		loss = F.mse_loss(q, y.detach())
@@ -71,6 +86,7 @@ def main():
 	runner = crl.OffPolicyRunner(
 		env=gym.make("CartPole-v1"),
 		agent=DQN(),
+		extra_specs={'error': [1]},
 		rollout_len=4,
 		batch_size=32,
 	)
