@@ -1,6 +1,8 @@
 import logging
 from typing import Optional
 from gymnasium import Env
+import jax
+import numpy as np
 from cardio_rl.agent import Agent
 from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.gatherer import Gatherer
@@ -28,22 +30,24 @@ class OffPolicyRunner(BaseRunner):
         self.n_batches = n_batches
         self.n_step = collector.n_step
 
-        super().__init__(env, agent, warmup_len, collector)   
+        super().__init__(env, agent, warmup_len, collector)
+
+    def _rollout(self, length): # Add to 
+        rollout_batch = super()._rollout(length)    # Needs to return a single dict with each value!
+
+        # Below is a temporary measure, move this to the gatherer
+        rollout_batch = jax.tree.map(lambda *arr: np.stack(arr), *rollout_batch)
+        self.buffer.store(self.prep_batch(rollout_batch), length)
 
     def _warm_start(self):
-        # Need to figure out whether to perform a random policy or not during warmup
-        batch = self.collector.step(self.agent, self.warmup_len)
-        for transition in batch:
-            self.buffer.store(self.prep_batch(transition))
-        
+        """
+        Need to figure out whether to perform a random policy or not during warmup
+        """
+        self._rollout(self.warmup_len)
         logging.info('### Warm up finished ###')
 
     def step(self):
-        rollout_batch = self.collector.step(self.agent, self.rollout_len)
-
-        for transition in rollout_batch:
-            # Remove for loops when storing multiple transitions
-            self.buffer.store(self.prep_batch(transition))
+        self._rollout(self.rollout_len)
 
         k = min(self.batch_size, len(self.buffer))
 

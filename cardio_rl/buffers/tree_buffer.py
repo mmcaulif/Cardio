@@ -50,19 +50,30 @@ class TreeBuffer:
 			return self.capacity
 		return self.pos
 
-	def store(self, transition: dict):
+	def store(self, transition: dict, num: int):
 
-		def _place(arr, x, idx):	# This is too awkward to be made into a lambda function
+		def _place(arr, x, idx):
+			"""
+			Instead of reshaping in this function maybe look into doing it in the gatherer
+			"""
+			if len(x.shape) == 1:
+				x = np.expand_dims(x, -1)
+
 			arr[idx] = x
 			return arr
+		
+		"""
+		Need to verify this works as expected and there's no silent bugs
+		"""
 
-		place = functools.partial(_place, idx=self.pos)
+		idxs = np.arange(self.pos, self.pos+num) % self.capacity
+		place = functools.partial(_place, idx=idxs)
 		self.table = jax.tree.map(place, self.table, transition)
 			
-		self.pos += 1
-		if self.pos == self.capacity:
+		self.pos += num
+		if self.pos >= self.capacity:
 			self.full = True
-			self.pos = 0
+			self.pos = self.pos % self.capacity
 
 	def sample(self, batch_size: int):
 		sample_size = int(min(batch_size, self.__len__()))

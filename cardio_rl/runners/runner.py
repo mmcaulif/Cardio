@@ -27,15 +27,19 @@ class BaseRunner:
         self.agent.setup(self.env)   
 
         self.collector._init_env(self.env)
-        self._warm_start()            
+        self._warm_start()       
+
+    def _rollout(self, length):
+        rollout_batch = self.collector.step(self.agent, length)    # Needs to return a single dict with each value!
+        return rollout_batch
 
     def _warm_start(self):
         # Need to figure out whether to perform a random policy or not during warmup
-        batch = self.collector.step(self.agent, self.warmup_len)
+        batch = self._rollout(self.agent, self.warmup_len)
         logging.info('### Warm up finished ###')
         
     def step(self):
-        rollout_batch = self.collector.step(self.agent)
+        rollout_batch = self._rollout(self.agent, 1)
         batch_samples = self.prep_batch(rollout_batch)
         return batch_samples
     

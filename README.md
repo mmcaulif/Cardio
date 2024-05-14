@@ -19,7 +19,7 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
 
 * [ ] Refactor Gatherer and Runners, keep minimalist and introduce an agent class
   * [x] Get rid of the use of "__call__" methods for runner etc. use .step() and .run() instead
-  * [ ] Add efficient appending to replay buffer (specified below, implement a pytree replay buffer)
+  * [ ] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
   * [x] Cleaner passing of rollout step and warmup length handling
   * [ ] Review Gatherer inner workings and runner inner workings (consider moving to pytrees)
 
@@ -32,9 +32,9 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
   * [ ] Figure out a way to make logging extensible and customisable
 
 * [ ] Improve extensibility
-  * [ ] Agents should be able to use and save extras (such as log probs)
+  * [x] Agents should be able to use and save extras (such as log probs)
     * add indeces sampled to batch data outputted
-  * [ ] Implement a pytree based replay buffer with saving of multiple transitions in parallel
+  * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
     * this ties into the above with using pytree's internally within the gatherer
   * [ ] Consider different popular algorithms and how they could be implemented easily
 
