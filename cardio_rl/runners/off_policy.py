@@ -3,6 +3,7 @@ from typing import Optional
 from gymnasium import Env
 import jax
 import numpy as np
+import cardio_rl as crl
 from cardio_rl.agent import Agent
 from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.gatherer import Gatherer
@@ -33,10 +34,7 @@ class OffPolicyRunner(BaseRunner):
         super().__init__(env, agent, warmup_len, collector)
 
     def _rollout(self, length): # Add to 
-        rollout_batch = super()._rollout(length)    # Needs to return a single dict with each value!
-
-        # Below is a temporary measure, move this to the gatherer
-        rollout_batch = jax.tree.map(lambda *arr: np.stack(arr), *rollout_batch)
+        rollout_batch = super()._rollout(length)
         self.buffer.store(self.prep_batch(rollout_batch), length)
 
     def _warm_start(self):

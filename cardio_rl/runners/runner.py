@@ -1,4 +1,5 @@
 import logging
+import cardio_rl as crl
 from tqdm import trange
 from gymnasium import Env
 from cardio_rl.gatherer import Gatherer
@@ -30,7 +31,9 @@ class BaseRunner:
         self._warm_start()       
 
     def _rollout(self, length):
-        rollout_batch = self.collector.step(self.agent, length)    # Needs to return a single dict with each value!
+        rollout_batch = self.collector.step(self.agent, length)
+        # Below is a temporary measure, move this to the gatherer
+        rollout_batch = crl.tree.stack(rollout_batch)
         return rollout_batch
 
     def _warm_start(self):
