@@ -15,34 +15,37 @@ class BaseRunner:
         self,
         env: Env,
         agent: Agent,
+        rollout_len: int = 1,
         warmup_len: int = 1_000,
-        collector: Gatherer = Gatherer(),
+        gatherer: Gatherer = Gatherer(),
     ) -> None:
 
         self.env = env
+        self.rollout_len = rollout_len
         self.warmup_len = warmup_len
 
-        self.collector = collector
+        self.gatherer = gatherer
 
         self.agent = agent
         self.agent.setup(self.env)   
 
-        self.collector._init_env(self.env)
+        self.gatherer._init_env(self.env)
         self._warm_start()       
 
     def _rollout(self, length):
-        rollout_batch = self.collector.step(self.agent, length)
+        rollout_batch = self.gatherer.step(self.agent, length)
         # Below is a temporary measure, move this to the gatherer
-        rollout_batch = crl.tree.stack(rollout_batch)
+        if rollout_batch:
+            rollout_batch = crl.tree.stack(rollout_batch)
         return rollout_batch
 
     def _warm_start(self):
         # Need to figure out whether to perform a random policy or not during warmup
-        batch = self._rollout(self.agent, self.warmup_len)
+        batch = self._rollout(self.warmup_len)
         logging.info('### Warm up finished ###')
         
     def step(self):
-        rollout_batch = self._rollout(self.agent, 1)
+        rollout_batch = self._rollout(self.rollout_len)
         batch_samples = self.prep_batch(rollout_batch)
         return batch_samples
     

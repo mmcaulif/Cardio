@@ -20,29 +20,21 @@ class OffPolicyRunner(BaseRunner):
         rollout_len: int = 1,
         batch_size: int = 100,
         warmup_len: int = 10_000,
-        collector: Gatherer = Gatherer(),
+        gatherer: Gatherer = Gatherer(),
         n_batches: int = 1,
     ) -> None:
         
         self.buffer = TreeBuffer(env, capacity, extra_specs)
 
-        self.rollout_len = rollout_len
         self.batch_size = batch_size
         self.n_batches = n_batches
-        self.n_step = collector.n_step
+        self.n_step = gatherer.n_step
 
-        super().__init__(env, agent, warmup_len, collector)
+        super().__init__(env, agent, rollout_len, warmup_len, gatherer)
 
     def _rollout(self, length): # Add to 
         rollout_batch = super()._rollout(length)
         self.buffer.store(self.prep_batch(rollout_batch), length)
-
-    def _warm_start(self):
-        """
-        Need to figure out whether to perform a random policy or not during warmup
-        """
-        self._rollout(self.warmup_len)
-        logging.info('### Warm up finished ###')
 
     def step(self):
         self._rollout(self.rollout_len)

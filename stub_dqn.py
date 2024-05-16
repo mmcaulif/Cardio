@@ -58,6 +58,7 @@ class DQN(crl.Agent):
 
 	def step(self, state):
 		if np.random.rand() > self.eps:
+			# TODO: rename input to something else
 			input = th.from_numpy(state).unsqueeze(0).float()
 			action = self.critic(input).argmax().detach().numpy()
 		else:

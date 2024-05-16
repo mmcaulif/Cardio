@@ -38,6 +38,7 @@ class DQN(crl.Agent):
 		self.ann_coeff = self.min_eps ** (1/schedule_steps)
 
 	def view(self, transition: dict, extras: dict):
+		return {'error': 0.0}
 		transition = jax.tree.map(crl.transitions.to_torch, transition)
 
 		q = self.critic(transition['s']).gather(0, transition['a'].long())
@@ -46,15 +47,13 @@ class DQN(crl.Agent):
 		q_p = self.targ_critic(transition['s_p']).gather(0, a_p.long())
 		y = transition['r'] + 0.99 * q_p * (1 - transition['d'])
 
-		error = q - y
-		extras.update({'error': error.detach().numpy()})
+		error = th.abs(q - y).detach().numpy() + 1e-8
+		extras.update({'error': error})
 		return extras 
 		
 	def update(self, data):
 		data = jax.tree.map(crl.transitions.to_torch, data)
 		s, a, r, s_p, d = data['s'], data['a'], data['r'], data['s_p'], data['d']
-
-		print(data['error'])
 
 		q = self.critic(s).gather(1, a.long())
 		
