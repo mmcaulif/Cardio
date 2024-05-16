@@ -1,4 +1,5 @@
 from collections import deque
+import itertools
 from typing import Optional
 from gymnasium import Env
 import numpy as np
@@ -59,11 +60,18 @@ class Gatherer:
         self,
         agent: Agent,
         length: Optional[int] = None,
-        ret_if_term: bool = False
     ):
+        # For eval or for reinforce
+        if length == -1:
+            ret_if_term = True
+            iterator = itertools.count()
+        else:
+            ret_if_term = False
+            iterator = range(length)
+
         gather_buffer = deque()
 
-        for _ in range(length):
+        for _ in iterator:
             transition, next_state, done, trun = self._env_step(agent, self.state)
             self.step_buffer.append(transition)
             if len(self.step_buffer) == self.n_step:
