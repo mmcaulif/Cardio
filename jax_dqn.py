@@ -11,6 +11,25 @@ import rlax
 
 from flax.training.train_state import TrainState
 
+
+"""
+CartPole-v1:
+  n_timesteps: !!float 5e4
+  policy: 'MlpPolicy'
+  learning_rate: !!float 2.3e-3
+  batch_size: 64
+  buffer_size: 100000
+  learning_starts: 1000
+  gamma: 0.99
+  target_update_interval: 10
+  train_freq: 256
+  gradient_steps: 128
+  exploration_fraction: 0.16
+  exploration_final_eps: 0.04
+  policy_kwargs: "dict(net_arch=[256, 256])"
+"""
+
+
 class DdqnTrainState(TrainState):
 	target_params: flax.core.FrozenDict[str, Any]
 
@@ -29,7 +48,7 @@ class DQN(crl.Agent):
 		self.key, init_key = jax.random.split(self.key)
 		model = Q_critic(action_dim=2)
 		params = model.init(init_key, jnp.zeros(4))
-		optim = optax.adam(1e-4)
+		optim = optax.adam(7e-4)
 		opt_state = optim.init(params)
 
 		self.train_state = DdqnTrainState(
@@ -46,12 +65,16 @@ class DQN(crl.Agent):
 		schedule_steps = 5000 
 		self.ann_coeff = self.min_eps ** (1/schedule_steps)
 		
-	def update(self, data):
-		
-		@jax.jit
-		def _update(train_state: DdqnTrainState, data: dict):
+	def update(self, batches):
+		n_iter_batches = jnp.arange(len(batches))
+		batches = iter(batches)
 
-			def _loss(params, data: dict, train_state: DdqnTrainState):
+		def scan_batch(train_state: DdqnTrainState, n):
+
+			data = next(batches)	# TODO: check if this is fastest solution
+
+			@jax.value_and_grad
+			def _loss(params, train_state: DdqnTrainState):
 				q = train_state.apply_fn(params, data['s'])
 				q_p_value = train_state.apply_fn(train_state.target_params, data['s_p'])
 				q_p_select = train_state.apply_fn(train_state.target_params, data['s_p'])
@@ -64,28 +87,23 @@ class DQN(crl.Agent):
 					q_p_value,
 					q_p_select
 				)
-				return jnp.mean(error**2)
+				loss = jnp.mean(error**2)
+				return loss
 
-			grads = jax.grad(_loss)(train_state.params, data, train_state)
-
+			loss, grads = _loss(train_state.params, train_state)
 			train_state = train_state.apply_gradients(grads=grads)
 
 			target_params = optax.periodic_update(
 				train_state.params,
 				train_state.target_params,
 				train_state.step,
-				1_000
+				10
 			)
 
 			train_state = train_state.replace(target_params=target_params)
-			return train_state
+			return train_state, loss
 
-		new_train_state = _update(
-			self.train_state, 
-			data
-		)
-
-		self.train_state = new_train_state
+		self.train_state, _ = jax.lax.scan(scan_batch, self.train_state, n_iter_batches)
 
 	def step(self, state):
 
@@ -103,8 +121,10 @@ def main():
 	runner = crl.OffPolicyRunner(
 		env=gym.make("CartPole-v1"),
 		agent=DQN(),
-		rollout_len=4,
-		batch_size=32,
+		rollout_len=1,
+		batch_size=128,
+		warmup_len=1_000,
+		n_batches=4
 	)
 	runner.run(10_000)
 
