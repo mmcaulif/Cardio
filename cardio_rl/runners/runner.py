@@ -6,6 +6,7 @@ from tqdm import trange
 from gymnasium import Env
 from cardio_rl.gatherer import Gatherer
 from cardio_rl.agent import Agent
+from cardio_rl import Transition
 
 
 """
@@ -35,27 +36,24 @@ class BaseRunner:
         self.gatherer._init_env(self.env)
         self._warm_start()
 
-    def _burn_in(self, length: int) -> dict:
+    def _burn_in(self, length: int) -> None:
         dummy = Agent()
         dummy.setup(self.env)
         self.gatherer.step(dummy, length)
 
-    def _rollout(self, length: int) -> dict:
+    def _rollout(self, length: int) -> Transition:
         rollout_batch = self.gatherer.step(self.agent, length)
-        # Below is a temporary measure, move this to the gatherer
-        if rollout_batch:
-            rollout_batch = crl.tree.stack(rollout_batch)
-        return rollout_batch
+        return crl.tree.stack(rollout_batch)
 
     def _warm_start(self):
         # Need to figure out whether to perform a random policy or not during warmup
-        batch = self._rollout(self.warmup_len)
+        self._rollout(self.warmup_len)
         logging.info("### Warm up finished ###")
 
-    def step(self) -> dict:
+    def step(self) -> list[Transition]:
         rollout_batch = self._rollout(self.rollout_len)
         batch_samples = self.prep_batch(rollout_batch)
-        return batch_samples
+        return [batch_samples]
 
     def run(
         self,
@@ -73,12 +71,12 @@ class BaseRunner:
         metrics = {"return": np.zeros(episodes), "length": np.zeros(episodes)}
         for e in range(episodes):
             state, _ = self.env.reset()
-            returns = 0
-            steps = 0
+            returns = 0.0
+            steps: int = 0
             while True:
                 action, _ = self.agent.step(state)
                 next_state, reward, done, trun, _ = self.env.step(action)
-                returns += reward
+                returns += reward  # type: ignore
                 steps += 1
                 state = next_state
                 if done or trun:

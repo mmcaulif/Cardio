@@ -7,3 +7,4 @@ run
 dist
 */outputs
 */tb_logs
+*.json

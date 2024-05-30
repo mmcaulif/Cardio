@@ -12,13 +12,13 @@ class Agent:
     def setup(self, env):
         self._init_env(env)
 
-    def view(self, transition: callable, extra: dict):
+    def view(self, transition: dict[str, np.array], extra: dict):
         return extra
 
     def step(self, state: np.ndarray):
         return self.env.action_space.sample(), {}
 
-    def update(self, data: dict):
+    def update(self, data: list[dict[str, np.array]]):
         pass
 
     def terminal(self):

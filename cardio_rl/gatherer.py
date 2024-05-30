@@ -1,10 +1,11 @@
 from collections import deque
 import itertools
-from typing import Optional
+from typing import Deque, Optional
 from gymnasium import Env
 import numpy as np
 from cardio_rl.logger import Logger
 from cardio_rl.agent import Agent
+from cardio_rl import Transition
 
 
 class Gatherer:
@@ -20,11 +21,11 @@ class Gatherer:
         self.take_every = take_every
         self.take_count = 0
 
-        if logger_kwargs == None:
+        if logger_kwargs is None:
             logger_kwargs = {}
 
         self.logger = Logger(**logger_kwargs)
-        self.step_buffer = deque(maxlen=self.n_step)
+        self.step_buffer: Deque = deque(maxlen=self.n_step)
 
     def _init_env(self, env: Env):
         self.env = env
@@ -53,17 +54,17 @@ class Gatherer:
     def step(
         self,
         agent: Agent,
-        length: Optional[int] = None,
-    ):
+        length: int,
+    ) -> list[Transition]:
         # For eval or for reinforce
         if length == -1:
             ret_if_term = True
             iterator = itertools.count()
         else:
             ret_if_term = False
-            iterator = range(length)
+            iterator = range(length)  # type: ignore
 
-        gather_buffer = deque()
+        gather_buffer: Deque = deque()
 
         for _ in iterator:
             transition, next_state, done, trun = self._env_step(agent, self.state)

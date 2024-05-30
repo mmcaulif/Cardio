@@ -2,6 +2,8 @@ import torch as th
 import numpy as np
 import jax.numpy as jnp
 
+# TODO: rename module so as to not be confused with typing
+
 
 def to_np(arr: np.ndarray):
     return arr.astype(float)
