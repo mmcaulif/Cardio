@@ -21,15 +21,15 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
   * [x] Get rid of the use of "__call__" methods for runner etc. use .step() and .run() instead
   * [x] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
   * [x] Cleaner passing of rollout step and warmup length handling
-  * [ ] Review Gatherer inner workings and runner inner workings (consider moving to pytrees)
+  * [ ] Review Gatherer inner workings and runner inner workings
   * [x] Add evaluation methodology
-  * [ ] Change logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
   * [x] Add reset, update_agent and load methods for runner/agent (e.g. for use in Reptile impl)
-  * [ ] Add trajectory and n-step adder
+  * [x] Add n-step collection
 
 * [ ] Improve logging
   * [x] Current time
   * [x] Env steps per second
+  * [ ] Move logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
   * [ ] Make logger/metrics system extensible (use dictionaries to pass around)
   * [ ] Rich logging, make it pretty and formatted well!!!
   * [ ] Explore if logging could be done outside the gatherer (as its very nested)
@@ -40,13 +40,16 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
     * add indeces sampled to batch data outputted
   * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
     * this ties into the above with using pytree's internally within the gatherer
+  * [ ] Implement dopamine Rainbow as an example
+    * [ ] Add buffer overriding via extra info from agent update method
 
 * [ ] Make library presentable
   * [ ] Jax based agent stubs
+    * [ ] Will need to get access to a linux machine with a GPU to properly evaluate performance/speed
     * [ ] Consider different popular algorithms and how they could be implemented easily
   * [ ] Linting and typing
-  * [ ] Readme and docs, look at stoix for inspo
-  * [ ] Extensive testing!!!
+  * [ ] Readme and docs, look at stoicx for inspo
+  * [ ] Extensive and widespread testing!!!
 
 __Focus on getting some form of Cardio as a finished deliverable__
 
@@ -63,20 +66,11 @@ __Focus on getting some form of Cardio as a finished deliverable__
   * [ ] need to do PyPi and look into further improvements
   * [ ] documentation, contribution guide, linting etc.
 
-* [ ] Implement replay buffer class and move IET work into Cardio ecosystem
-  * [ ] Implement PER
-  * [ ] change IET work to use circular buffer
-
 * [x] Remove warmup method in gatherer and make it a special call of the rollout method
 
-* [ ] Make circular buffer the default buffer across the board, get rid of old buffer (or make it a base class)
-
-* [ ] Add checks and resizing stuff to buffer
-  * [ ] Reimplement n-step returns in Runner
+* [ ] Add trajectory buffer
 
 * [x] Add all action spaces to circular buffer
-
-* [ ] Investigate if epsilon argmax works as intended (i.e. for DQN)
 
 * [ ] Benchmark and debug after restructuring
 
@@ -104,8 +98,6 @@ __Focus on getting some form of Cardio as a finished deliverable__
 * [x] Implement multibatch sampling for off-policy runner
 
 * [x] Add episode length to logger and use the same names as SB3 for easy integration!
-
-* [x] Parallel gatherer
 
 * [x] Change logging from episodic to timestep based
   * include window and log_interval arguments to gatherer
