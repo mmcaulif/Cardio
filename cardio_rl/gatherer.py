@@ -93,3 +93,7 @@ class Gatherer:
                     return list(gather_buffer)
 
         return list(gather_buffer)
+    
+    def reset(self) -> None:
+        self.step_buffer.clear()
+        self.env.reset()

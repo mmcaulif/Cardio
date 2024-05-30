@@ -1,9 +1,6 @@
-import logging
+
 from typing import Optional
 from gymnasium import Env
-import jax
-import numpy as np
-import cardio_rl as crl
 from cardio_rl.agent import Agent
 from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.gatherer import Gatherer
@@ -25,6 +22,8 @@ class OffPolicyRunner(BaseRunner):
     ) -> None:
         
         self.buffer = TreeBuffer(env, capacity, extra_specs)
+        self.capacity = capacity
+        self.extra_specs = extra_specs
 
         self.batch_size = batch_size
         self.n_batches = n_batches
@@ -32,50 +31,26 @@ class OffPolicyRunner(BaseRunner):
 
         super().__init__(env, agent, rollout_len, warmup_len, gatherer)
 
-    def _rollout(self, length): # Add to 
+    def _rollout(self, length: int) -> None:
         rollout_batch = super()._rollout(length)
         self.buffer.store(self.prep_batch(rollout_batch), length)
 
-    def step(self):
+    def step(self) -> dict:
         self._rollout(self.rollout_len)
-
         k = min(self.batch_size, len(self.buffer))
-
-        if self.n_batches == 1:
-            batch_samples = self.buffer.sample(k)
-        else:
-            batch_samples = [self.buffer.sample(k) for _ in range(self.n_batches)]
-
+        batch_samples = [self.buffer.sample(k) for _ in range(self.n_batches)]
         return batch_samples
 
-    def prep_batch(self, batch):
+    def prep_batch(self, batch: dict) -> dict:
         """
-        takes the batch (which will be a list of transitons) and processes them to be seperate etc.
+        takes the batch (which will be a dict) and processes them
         """
         # need to redo after implementing replay buffer class
 
         if self.n_step == 1:
             return batch
-
-        # elif self.reduce == False:
-        #     processed_batch = []
-        #     for n_step_transition in batch:
-        #         transition = n_step_transition
-        #         processed_batch.append([*transition])
-
-        #     return processed_batch
         
-        # else:
-        #     processed_batch = []
-        #     for n_step_transition in batch:
-        #         s, a, r, s_p, d, i = n_step_transition
-        #         s = s[0]
-        #         a = a[0]
-        #         r_list = list(r)
-        #         s_p = s_p[-1]
-        #         d = any(d)
-        #         i = i
-        #         processed_batch.append([s, a, r_list, s_p, d, i])
-
-        #     return self.transition(*zip(*processed_batch))
-        
+    def reset(self) -> None:
+        del self.buffer
+        self.buffer = TreeBuffer(self.env, self.capacity, self.extra_specs)
+        super().reset()
