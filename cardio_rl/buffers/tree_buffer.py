@@ -9,7 +9,14 @@ from gymnasium import Env
 
 
 class TreeBuffer:
-    def __init__(self, env: Env, capacity: int = 1_000_000, extra_specs: dict = {}):
+    def __init__(
+        self, 
+        env: Env,
+        capacity: int = 1_000_000, 
+        extra_specs: dict = {},
+        n_steps: int = 1,
+        trajectory: int = 1,
+    ):
         obs_space = env.observation_space
         obs_dims = obs_space.shape
 
@@ -22,20 +29,26 @@ class TreeBuffer:
 
         self.pos = 0
         self.capacity = capacity
+        base_shape = [capacity]
+        if trajectory > 1:
+            if trajectory > 1 and n_steps > 1:
+                raise ValueError    # TODO: make the buffer compatible with both n_steps and trajectories
+            base_shape += [trajectory]
+
         self.full = False
 
         self.table = {
-            "s": np.zeros((self.capacity, *obs_dims), dtype=obs_space.dtype),
+            "s": np.zeros((*base_shape, *obs_dims), dtype=obs_space.dtype),
             "a": np.zeros(
                 (
-                    self.capacity,
+                    *base_shape,
                     act_dim,
                 ),
                 dtype=act_space.dtype,
             ),
-            "r": np.zeros((self.capacity, 1)),
-            "s_p": np.zeros((self.capacity, *obs_dims), dtype=obs_space.dtype),
-            "d": np.zeros((self.capacity, 1)),
+            "r": np.zeros((*base_shape, n_steps)),
+            "s_p": np.zeros((*base_shape, *obs_dims), dtype=obs_space.dtype),
+            "d": np.zeros((*base_shape, 1)),
         }
 
         if extra_specs:
@@ -51,7 +64,7 @@ class TreeBuffer:
             return self.capacity
         return self.pos
 
-    def store(self, transition: dict, num: int):
+    def store(self, batch: dict):
         def _place(arr, x, idx):
             """
             Instead of reshaping in this function maybe look into doing it in the gatherer
@@ -65,10 +78,15 @@ class TreeBuffer:
         """
 		Need to verify this works as expected and there's no silent bugs
 		"""
+        # print(batch)
+        # print(len(batch['s']))
+        # exit()
+
+        num = len(batch['s'])
 
         idxs = np.arange(self.pos, self.pos + num) % self.capacity
         place = functools.partial(_place, idx=idxs)
-        self.table = jax.tree.map(place, self.table, transition)
+        self.table = jax.tree.map(place, self.table, batch)
 
         self.pos += num
         if self.pos >= self.capacity:

@@ -25,7 +25,8 @@ class Q_critic(nn.Module):
 
 
 class DQN(crl.Agent):
-    def __init__(self):
+    def __init__(self, n_step: int):
+        self.n_step = n_step
         self.critic = Q_critic(4, 2)
         self.targ_critic = Q_critic(4, 2)
         self.targ_critic.load_state_dict(self.critic.state_dict())
@@ -37,45 +38,59 @@ class DQN(crl.Agent):
         schedule_steps = 5000
         self.ann_coeff = self.min_eps ** (1 / schedule_steps)
 
-    def update(self, data):
-        data = jax.tree.map(crl.utils.to_torch, data)
-        s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
+    def update(self, batches):
+        for data in batches:
+            data = jax.tree.map(crl.utils.to_torch, data)
+            s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
-        q = self.critic(s).gather(-1, a.long())
+            returns = th.zeros(r.shape[0])
+            for i in reversed(range(r.shape[1])):
+                returns += (0.99 * r[:, i])
 
-        a_p = self.critic(s_p).argmax(-1, keepdim=True)
-        q_p = self.targ_critic(s_p).gather(-1, a_p.long())
-        y = r + 0.99 * q_p * (1 - d)
+            r = returns.unsqueeze(-1)
 
-        loss = F.mse_loss(q, y.detach())
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+            q = self.critic(s).gather(-1, a.long())
 
-        self.update_count += 1
-        if self.update_count % 1_000 == 0:
-            self.targ_critic.load_state_dict(self.critic.state_dict())
+            a_p = self.critic(s_p).argmax(-1, keepdim=True)
+            q_p = self.targ_critic(s_p).gather(-1, a_p.long())
+            y = r + np.power(0.99, self.n_step) * q_p * (1 - d)
+
+            loss = F.mse_loss(q, y.detach())
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+            self.update_count += 1
+            if self.update_count % 1_000 == 0:
+                self.targ_critic.load_state_dict(self.critic.state_dict())
+
+    def _step(self, state):
+        th_state = th.from_numpy(state).unsqueeze(0).float()
+        action = self.critic(th_state).argmax().detach().numpy()
+        return action
 
     def step(self, state):
         if np.random.rand() > self.eps:
-            # TODO: rename input to something else
-            input = th.from_numpy(state).unsqueeze(0).float()
-            action = self.critic(input).argmax().detach().numpy()
+            action = self._step(state)
         else:
             action = self.env.action_space.sample()
 
         self.eps = max(self.min_eps, self.eps * self.ann_coeff)
         return action, {}
+    
+    def eval_step(self, state):
+        return self._step(state), {}
 
 
 def main():
     runner = crl.OffPolicyRunner(
         env=gym.make("CartPole-v1"),
-        agent=DQN(),
-        rollout_len=4,
+        agent=DQN(n_step=2),
+        rollout_len=5,
         batch_size=32,
+        n_step=2
     )
-    runner.run(50_000)
+    runner.run(50_000, eval_interval=10_000, eval_episodes=1)
 
 
 if __name__ == "__main__":

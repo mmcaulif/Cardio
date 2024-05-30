@@ -17,6 +17,9 @@ class Agent:
 
     def step(self, state: np.ndarray):
         return self.env.action_space.sample(), {}
+    
+    def eval_step(self, state: np.ndarray):
+        return self.step(state)
 
     def update(self, data: list[dict[str, np.array]]):
         pass
