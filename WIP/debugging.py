@@ -6,6 +6,7 @@ from cardio_rl.transitions import BaseTransition
 from typing import NamedTuple
 from debug_env import CardioDebugEnv
 
+
 class TestTransition(BaseTransition):
     def __call__(self):
         s = th.from_numpy(np.array(self.s)).float()
@@ -14,6 +15,7 @@ class TestTransition(BaseTransition):
         s_p = th.from_numpy(np.array(self.s_p)).float()
         d = th.from_numpy(np.array(self.d)).unsqueeze(1).int()
         return s, a, r, s_p, d, self.i
+
 
 env = CardioDebugEnv()
 
@@ -29,20 +31,20 @@ Need to consider options/possibilities...
 """
 
 runner = Runner(
-	env=env,
-	policy='random',
+    env=env,
+    policy="random",
     sampler=True,
     capacity=1_000,
     batch_size=2,
-	collector=Gatherer(
-		env=env,
-		rollout_len=2,
+    collector=Gatherer(
+        env=env,
+        rollout_len=2,
         warmup_len=6,
         n_step=4,
         take_every=2,
-		),
-	reduce=False,
-	backend='pytorch'
+    ),
+    reduce=False,
+    backend="pytorch",
 )
 
 batch: NamedTuple = runner.step(net=None)

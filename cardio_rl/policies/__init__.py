@@ -1,10 +1,12 @@
-from .basic import (BasePolicy, 
-                    WhitenoiseDeterministic, 
-                    EpsilonArgmax, 
-                    Gaussian, 
-                    NoisyNaf,
-                    Categorical,
-                    Beta)
+from .basic import (
+    BasePolicy,
+    WhitenoiseDeterministic,
+    EpsilonArgmax,
+    Gaussian,
+    NoisyNaf,
+    Categorical,
+    Beta,
+)
 
 REGISTRY = {}
 

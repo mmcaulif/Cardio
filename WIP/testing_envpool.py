@@ -11,7 +11,7 @@ env = envpool.make_gymnasium("Hopper-v4")
 obs = env.reset()
 
 for _ in trange(1_000_000):
-    act = np.array([env.action_space.sample()])  
+    act = np.array([env.action_space.sample()])
     # act = env.action_space.sample()
 
     obs, rew, term, trunc, info = env.step(act)
@@ -24,4 +24,4 @@ end_time = time.time()
 
 # Calculate elapsed time
 elapsed_time = end_time - start_time
-print("Elapsed time: ", elapsed_time) 
+print("Elapsed time: ", elapsed_time)

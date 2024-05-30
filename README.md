@@ -22,7 +22,8 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
   * [x] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
   * [x] Cleaner passing of rollout step and warmup length handling
   * [ ] Review Gatherer inner workings and runner inner workings (consider moving to pytrees)
-  * [ ] Add evaluation methodology, requires changing of logging
+  * [x] Add evaluation methodology
+  * [ ] Change logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
   * [x] Add reset, update_agent and load methods for runner/agent (e.g. for use in Reptile impl)
   * [ ] Add trajectory and n-step adder
 

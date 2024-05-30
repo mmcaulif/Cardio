@@ -1,4 +1,3 @@
-
 from typing import Optional
 from gymnasium import Env
 from cardio_rl.agent import Agent
@@ -20,7 +19,6 @@ class OffPolicyRunner(BaseRunner):
         gatherer: Gatherer = Gatherer(),
         n_batches: int = 1,
     ) -> None:
-        
         self.buffer = TreeBuffer(env, capacity, extra_specs)
         self.capacity = capacity
         self.extra_specs = extra_specs
@@ -49,7 +47,7 @@ class OffPolicyRunner(BaseRunner):
 
         if self.n_step == 1:
             return batch
-        
+
     def reset(self) -> None:
         del self.buffer
         self.buffer = TreeBuffer(self.env, self.capacity, self.extra_specs)

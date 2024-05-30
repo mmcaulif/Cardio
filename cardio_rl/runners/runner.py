@@ -12,6 +12,7 @@ from cardio_rl.agent import Agent
 Refactor to be a base runner that is inherited by both on-policy and off-policy
 """
 
+
 class BaseRunner:
     def __init__(
         self,
@@ -21,7 +22,6 @@ class BaseRunner:
         warmup_len: int = 1_000,
         gatherer: Gatherer = Gatherer(),
     ) -> None:
-
         self.env = env
         self.rollout_len = rollout_len
         self.warmup_len = warmup_len
@@ -30,10 +30,10 @@ class BaseRunner:
         self._burn_in(0)
 
         self.agent = agent
-        self.agent.setup(self.env)   
+        self.agent.setup(self.env)
 
         self.gatherer._init_env(self.env)
-        self._warm_start()      
+        self._warm_start()
 
     def _burn_in(self, length: int) -> dict:
         dummy = Agent()
@@ -50,25 +50,27 @@ class BaseRunner:
     def _warm_start(self):
         # Need to figure out whether to perform a random policy or not during warmup
         batch = self._rollout(self.warmup_len)
-        logging.info('### Warm up finished ###')
-        
+        logging.info("### Warm up finished ###")
+
     def step(self) -> dict:
         rollout_batch = self._rollout(self.rollout_len)
         batch_samples = self.prep_batch(rollout_batch)
         return batch_samples
-    
-    def run(self, rollouts: int = 1_000_000, eval_interval: int = 10_000, eval_episodes: int = 10) -> None:
+
+    def run(
+        self,
+        rollouts: int = 1_000_000,
+        eval_interval: int = 10_000,
+        eval_episodes: int = 10,
+    ) -> None:
         for i in trange(rollouts):
             data = self.step()
             self.agent.update(data)
             if i % eval_interval == 0:
                 self.evaluate(eval_episodes)
-    
+
     def evaluate(self, episodes: int) -> None:
-        metrics = {
-            'return': np.zeros(episodes),
-            'length': np.zeros(episodes)
-        }
+        metrics = {"return": np.zeros(episodes), "length": np.zeros(episodes)}
         for e in range(episodes):
             state, _ = self.env.reset()
             returns = 0
@@ -80,14 +82,14 @@ class BaseRunner:
                 steps += 1
                 state = next_state
                 if done or trun:
-                    metrics['return'][e] = returns
-                    metrics['length'][e] = steps
+                    metrics["return"][e] = returns
+                    metrics["length"][e] = steps
                     break
 
-    def update_agent(self, new_agent: Agent, setup = False):
+    def update_agent(self, new_agent: Agent, setup=False):
         self.agent = new_agent
         if setup:
-            self.agent.setup(self.env)  
+            self.agent.setup(self.env)
 
     def prep_batch(self, batch: dict) -> dict:
         return batch

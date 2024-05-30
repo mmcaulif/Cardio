@@ -1,6 +1,6 @@
-
 from gymnasium import Env
 import numpy as np
+
 
 class Agent:
     def __init__(self):
@@ -17,7 +17,7 @@ class Agent:
 
     def step(self, state: np.ndarray):
         return self.env.action_space.sample(), {}
-    
+
     def update(self, data: dict):
         pass
 
