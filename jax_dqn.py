@@ -1,3 +1,5 @@
+# type: ignore
+
 from typing import Any
 import distrax
 import jax
@@ -19,7 +21,7 @@ Efficient Rainbow impl checklist:
 * [x] Double dqn
 * [ ] PER
 * [ ] C51
-* [ ] n-step returns
+* [x] n-step returns
 """
 
 
@@ -69,8 +71,11 @@ class DDQN(crl.Agent):
         """
         Jax can only scan through an array, need to figure out a way to implement batches of data
         """
+        n = jnp.arange(len(batches))
+        batches = iter(batches)
 
-        def scan_batch(train_state: DdqnTrainState, data: dict):
+        def scan_batch(train_state: DdqnTrainState, n: int):
+            data = next(batches)
             @jax.value_and_grad
             def _loss(params, train_state: DdqnTrainState, data: dict):
                 q = train_state.apply_fn(params, data["s"])
@@ -99,8 +104,8 @@ class DDQN(crl.Agent):
 
             train_state = train_state.replace(target_params=target_params)
             return train_state, loss
-
-        self.train_state, _ = jax.lax.scan(scan_batch, self.train_state, batches)
+        
+        self.train_state, _ = jax.lax.scan(scan_batch, self.train_state, n)
 
     def step(self, state):
         # @jax.jit
@@ -124,7 +129,7 @@ def main():
         agent=DDQN(),
         rollout_len=4,
         batch_size=32,
-        warmup_len=1_000,
+        warmup_len=10_000,
         n_batches=1,
     )
     # runner.evaluate(episodes=500)
