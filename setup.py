@@ -1,3 +1,5 @@
+# type: ignore
+
 import os
 from setuptools import setup, find_packages
 
@@ -5,16 +7,20 @@ from setuptools import setup, find_packages
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-
 setup(
     name="cardio_rl",
     packages=find_packages(),
     install_requires=["numpy>=1.21.0", "gymnasium>=0.28.0", "tensorboard", "tqdm"],
     extras_require={
         "exp": [
-            # Optional dependencies for testing go here
+            # Optional dependencies for experimenting
             "hydra-core",
             "rich",
+        ],
+        "dev": [
+            # Optional dependencies for development
+            "ruff",
+            "mypy"
         ]
     },
     description="Cardio RL. In development...",
