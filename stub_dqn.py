@@ -38,7 +38,7 @@ class DQN(crl.Agent):
         self.ann_coeff = self.min_eps ** (1 / schedule_steps)
 
     def update(self, data):
-        data = jax.tree.map(crl.transitions.to_torch, data)
+        data = jax.tree.map(crl.utils.to_torch, data)
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
         q = self.critic(s).gather(-1, a.long())

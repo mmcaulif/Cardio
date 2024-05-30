@@ -1,12 +1,11 @@
 import copy
-import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import gymnasium as gym
 from gymnasium.wrappers import RescaleAction
-from cardio_rl import Runner, Gatherer
-from iet_buffer import IeTable
+from cardio_rl import OffPolicyRunner, Gatherer
+from implicit_event_tables.iet_buffer import IeTable
 
 
 class Q_critic(nn.Module):
@@ -110,7 +109,7 @@ for _ in range(iet_warmup):
 
 s_t, _ = env.reset()
 
-runner = Runner(
+runner = OffPolicyRunner(
     env=env,
     policy="whitenoise",
     collector=Gatherer(
