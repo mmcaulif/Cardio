@@ -78,9 +78,6 @@ class TreeBuffer:
         """
 		Need to verify this works as expected and there's no silent bugs
 		"""
-        # print(batch)
-        # print(len(batch['s']))
-        # exit()
 
         num = len(batch['s'])
 
