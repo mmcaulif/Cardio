@@ -19,16 +19,19 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
 
 * [ ] Refactor Gatherer and Runners, keep minimalist and introduce an agent class
   * [x] Get rid of the use of "__call__" methods for runner etc. use .step() and .run() instead
-  * [ ] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
+  * [x] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
   * [x] Cleaner passing of rollout step and warmup length handling
   * [ ] Review Gatherer inner workings and runner inner workings (consider moving to pytrees)
+  * [ ] Add evaluation methodology, requires changing of logging
+  * [x] Add reset, update_agent and load methods for runner/agent (e.g. for use in Reptile impl)
+  * [ ] Add trajectory and n-step adder
 
 * [ ] Improve logging
   * [x] Current time
   * [x] Env steps per second
   * [ ] Make logger/metrics system extensible (use dictionaries to pass around)
   * [ ] Rich logging, make it pretty and formatted well!!!
-  * [ ] Explore of logging could be done outside the gatherer (as its very nested)
+  * [ ] Explore if logging could be done outside the gatherer (as its very nested)
   * [ ] Figure out a way to make logging extensible and customisable
 
 * [ ] Improve extensibility
@@ -36,12 +39,13 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
     * add indeces sampled to batch data outputted
   * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
     * this ties into the above with using pytree's internally within the gatherer
-  * [ ] Consider different popular algorithms and how they could be implemented easily
 
 * [ ] Make library presentable
   * [ ] Jax based agent stubs
+    * [ ] Consider different popular algorithms and how they could be implemented easily
   * [ ] Linting and typing
   * [ ] Readme and docs, look at stoix for inspo
+  * [ ] Extensive testing!!!
 
 __Focus on getting some form of Cardio as a finished deliverable__
 
