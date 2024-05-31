@@ -18,11 +18,11 @@
     <p>Cardio: Runners for Deep Reinforcement Learning in Gym Environments</p>
 </h2>
 
-<!-- <div align="center">
+<div align="center">
 
-**_stoic - a person who can endure pain or hardship without showing their feelings or complaining._**
+**_Cleaner_** RL
 
-</div> -->
+</div>
 
 ## Cardio basics
 
