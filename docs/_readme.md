@@ -23,6 +23,30 @@
 
 </div>
 
+<!-- Overview -->
+- ⚡️ 
+- 🐍 
+- 🛠️ 
+- 🤝 
+- ⚖️ 
+- 📦 
+- 🔧 
+- 📏 
+- ⌨️ 
+- 🌎 
+
+_general aims and bit about cardio_
+<!-- End overview -->
+
+## Table of Contents
+1. [Cardio basics](#cardio-basics)
+1. [Installation](#installation)
+1. [Motivation](#motivation)
+1. [Simple Examples](#simple-examples)
+1. [Intermediate Examples](#intermediate-examples)
+1. [Development](#development)
+1. [Contributing](#contributing)
+
 ## Cardio basics
 
 ## Installation
@@ -42,3 +66,6 @@
         <img src="images/cat_pr_image.jpg" alt="Cat pull request image" width="30%"/>
     </a>
 </p>
+
+## License
+This repository is licensed under the [Apache 2.0 License](https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt)
