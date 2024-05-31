@@ -1,8 +1,14 @@
 
 <div align="center">
-<a href="https://www.python.org/doc/versions/">
-      <img src="https://img.shields.io/badge/python-3.10-blue" alt="Python Versions">
+
+<a href="https://github.com/astral-sh/ruff">
+    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff">
 </a>
+
+<a href="https://www.python.org/doc/versions/">
+    <img src="https://img.shields.io/badge/python-3.10-blue" alt="Python Versions">
+</a>
+
 <a  href="https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/License-Apache%202.0-orange.svg" alt="License" />
 </a>
