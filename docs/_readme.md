@@ -1,16 +1,12 @@
 
 <div align="center">
-<a href="https://github.com/astral-sh/ruff">
-    <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff">
-</a>
 
-<a href="https://www.python.org/doc/versions/">
-    <img src="https://img.shields.io/badge/python-3.10-blue" alt="Python Versions">
-</a>
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-<a  href="https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt">
-    <img src="https://img.shields.io/badge/License-Apache%202.0-orange.svg" alt="License" />
-</a>
+[![Pythonver](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://www.python.org/doc/versions/)
+
+[![License](https://img.shields.io/badge/python-3.10-blue)](https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt)
+
 </div>
 
 <h2 align="center">
