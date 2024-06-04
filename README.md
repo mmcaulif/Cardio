@@ -26,14 +26,22 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
   * [x] Add reset, update_agent and load methods for runner/agent (e.g. for use in Reptile impl)
   * [x] Add n-step collection
 
+* [ ] QOL Runner and Gatherer changes
+  * [ ] Have the rollout length be determined by how many transitions you want to get, not env steps
+  * [ ] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
+  * [ ] Write up documents and doc strings for Runner and Gatherer to make it easier to understand!!! 
+    * Include dimensions etc.
+  * [ ] Implement sequence/trajectory collection to runner/gatherer, have it be compatible with n-step
+
 * [ ] Improve logging
-  * [x] Current time
+  * [x] Current time spent
   * [x] Env steps per second
   * [ ] Move logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
   * [ ] Make logger/metrics system extensible (use dictionaries to pass around)
   * [ ] Rich logging, make it pretty and formatted well!!!
   * [ ] Explore if logging could be done outside the gatherer (as its very nested)
   * [ ] Figure out a way to make logging extensible and customisable
+  * [ ] Gatherer should return the number of steps taken and episodes completed
 
 * [ ] Improve extensibility
   * [x] Agents should be able to use and save extras (such as log probs)
@@ -44,14 +52,38 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
     * [ ] Add buffer overriding via extra info from agent update method
 
 * [ ] Make library presentable
-  * [ ] Jax based agent stubs
+  * [ ] Jax agent stubs
     * [ ] Will need to get access to a linux machine with a GPU to properly evaluate performance/speed
     * [ ] Consider different popular algorithms and how they could be implemented easily
+    * [ ] MinAtar baselines
+  * [ ] Simple examples
+    * [ ] DDPG
+    * [ ] SAC
+    * [ ] TD3
+    * [ ] Simplified MPO (?)
+    * [ ] Munchausen-DQN
+    * [ ] Dopamine Rainbow
+    * [ ] V-trace with experience replay
+  * [ ] Intermediate examples
+    * [ ] Simple NGU
+    * [ ] Simple SPR
+    * [ ] Simple DrQ(eps)
+    * [ ] Data efficient Rainbow
+    * [ ] HL-Gauss
+    * [ ] Soft MOE
   * [ ] Linting and typing
   * [ ] Readme and docs, look at stoicx for inspo
   * [ ] Extensive and widespread testing!!!
+  * [ ] Precommit hooks
+  * [ ] Make file
 
 __Focus on getting some form of Cardio as a finished deliverable__
+
+## Post-release
+* [ ] Github integrations for ruff, type checking
+* [ ] More test coverage and github integration
+* [ ] 
+
 
 ## To do list
 
@@ -68,7 +100,8 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [x] Remove warmup method in gatherer and make it a special call of the rollout method
 
-* [ ] Add trajectory buffer
+* [ ] Add trajectory 
+  * [ ] Recurrent DQN
 
 * [x] Add all action spaces to circular buffer
 
@@ -83,16 +116,13 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [ ] Makes sure vector collector work as intended for off-policy methods and n-step collector work as intended for on-policy methods etc.
 
-## Lower priority
+## Longer hoziron priority
+* [ ] Benchmark each implementation wrt. SB3 (change logging to timestep based first though)
+
+* [ ] Make library faster and performant!!!
+
 * [ ] Offline gatherer
   * on pause until mujoco sorted
-
-* [ ] Move agent stubs into own folder and refactor each one
-
-* [ ] Sort policies better, i.e. discrete, continuous
-  * [ ] Deprecated as moving towards an agent class
-
-* [ ] Benchmark each implementation wrt. SB3 (change logging to timestep based first though)
  
 ## Completed
 * [x] Implement multibatch sampling for off-policy runner
