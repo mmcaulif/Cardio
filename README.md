@@ -27,11 +27,14 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
   * [x] Add n-step collection
 
 * [ ] QOL Runner and Gatherer changes
-  * [ ] Have the rollout length be determined by how many transitions you want to get, not env steps
-  * [ ] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
+  * [x] Have the rollout length be determined by how many transitions you want to get, not env steps
+    * CONFIRM THIS WORKS AS INTENDED
+    * Swap names of transition and step in gatherer
+  * [x] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
   * [ ] Write up documents and doc strings for Runner and Gatherer to make it easier to understand!!! 
     * Include dimensions etc.
   * [ ] Implement sequence/trajectory collection to runner/gatherer, have it be compatible with n-step
+    * This is mainly on the gather_buffer side, whereas step_buffer is sufficient for handling n-step transitions
 
 * [ ] Improve logging
   * [x] Current time spent
@@ -82,7 +85,6 @@ __Focus on getting some form of Cardio as a finished deliverable__
 ## Post-release
 * [ ] Github integrations for ruff, type checking
 * [ ] More test coverage and github integration
-* [ ] 
 
 
 ## To do list
