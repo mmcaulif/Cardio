@@ -31,7 +31,6 @@ class BaseRunner:
 
         self.n_step = n_step
         self.agent = agent
-        self.agent.setup(self.env)
 
         self.gatherer._init_env(self.env)
         # self._burn_in(10_000) # TODO: implement propoerly with argument
@@ -42,8 +41,7 @@ class BaseRunner:
             self._warm_start()
 
     def _burn_in(self, length: int) -> None:
-        dummy = Agent()
-        dummy.setup(self.env)
+        dummy = Agent(self.env)
         self.gatherer.step(dummy, length)
 
     def _rollout(self, length: int) -> Transition:
@@ -96,10 +94,8 @@ class BaseRunner:
 
         return metrics
 
-    def update_agent(self, new_agent: Agent, setup=False):
+    def update_agent(self, new_agent: Agent):
         self.agent = new_agent
-        if setup:
-            self.agent.setup(self.env)
 
     def prep_batch(self, batch: dict) -> dict:
         if self.n_step > 1:

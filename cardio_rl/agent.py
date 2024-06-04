@@ -3,14 +3,8 @@ import numpy as np
 
 
 class Agent:
-    def __init__(self):
-        pass
-
-    def _init_env(self, env: Env):
+    def __init__(self, env: Env):
         self.env = env
-
-    def setup(self, env):
-        self._init_env(env)
 
     def view(self, transition: dict[str, np.array], extra: dict):
         return extra
