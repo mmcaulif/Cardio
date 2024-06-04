@@ -15,7 +15,7 @@ class TreeBuffer:
         capacity: int = 1_000_000, 
         extra_specs: dict = {},
         n_steps: int = 1,
-        trajectory: int = 1,
+        traj_len: int = 1,
     ):
         obs_space = env.observation_space
         obs_dims = obs_space.shape
@@ -30,10 +30,10 @@ class TreeBuffer:
         self.pos = 0
         self.capacity = capacity
         base_shape = [capacity]
-        if trajectory > 1:
-            if trajectory > 1 and n_steps > 1:
+        if traj_len > 1:
+            if n_steps > 1:
                 raise ValueError    # TODO: make the buffer compatible with both n_steps and trajectories
-            base_shape += [trajectory]
+            base_shape += [traj_len]
 
         self.full = False
 
@@ -64,7 +64,7 @@ class TreeBuffer:
             return self.capacity
         return self.pos
 
-    def store(self, batch: dict):
+    def store(self, batch: dict, num: int):
         def _place(arr, x, idx):
             """
             Instead of reshaping in this function maybe look into doing it in the gatherer
@@ -77,10 +77,7 @@ class TreeBuffer:
 
         """
 		Need to verify this works as expected and there's no silent bugs,
-        the below line is problematic when adding singular transitions, can definitely be cleaner!!!
-		"""
-
-        num = len(batch['s'])
+        """
 
         idxs = np.arange(self.pos, self.pos + num) % self.capacity
         place = functools.partial(_place, idx=idxs)
