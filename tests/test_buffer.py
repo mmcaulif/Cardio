@@ -12,7 +12,6 @@ class TestTreeBuffer:
         assert buffer.table['r'].shape == (cap, 1)
         assert buffer.table['s_p'].shape == (cap, 5)
         assert buffer.table['d'].shape == (cap, 1)
-            
 
     def test_sample(self):
         env = ToyEnv()

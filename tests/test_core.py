@@ -1,7 +1,7 @@
 import cardio_rl as crl
 import gymnasium as gym
 import numpy as np
-from cardio_rl import ToyEnv
+from cardio_rl.toy_env import ToyEnv
 
 
 class TestStack:
@@ -148,5 +148,6 @@ class TestEnv:
             s_tp1, _, done, _, _ = env.step(env.action_space.sample())
             assert s_tp1[0] == i
             i += 1
-    
-    
+
+
+# class TestUtils

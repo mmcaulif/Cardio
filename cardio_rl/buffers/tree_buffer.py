@@ -76,7 +76,8 @@ class TreeBuffer:
             return arr
 
         """
-		Need to verify this works as expected and there's no silent bugs
+		Need to verify this works as expected and there's no silent bugs,
+        the below line is problematic when adding singular transitions, can definitely be cleaner!!!
 		"""
 
         num = len(batch['s'])
