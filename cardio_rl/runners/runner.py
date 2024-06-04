@@ -98,8 +98,6 @@ class BaseRunner:
         self.agent = new_agent
 
     def prep_batch(self, batch: dict) -> dict:
-        if self.n_step > 1:
-            batch['r'] = np.transpose(batch['r'])
         return batch
 
     def reset(self) -> None:

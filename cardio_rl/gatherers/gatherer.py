@@ -1,5 +1,4 @@
 from collections import deque
-import itertools
 from typing import Deque, Optional
 from gymnasium import Env
 import numpy as np
@@ -17,12 +16,12 @@ class Gatherer:
     ) -> None:
         self.n_step = n_step
         self.take_every = take_every
-        self.take_count = 0
 
         if logger_kwargs is None:
             logger_kwargs = {}
 
         self.logger = Logger(**logger_kwargs)
+        self.gather_buffer: Deque = deque()
         self.step_buffer: Deque = deque(maxlen=n_step)
 
     def _init_env(self, env: Env):
@@ -35,14 +34,6 @@ class Gatherer:
         self.logger.step(r, d, t)
         d = d or t
 
-        """
-        In the interest of making it easier in cardio to track and pass different features and values
-        between components it could be good to move towards a dictionary/dataclass approach for 
-        timesteps. Using pytree utils this could be relatively straight forward and extensible.
-
-        update: this is now partially implemented but needs to be fully extended to allow for n-step etc.
-        """
-
         transition = {"s": s, "a": a, "r": r, "s_p": s_p, "d": d}
         ext = agent.view(transition, ext)
         transition.update(ext)
@@ -54,46 +45,38 @@ class Gatherer:
         agent: Agent,
         length: int,
     ) -> list[Transition]:
-        # For eval or for reinforce
-        if length == -1:
-            ret_if_term = True
-            iterator = itertools.count()
-        else:
-            ret_if_term = False
-            iterator = range(length)  # type: ignore
 
-        gather_buffer: Deque = deque(maxlen=length)
-
-        for _ in iterator:
+        steps_added = 0
+        while steps_added < length and length > 0:
             transition, next_state, done, trun = self._env_step(agent, self.state)
             self.step_buffer.append(transition)
+            
             if len(self.step_buffer) == self.n_step:
-                    
-                if self.n_step == 1:
-                    # No idea why but if not converted to a list this overrides the whole gather buffer
-                    gather_buffer.append(*list(self.step_buffer))
-                else:
-                    n_step = {
-                        "s": self.step_buffer[0]['s'], 
-                        "a": self.step_buffer[0]['a'], 
-                        "r": [step['r'] for step in self.step_buffer],
-                        "s_p": self.step_buffer[-1]['s_p'],
-                        "d": self.step_buffer[-1]['d'],
-                    }
-                    gather_buffer.append(n_step)
-
-                self.take_count += 1
+                step = {
+                    "s": self.step_buffer[0]['s'], 
+                    "a": self.step_buffer[0]['a'], 
+                    "r": np.array([step['r'] for step in self.step_buffer]),
+                    "s_p": self.step_buffer[-1]['s_p'],
+                    "d": self.step_buffer[-1]['d'],
+                }
+                self.gather_buffer.append(step)
+                steps_added += 1
 
             self.state = next_state
             if done or trun:
                 self.state, _ = self.env.reset()
                 self.step_buffer = deque(maxlen=self.n_step)
                 agent.terminal()
-                if ret_if_term:
-                    return list(gather_buffer)
-
-        return list(gather_buffer)
+                # For eval or for reinforce
+                if length == -1:
+                    break
+        
+        # Process the gather buffer
+        output_batch = list(self.gather_buffer)
+        self.gather_buffer.clear()
+        return output_batch
 
     def reset(self) -> None:
         self.step_buffer.clear()
+        self.gather_buffer.clear()
         self.env.reset()
