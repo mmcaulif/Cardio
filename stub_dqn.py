@@ -25,7 +25,8 @@ class Q_critic(nn.Module):
 
 
 class DQN(crl.Agent):
-    def __init__(self, n_step: int):
+    def __init__(self, env: gym.Env, n_step: int):
+        self.env = env
         self.n_step = n_step
         self.critic = Q_critic(4, 2)
         self.targ_critic = Q_critic(4, 2)
@@ -83,9 +84,10 @@ class DQN(crl.Agent):
 
 
 def main():
+    env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
-        env=gym.make("CartPole-v1"),
-        agent=DQN(n_step=2),
+        env=env,
+        agent=DQN(env, n_step=2),
         rollout_len=5,
         batch_size=32,
         n_step=2

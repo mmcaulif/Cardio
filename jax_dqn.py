@@ -21,7 +21,10 @@ Efficient Rainbow impl checklist:
 * [x] Double dqn
 * [ ] PER
 * [ ] C51
-* [x] n-step returns
+* [x] n-step returns    # https://rlax.readthedocs.io/en/latest/api.html#rlax.n_step_bootstrapped_returns
+
+Dopamine rainbow details:
+https://github.com/google/dopamine/blob/master/dopamine/jax/agents/rainbow/rainbow_agent.py
 """
 
 
@@ -43,14 +46,8 @@ class DuellingQ(nn.Module):
 
 
 class DDQN(crl.Agent):
-    def __init__(self, seed: int = 0):
+    def __init__(self, env: Env, seed: int = 0):
         self.key = jax.random.PRNGKey(seed)
-        self.eps = 0.9
-        self.min_eps = 0.05
-        schedule_steps = 20_000
-        self.ann_coeff = self.min_eps ** (1 / schedule_steps)
-
-    def setup(self, env: Env):
         self.env = env
         self.key, init_key = jax.random.split(self.key)
         model = DuellingQ(action_dim=env.action_space.n)
@@ -66,6 +63,10 @@ class DDQN(crl.Agent):
             tx=optim,
             target_params=params,
         )
+        self.eps = 0.9
+        self.min_eps = 0.05
+        schedule_steps = 20_000
+        self.ann_coeff = self.min_eps ** (1 / schedule_steps)
 
     def update(self, batches: list):
         """
@@ -123,10 +124,10 @@ class DDQN(crl.Agent):
 
 def main():
     env_name = "CartPole-v1"  # CartPole-v1 LunarLander-v2
-
+    env = gym.make(env_name)
     runner = crl.OffPolicyRunner(
-        env=gym.make(env_name),
-        agent=DDQN(),
+        env=env,
+        agent=DDQN(env),
         rollout_len=4,
         batch_size=32,
         warmup_len=10_000,
