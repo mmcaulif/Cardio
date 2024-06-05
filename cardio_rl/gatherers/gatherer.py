@@ -11,17 +11,15 @@ class Gatherer:
     def __init__(
         self,
         n_step: int = 1,
-        take_every: int = 1,
         logger_kwargs: Optional[dict] = None,
     ) -> None:
         self.n_step = n_step
-        self.take_every = take_every
 
         if logger_kwargs is None:
             logger_kwargs = {}
 
         self.logger = Logger(**logger_kwargs)
-        self.gather_buffer: Deque = deque()
+        self.transition_buffer: Deque = deque()
         self.step_buffer: Deque = deque(maxlen=n_step)
 
     def _init_env(self, env: Env):
@@ -45,12 +43,11 @@ class Gatherer:
         agent: Agent,
         length: int,
     ) -> list[Transition]:
-
-        steps_added = 0
-        while steps_added < length and length > 0:
+        
+        for _ in range(length):
             transition, next_state, done, trun = self._env_step(agent, self.state)
             self.step_buffer.append(transition)
-            
+
             if len(self.step_buffer) == self.n_step:
                 step = {
                     "s": self.step_buffer[0]['s'], 
@@ -59,24 +56,55 @@ class Gatherer:
                     "s_p": self.step_buffer[-1]['s_p'],
                     "d": self.step_buffer[-1]['d'],
                 }
-                self.gather_buffer.append(step)
-                steps_added += 1
+                self.transition_buffer.append(step)
 
             self.state = next_state
             if done or trun:
+                if self.n_step > 1:
+                    self._flush_step_buffer()
                 self.state, _ = self.env.reset()
-                self.step_buffer = deque(maxlen=self.n_step)
+                self.step_buffer.clear()
                 agent.terminal()
-                # For eval or for reinforce
+                # For evaluation and/or reinforce
                 if length == -1:
                     break
         
         # Process the gather buffer
-        output_batch = list(self.gather_buffer)
-        self.gather_buffer.clear()
-        return output_batch
+        transition_list = list(self.transition_buffer)
+        self.transition_buffer.clear()
+        return transition_list
 
     def reset(self) -> None:
         self.step_buffer.clear()
-        self.gather_buffer.clear()
+        self.transition_buffer.clear()
         self.env.reset()
+
+    def _flush_step_buffer(self) -> None:
+        
+        """
+        When using n-step transitions and reaching a terminal state,
+        use the remaining individual steps in the step_buffer to not
+        waste information i.e. iterate through states and pad reward
+        Ignore first step as that has already been added to 
+        transition buffer
+        """
+
+        remainder = len(self.step_buffer)
+
+        if remainder < self.n_step:
+            start = 0
+        else:
+            start = 1
+        
+        for i in range(start, remainder):
+            temp = list(self.step_buffer)[i:]
+            pad = [0.] * i
+            step = {
+                "s": temp[0]['s'], 
+                "a": temp[0]['a'], 
+                "r": np.array([step['r'] for step in temp] + pad),
+                "s_p": temp[-1]['s_p'],
+                "d": temp[-1]['d'],
+            }
+            
+            self.transition_buffer.append(step)

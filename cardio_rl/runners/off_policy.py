@@ -28,11 +28,11 @@ class OffPolicyRunner(BaseRunner):
 
         super().__init__(env, agent, rollout_len, warmup_len, n_step=n_step)
 
-    def _rollout(self, length: int) -> Transition:
-        rollout_batch = super()._rollout(length)
+    def _rollout(self, length: int) -> tuple[list[Transition], int]:
+        rollout_batch, num_transitions = super()._rollout(length)
         prepped_batch = self.prep_batch(rollout_batch)
-        self.buffer.store(prepped_batch, length)
-        return rollout_batch
+        self.buffer.store(prepped_batch, num_transitions)
+        return rollout_batch, num_transitions
 
     def step(self) -> list[Transition]:
         self._rollout(self.rollout_len)

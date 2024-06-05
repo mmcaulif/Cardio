@@ -2,7 +2,6 @@ import copy
 import logging
 from typing import Optional
 
-import numpy as np
 import cardio_rl as crl
 from tqdm import trange
 from gymnasium import Env
@@ -44,9 +43,9 @@ class BaseRunner:
         dummy = Agent(self.env)
         self.gatherer.step(dummy, length)
 
-    def _rollout(self, length: int) -> Transition:
+    def _rollout(self, length: int) -> tuple[list[Transition], int]:
         rollout_batch = self.gatherer.step(self.agent, length)
-        return crl.tree.stack(rollout_batch)
+        return rollout_batch, len(rollout_batch)
 
     def _warm_start(self):
         # Need to figure out whether to perform a random policy or not during warmup
@@ -54,15 +53,15 @@ class BaseRunner:
         logging.info("### Warm up finished ###")
 
     def step(self) -> list[Transition]:
-        rollout_batch = self._rollout(self.rollout_len)
-        batch_samples = self.prep_batch(rollout_batch)
-        return [batch_samples]
+        rollout_batch, num_transtions = self._rollout(self.rollout_len)
+        del num_transtions
+        return [self.prep_batch(rollout_batch)]
 
     def run(
         self,
         rollouts: int = 1_000_000,
-        eval_interval: int = 10_000,
-        eval_episodes: int = 100,
+        eval_interval: int = 0,
+        eval_episodes: int = 0,
     ) -> None:
         steps = 0
 
@@ -76,29 +75,33 @@ class BaseRunner:
             steps += self.rollout_len
 
     def evaluate(self, episodes: int) -> dict:
-        metrics = {"return": np.zeros(episodes), "length": np.zeros(episodes)}
-        for e in range(episodes):
-            state, _ = self.eval_env.reset()
-            returns = 0.0
-            steps: int = 0
-            while True:
-                action, _ = self.agent.eval_step(state)
-                next_state, reward, done, trun, _ = self.eval_env.step(action)
-                returns += reward  # type: ignore
-                steps += 1
-                state = next_state
-                if done or trun:
-                    metrics["return"][e] = returns
-                    metrics["length"][e] = steps
-                    break
+        """
+        To be returned to when updating logging
+        """
+        return {}
+        # metrics = {"return": np.zeros(episodes), "length": np.zeros(episodes)}
+        # for e in range(episodes):
+        #     state, _ = self.eval_env.reset()
+        #     returns = 0.0
+        #     steps: int = 0
+        #     while True:
+        #         action, _ = self.agent.eval_step(state)
+        #         next_state, reward, done, trun, _ = self.eval_env.step(action)
+        #         returns += reward  # type: ignore
+        #         steps += 1
+        #         state = next_state
+        #         if done or trun:
+        #             metrics["return"][e] = returns
+        #             metrics["length"][e] = steps
+        #             break
 
-        return metrics
+        # return metrics
 
     def update_agent(self, new_agent: Agent):
         self.agent = new_agent
 
-    def prep_batch(self, batch: dict) -> dict:
-        return batch
+    def prep_batch(self, batch: list[Transition]) -> Transition:
+        return crl.tree.stack(batch)
 
     def reset(self) -> None:
         self.gatherer.reset()
