@@ -6,7 +6,7 @@ The purpose of this library was initially to speed up my own self-implemented ve
 This is still heavily a work in progress and even many of the (poorly organised) stubs do not work with the current versions of the runner. Going forward I will be chipping away at streamlining, organising and documenting this repository when I get the chance!
 
 # Cardio basics
-This section will be overhauled at a later date, but now the gist of Cardio is the Runner class that gives you a simple interface that wraps the environment and then with one method, will step through the environment, collect transitions, and process them in your defined way. The runner supports n-step transitions, custom policies and custom processing. Currently the runner class is biased with off-policy algorithms in mind (altough fully supporting on-policy approaches too) but going forward it will be better balanced between the two.
+This section will be overhauled at a later date, but now the gist of Cardio is the Runner class that gives you a simple interface that wraps the environment and then with one method, will step through the environment, collect transitions, and process them in your defined way. The runner supports n-step transitions, custom policies and custom processing. Currently the runner class is biased towards off-policy algorithms in mind (altough fully supporting on-policy approaches too) but going forward it will be better balanced between the two.
 
 # Big Refactor and prerequisites for release
 
@@ -22,20 +22,20 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
   * [x] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
   * [x] Cleaner passing of rollout step and warmup length handling
   * [ ] Review Gatherer inner workings and runner inner workings
+    * [ ] You'll absolutely need to document these well and understand them well (incl. edge cases)
   * [x] Add evaluation methodology
   * [x] Add reset, update_agent and load methods for runner/agent (e.g. for use in Reptile impl)
   * [x] Add n-step collection
 
 * [ ] QOL Runner and Gatherer changes
-  * [x] Have the rollout length be determined by how many transitions you want to get, not env steps
-    * CONFIRM THIS WORKS AS INTENDED
-    * Swap names of transition and step in gatherer
   * [x] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
   * [ ] Write up documents and doc strings for Runner and Gatherer to make it easier to understand!!! 
     * Include dimensions etc.
+    * Use NumPy style docs
+  * [ ] Verify that Runner can be used without supplying an agent in a manner as expected
   * [ ] Implement sequence/trajectory collection to runner/gatherer, have it be compatible with n-step
-    * This is mainly on the gather_buffer side, whereas step_buffer is sufficient for handling n-step transitions
-
+    * This is can be done via the replay buffer most likely!
+    
 * [ ] Improve logging
   * [x] Current time spent
   * [x] Env steps per second
@@ -88,25 +88,18 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 
 ## To do list
-
 * [ ] Make default research template via make, conda, hydra, optuna etc.
-
 * [ ] Minor refactor to gatherer and runner, add default arg values, careful consideration needed
   * [x] change collector name to gatherer, idk why its different
   * still not confident on all changes and structure
-
 * [ ] Create package!
   * [x] basic implementation done
   * [ ] need to do PyPi and look into further improvements
   * [ ] documentation, contribution guide, linting etc.
-
 * [x] Remove warmup method in gatherer and make it a special call of the rollout method
-
-* [ ] Add trajectory 
+* [ ] Add trajectory collection
   * [ ] Recurrent DQN
-
 * [x] Add all action spaces to circular buffer
-
 * [ ] Benchmark and debug after restructuring
 
 
