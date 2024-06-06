@@ -1,6 +1,6 @@
 import jax
 import numpy as np
-from cardio_rl import Transition
+from cardio_rl.types import Transition
 
 
 def stack(tree_list: list[Transition], axis=0) -> Transition:

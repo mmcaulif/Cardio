@@ -10,7 +10,14 @@ class ToyEnv(gym.Env):
         self.count = 0
 
         self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.Box(0, self.maxlen, shape=[5,], dtype=np.float32)
+        self.observation_space = spaces.Box(
+            0,
+            self.maxlen,
+            shape=[
+                5,
+            ],
+            dtype=np.float32,
+        )
 
     def step(self, action):
         self.count += 1
@@ -19,7 +26,7 @@ class ToyEnv(gym.Env):
         if self.count == self.maxlen:
             return np.array(state), 1, True, False, {}
 
-        return np.array(state), 0.1*self.count, False, False, {}
+        return np.array(state), 0.1 * self.count, False, False, {}
 
     def reset(self):
         self.count = 0

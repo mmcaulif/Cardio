@@ -77,6 +77,7 @@ class DDQN(crl.Agent):
 
         def scan_batch(train_state: DdqnTrainState, n: int):
             data = next(batches)
+
             @jax.value_and_grad
             def _loss(params, train_state: DdqnTrainState, data: dict):
                 q = train_state.apply_fn(params, data["s"])
@@ -105,7 +106,7 @@ class DDQN(crl.Agent):
 
             train_state = train_state.replace(target_params=target_params)
             return train_state, loss
-        
+
         self.train_state, _ = jax.lax.scan(scan_batch, self.train_state, n)
 
     def step(self, state):

@@ -46,7 +46,7 @@ class DQN(crl.Agent):
 
             returns = th.zeros(r.shape[0])
             for i in reversed(range(r.shape[1])):
-                returns += (0.99 * r[:, i])
+                returns += 0.99 * r[:, i]
 
             r = returns.unsqueeze(-1)
 
@@ -78,7 +78,7 @@ class DQN(crl.Agent):
 
         self.eps = max(self.min_eps, self.eps * self.ann_coeff)
         return action, {}
-    
+
     def eval_step(self, state):
         return self._step(state), {}
 
@@ -86,11 +86,7 @@ class DQN(crl.Agent):
 def main():
     env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
-        env=env,
-        agent=DQN(env, n_step=2),
-        rollout_len=5,
-        batch_size=32,
-        n_step=2
+        env=env, agent=DQN(env, n_step=2), rollout_len=5, batch_size=32, n_step=2
     )
     runner.run(50_000, eval_interval=10_000, eval_episodes=1)
 

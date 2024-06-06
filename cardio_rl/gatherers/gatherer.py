@@ -4,7 +4,8 @@ from gymnasium import Env
 import numpy as np
 from cardio_rl.logger import Logger
 from cardio_rl.agent import Agent
-from cardio_rl import Transition
+from cardio_rl.types import Transition
+from numpy.typing import NDArray
 
 
 class Gatherer:
@@ -26,7 +27,7 @@ class Gatherer:
         self.env = env
         self.state, _ = self.env.reset()
 
-    def _env_step(self, agent: Agent, s: np.array):
+    def _env_step(self, agent: Agent, s: NDArray):
         a, ext = agent.step(s)
         s_p, r, d, t, _ = self.env.step(a)
         self.logger.step(r, d, t)
@@ -43,18 +44,17 @@ class Gatherer:
         agent: Agent,
         length: int,
     ) -> list[Transition]:
-        
         for _ in range(length):
             transition, next_state, done, trun = self._env_step(agent, self.state)
             self.step_buffer.append(transition)
 
             if len(self.step_buffer) == self.n_step:
                 step = {
-                    "s": self.step_buffer[0]['s'], 
-                    "a": self.step_buffer[0]['a'], 
-                    "r": np.array([step['r'] for step in self.step_buffer]),
-                    "s_p": self.step_buffer[-1]['s_p'],
-                    "d": self.step_buffer[-1]['d'],
+                    "s": self.step_buffer[0]["s"],
+                    "a": self.step_buffer[0]["a"],
+                    "r": np.array([step["r"] for step in self.step_buffer]),
+                    "s_p": self.step_buffer[-1]["s_p"],
+                    "d": self.step_buffer[-1]["d"],
                 }
                 self.transition_buffer.append(step)
 
@@ -68,7 +68,7 @@ class Gatherer:
                 # For evaluation and/or reinforce
                 if length == -1:
                     break
-        
+
         # Process the gather buffer
         transition_list = list(self.transition_buffer)
         self.transition_buffer.clear()
@@ -80,12 +80,11 @@ class Gatherer:
         self.env.reset()
 
     def _flush_step_buffer(self) -> None:
-        
         """
         When using n-step transitions and reaching a terminal state,
         use the remaining individual steps in the step_buffer to not
         waste information i.e. iterate through states and pad reward
-        Ignore first step as that has already been added to 
+        Ignore first step as that has already been added to
         transition buffer
         """
 
@@ -95,16 +94,16 @@ class Gatherer:
             start = 0
         else:
             start = 1
-        
+
         for i in range(start, remainder):
             temp = list(self.step_buffer)[i:]
-            pad = [0.] * i
+            pad = [0.0] * i
             step = {
-                "s": temp[0]['s'], 
-                "a": temp[0]['a'], 
-                "r": np.array([step['r'] for step in temp] + pad),
-                "s_p": temp[-1]['s_p'],
-                "d": temp[-1]['d'],
+                "s": temp[0]["s"],
+                "a": temp[0]["a"],
+                "r": np.array([step["r"] for step in temp] + pad),
+                "s_p": temp[-1]["s_p"],
+                "d": temp[-1]["d"],
             }
-            
+
             self.transition_buffer.append(step)

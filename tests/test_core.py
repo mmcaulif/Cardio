@@ -8,73 +8,74 @@ class TestStack:
     """
     Add reparameterisation for multiple different shapes/data
     """
+
     def test_data(self):
         d1 = {
-            'a': np.array([1.0]),
-            'b': np.array([0.1]),
+            "a": np.array([1.0]),
+            "b": np.array([0.1]),
         }
         d2 = {
-            'a': np.array([2.0]),
-            'b': np.array([0.2]),
+            "a": np.array([2.0]),
+            "b": np.array([0.2]),
         }
         stacked_dicts = crl.tree.stack([d1, d2])
-        cond_a = np.allclose(stacked_dicts['a'], np.array([[1.0], [2.0]]))
-        cond_b = np.allclose(stacked_dicts['b'], np.array([[0.1], [0.2]]))
+        cond_a = np.allclose(stacked_dicts["a"], np.array([[1.0], [2.0]]))
+        cond_b = np.allclose(stacked_dicts["b"], np.array([[0.1], [0.2]]))
         assert cond_a and cond_b
 
     def test_shape(self):
         d1 = {
-            'a': np.ones([100]),
-            'b': np.ones([10, 3]),
+            "a": np.ones([100]),
+            "b": np.ones([10, 3]),
         }
         d2 = {
-            'a': np.ones([100]),
-            'b': np.ones([10, 3]),
+            "a": np.ones([100]),
+            "b": np.ones([10, 3]),
         }
         stacked_dicts = crl.tree.stack([d1, d2])
-        cond_a = stacked_dicts['a'].shape == (2, 100)
-        cond_b = stacked_dicts['b'].shape == (2, 10, 3)
+        cond_a = stacked_dicts["a"].shape == (2, 100)
+        cond_b = stacked_dicts["b"].shape == (2, 10, 3)
         assert cond_a and cond_b
-
 
     def test_added_dim(self):
         d = {
-            'a': np.ones([100]),
+            "a": np.ones([100]),
         }
         stacked_dicts = crl.tree.stack([d])
-        assert stacked_dicts['a'].shape == (1, 100)
+        assert stacked_dicts["a"].shape == (1, 100)
 
 
 class TestConcatenate:
     """
     Add reparameterisation for multiple different shapes/data
     """
+
     def test_data(self):
         d1 = {
-            'a': np.array([1.0]),
-            'b': np.array([0.1]),
+            "a": np.array([1.0]),
+            "b": np.array([0.1]),
         }
         d2 = {
-            'a': np.array([2.0]),
-            'b': np.array([0.2]),
+            "a": np.array([2.0]),
+            "b": np.array([0.2]),
         }
         stacked_dicts = crl.tree.concatenate([d1, d2])
-        cond_a = np.allclose(stacked_dicts['a'], np.array([1.0, 2.0]))
-        cond_b = np.allclose(stacked_dicts['b'], np.array([0.1, 0.2]))
+        cond_a = np.allclose(stacked_dicts["a"], np.array([1.0, 2.0]))
+        cond_b = np.allclose(stacked_dicts["b"], np.array([0.1, 0.2]))
         assert cond_a and cond_b
 
     def test_shape(self):
         d1 = {
-            'a': np.ones([100]),
-            'b': np.ones([10, 3]),
+            "a": np.ones([100]),
+            "b": np.ones([10, 3]),
         }
         d2 = {
-            'a': np.ones([100]),
-            'b': np.ones([10, 3]),
+            "a": np.ones([100]),
+            "b": np.ones([10, 3]),
         }
         stacked_dicts = crl.tree.concatenate([d1, d2])
-        cond_a = stacked_dicts['a'].shape == (200,)
-        cond_b = stacked_dicts['b'].shape == (20, 3)
+        cond_a = stacked_dicts["a"].shape == (200,)
+        cond_b = stacked_dicts["b"].shape == (20, 3)
         assert cond_a and cond_b
 
 
@@ -83,7 +84,6 @@ class TestAgent:
         env = ToyEnv()
         agent = crl.Agent(env)
         assert isinstance(agent.env, ToyEnv)
-
 
     def test_step(self):
         env = ToyEnv()
@@ -103,15 +103,15 @@ class TestAgent:
         del a_t
         assert isinstance(extras, dict)
 
-    
+
 class TestEnv:
     def test_length(self):
         length = 20
         env = ToyEnv(maxlen=length)
         for i in range(length):
             _, _, done, _, _ = env.step(env.action_space.sample())
-            if i == length-1:
-                assert done 
+            if i == length - 1:
+                assert done
             else:
                 assert not done
 
@@ -131,7 +131,7 @@ class TestEnv:
     def test_obs_space(self):
         env = ToyEnv()
         assert isinstance(env.observation_space, gym.spaces.Box)
-    
+
     def test_action_oracle(self):
         env = ToyEnv()
         done = False

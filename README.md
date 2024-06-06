@@ -29,13 +29,13 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
 
 * [ ] QOL Runner and Gatherer changes
   * [x] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
-  * [ ] Write up documents and doc strings for Runner and Gatherer to make it easier to understand!!! 
+  * [ ] Write up documents and doc strings for Runner and Gatherer to make it easier to understand!!!
     * Include dimensions etc.
     * Use NumPy style docs
   * [ ] Verify that Runner can be used without supplying an agent in a manner as expected
   * [ ] Implement sequence/trajectory collection to runner/gatherer, have it be compatible with n-step
     * This is can be done via the replay buffer most likely!
-    
+
 * [ ] Improve logging
   * [x] Current time spent
   * [x] Env steps per second
@@ -79,6 +79,7 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
   * [ ] Extensive and widespread testing!!!
   * [ ] Precommit hooks
   * [ ] Make file
+  * [ ] Docker file (?)
 
 __Focus on getting some form of Cardio as a finished deliverable__
 
@@ -118,7 +119,7 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [ ] Offline gatherer
   * on pause until mujoco sorted
- 
+
 ## Completed
 * [x] Implement multibatch sampling for off-policy runner
 

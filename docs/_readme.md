@@ -20,16 +20,16 @@
 </div>
 
 <!-- Overview -->
-- ⚡️ 
-- 🐍 
-- 🛠️ 
-- 🤝 
-- ⚖️ 
-- 📦 
-- 🔧 
-- 📏 
-- ⌨️ 
-- 🌎 
+- ⚡️
+- 🐍
+- 🛠️
+- 🤝
+- ⚖️
+- 📦
+- 🔧
+- 📏
+- ⌨️
+- 🌎
 
 _general aims and bit about cardio_
 <!-- End overview -->
@@ -38,6 +38,7 @@ _general aims and bit about cardio_
 1. [Cardio basics](#cardio-basics)
 1. [Installation](#installation)
 1. [Motivation](#motivation)
+1. [Under the hood](#under-the-hood)
 1. [Simple Examples](#simple-examples)
 1. [Intermediate Examples](#intermediate-examples)
 1. [Development](#development)
@@ -49,7 +50,15 @@ _general aims and bit about cardio_
 
 ## Motivation
 
+## Under the hood
+
 ## Simple Examples
+
+### Q-Learning
+
+### Reinforce
+
+### DQN
 
 ## Intermediate Examples
 
