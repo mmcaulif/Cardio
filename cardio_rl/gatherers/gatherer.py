@@ -1,3 +1,4 @@
+import itertools
 from collections import deque
 from typing import Deque, Optional
 
@@ -46,7 +47,8 @@ class Gatherer:
         agent: Agent,
         length: int,
     ) -> list[Transition]:
-        for _ in range(length):
+        iterable = range(length) if length > 0 else itertools.count()
+        for _ in iterable:
             transition, next_state, done, trun = self._env_step(agent, self.state)
             self.step_buffer.append(transition)
 
@@ -71,10 +73,10 @@ class Gatherer:
                 if length == -1:
                     break
 
-        # Process the gather buffer
-        transition_list = list(self.transition_buffer)
+        # Process the transition buffer
+        transitions = list(self.transition_buffer)
         self.transition_buffer.clear()
-        return transition_list
+        return transitions
 
     def reset(self) -> None:
         self.step_buffer.clear()
@@ -82,12 +84,11 @@ class Gatherer:
         self.env.reset()
 
     def _flush_step_buffer(self) -> None:
-        """
-        When using n-step transitions and reaching a terminal state,
-        use the remaining individual steps in the step_buffer to not
-        waste information i.e. iterate through states and pad reward
-        Ignore first step as that has already been added to
-        transition buffer
+        """When using n-step transitions and reaching a terminal
+        state, use the remaining individual steps in the step_buffer
+        to not waste information i.e. iterate through states and
+        pad reward. Ignore first step as that has already been
+        added to transition buffer.
         """
 
         remainder = len(self.step_buffer)
