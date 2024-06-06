@@ -1,14 +1,13 @@
-# ruff: noqa
+"""
+isort:skip_file
+Results in circular imports otherwise
+"""
 
+from cardio_rl import buffers, toy_env, tree, types, utils
 from cardio_rl.agent import Agent
 from cardio_rl.gatherers import Gatherer
-from cardio_rl.runners import BaseRunner, OffPolicyRunner
-
-from cardio_rl import types
-from cardio_rl import toy_env
-from cardio_rl import buffers
-from cardio_rl import tree
-from cardio_rl import utils
+from cardio_rl.runners.runner import BaseRunner
+from cardio_rl.runners.off_policy import OffPolicyRunner
 
 __all__ = [
     # core classes
@@ -17,9 +16,9 @@ __all__ = [
     "BaseRunner",
     "OffPolicyRunner",
     # module folders
-    "types",
-    "toy_env",
     "buffers",
+    "toy_env",
     "tree",
+    "types",
     "utils",
 ]
