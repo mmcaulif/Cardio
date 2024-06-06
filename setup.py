@@ -7,6 +7,7 @@ from setuptools import setup, find_packages
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+
 setup(
     name="cardio_rl",
     packages=find_packages(),
@@ -20,8 +21,9 @@ setup(
         "dev": [
             # Optional dependencies for development
             "ruff",
-            "mypy"
-        ]
+            "mypy",
+            "pre-coomit",
+        ],
     },
     description="Cardio RL. In development...",
     author="Manus McAuliffe",
