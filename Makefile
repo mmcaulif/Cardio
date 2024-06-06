@@ -10,3 +10,4 @@ precommit_run:
 .PHONY: install_cpu
 install_cpu:
 	pip install -e ".[dev,exp,cpu]"
+	make precommit_setup
