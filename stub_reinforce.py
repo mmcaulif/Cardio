@@ -1,8 +1,9 @@
-import jax
-import cardio_rl as crl
 import gymnasium as gym
+import jax
 import torch as th
 import torch.nn as nn
+
+import cardio_rl as crl
 
 
 class Policy(nn.Module):

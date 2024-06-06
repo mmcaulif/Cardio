@@ -1,11 +1,13 @@
 from collections import deque
 from typing import Deque, Optional
-from gymnasium import Env
+
 import numpy as np
-from cardio_rl.logger import Logger
-from cardio_rl.agent import Agent
-from cardio_rl.types import Transition
+from gymnasium import Env
 from numpy.typing import NDArray
+
+from cardio_rl.agent import Agent
+from cardio_rl.logger import Logger
+from cardio_rl.types import Transition
 
 
 class Gatherer:

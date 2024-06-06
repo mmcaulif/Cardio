@@ -1,6 +1,7 @@
-import cardio_rl as crl
 import gymnasium as gym
 import numpy as np
+
+import cardio_rl as crl
 from cardio_rl.toy_env import ToyEnv
 
 

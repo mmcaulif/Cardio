@@ -1,6 +1,6 @@
 import cardio_rl as crl
+from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.toy_env import ToyEnv
-from cardio_rl.buffers import TreeBuffer
 
 
 class TestTreeBuffer:

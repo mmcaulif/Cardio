@@ -1,18 +1,17 @@
 import functools
-import jax
 import random
-import numpy as np
-import gymnasium as gym
 
-from gymnasium import spaces
-from gymnasium import Env
+import gymnasium as gym
+import jax
+import numpy as np
+from gymnasium import Env, spaces
 
 
 class TreeBuffer:
     def __init__(
-        self, 
+        self,
         env: Env,
-        capacity: int = 1_000_000, 
+        capacity: int = 1_000_000,
         extra_specs: dict = {},
         n_steps: int = 1,
         traj_len: int = 1,
@@ -32,7 +31,7 @@ class TreeBuffer:
         base_shape = [capacity]
         if traj_len > 1:
             if n_steps > 1:
-                raise ValueError    # TODO: make the buffer compatible with both n_steps and trajectories
+                raise ValueError  # TODO: make the buffer compatible with both n_steps and trajectories
             base_shape += [traj_len]
 
         self.full = False

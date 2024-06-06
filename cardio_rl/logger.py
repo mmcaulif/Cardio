@@ -1,10 +1,12 @@
-from collections import deque
+import logging
 import time
+from collections import deque
+from datetime import datetime
+from typing import Deque
+
+import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 from tqdm.contrib.logging import logging_redirect_tqdm
-import logging
-import numpy as np
-from datetime import datetime
 
 
 class Logger:
@@ -39,7 +41,7 @@ class Logger:
         self.prev_time = 0
 
         self.running_reward = 0
-        self.episodic_rewards = deque(maxlen=episode_window)
+        self.episodic_rewards: Deque = deque(maxlen=episode_window)
 
         logging.basicConfig(
             format="%(asctime)s: %(message)s",

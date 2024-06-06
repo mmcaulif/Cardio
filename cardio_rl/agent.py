@@ -1,5 +1,5 @@
-from gymnasium import Env
 import numpy as np
+from gymnasium import Env
 
 from cardio_rl.types import Transition
 

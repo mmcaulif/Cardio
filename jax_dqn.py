@@ -1,19 +1,20 @@
 # type: ignore
 
 from typing import Any
+
 import distrax
-import jax
-import numpy as np
-import cardio_rl as crl
-import gymnasium as gym
-import jax.numpy as jnp
 import flax
 import flax.linen as nn
+import gymnasium as gym
+import jax
+import jax.numpy as jnp
+import numpy as np
 import optax
 import rlax
-
 from flax.training.train_state import TrainState
 from gymnasium import Env
+
+import cardio_rl as crl
 
 """
 Efficient Rainbow impl checklist:

@@ -1,9 +1,10 @@
 from typing import Optional
+
 from gymnasium import Env
-from cardio_rl.agent import Agent
+
+from cardio_rl import Agent, BaseRunner
 from cardio_rl.buffers.tree_buffer import TreeBuffer
-from cardio_rl.runners import BaseRunner
-from cardio_rl import Transition
+from cardio_rl.types import Transition
 
 
 class OffPolicyRunner(BaseRunner):
@@ -17,7 +18,7 @@ class OffPolicyRunner(BaseRunner):
         warmup_len: int = 10_000,
         n_batches: int = 1,
         n_step: int = 1,
-        agent: Optional[Agent] = None
+        agent: Optional[Agent] = None,
     ) -> None:
         self.buffer = TreeBuffer(env, capacity, extra_specs, n_step)
         self.capacity = capacity
@@ -29,8 +30,16 @@ class OffPolicyRunner(BaseRunner):
 
         super().__init__(env, rollout_len, warmup_len, n_step, agent)
 
-    def _rollout(self, steps: int, agent: Optional[Agent]) -> tuple[list[Transition], int]:
-        rollout_batch, num_transitions = super()._rollout(steps, agent)
+    def _rollout(
+        self, steps: int, agent: Optional[Agent]
+    ) -> tuple[list[Transition], int]:
+        """
+        Make it so that _rollout doesn't need to return a rollout branch,
+        allowing you to use rollout_len < n_step without errors. The ratio
+        of steps to transitions will stay equal (1:1) as steps that don't return
+        a transition will be accounted for the the flushing of the step_buffer
+        """
+        rollout_batch, num_transitions = super()._rollout(steps, agent)  # type: ignore
         prepped_batch = self.transform_batch(rollout_batch)
         self.buffer.store(prepped_batch, num_transitions)
         return rollout_batch, num_transitions

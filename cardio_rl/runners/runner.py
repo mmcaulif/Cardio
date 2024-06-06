@@ -2,14 +2,16 @@ import copy
 import logging
 from typing import Optional
 
-import cardio_rl as crl
-from tqdm import trange
 from gymnasium import Env
-from cardio_rl import Gatherer, Agent, Transition
+from tqdm import trange
+
+import cardio_rl as crl
+from cardio_rl import Agent, Gatherer
+from cardio_rl.types import Transition
 
 
 class BaseRunner:
-    '''
+    """
     The Vehicles object contains lots of vehicles
 
     Parameters
@@ -25,7 +27,8 @@ class BaseRunner:
     ----------
     arg : str
         This is where we store arg,
-    '''
+    """
+
     def __init__(
         self,
         env: Env,
@@ -51,7 +54,7 @@ class BaseRunner:
         self.gatherer._init_env(self.env)
         self.burn_in_len = 0
         if self.burn_in_len:
-            self._burn_in() # TODO: implement argument
+            self._burn_in()  # TODO: implement argument
         self.gatherer.reset()
 
         # Logging should only start now
@@ -60,34 +63,34 @@ class BaseRunner:
 
     def _burn_in(self) -> None:
         """Step through environment with random agent, e.g. to
-        initialise observation normalisation. Gatherer is 
+        initialise observation normalisation. Gatherer is
         reset afterwards.
         """
         self._rollout(self.burn_in_len, Agent(self.env))
 
     def _rollout(self, steps: int, agent: Agent) -> tuple[list[Transition], int]:
-        """Internal method to step through environment for a 
-        provided number of steps. Return the collected 
+        """Internal method to step through environment for a
+        provided number of steps. Return the collected
         transitions and how many were collected.
         """
         rollout_batch = self.gatherer.step(agent, steps)
         return rollout_batch, len(rollout_batch)
 
     def _warm_start(self):
-        """Step through environment with freshly initialised 
-        agent, to collect transitions before training via 
+        """Step through environment with freshly initialised
+        agent, to collect transitions before training via
         the _rollout internal method.
         """
         self._rollout(self.warmup_len, self.agent)
         logging.info("### Warm up finished ###")
 
     def step(self, agent: Optional[Agent] = None) -> list[Transition]:
-        """Default method to step through environment with 
+        """Default method to step through environment with
         agent, to collect transitions and pass them to your
         agent's update function.
         """
         agent = agent if self.agent is None else self.agent
-        rollout_batch, num_transtions = self._rollout(self.rollout_len, agent)
+        rollout_batch, num_transtions = self._rollout(self.rollout_len, agent)  # type: ignore
         del num_transtions
         return [self.transform_batch(rollout_batch)]
 
@@ -97,7 +100,7 @@ class BaseRunner:
         eval_interval: int = 0,
         eval_episodes: int = 0,
     ) -> None:
-        '''Iteratively run runner.step() for self.rollout_len
+        """Iteratively run runner.step() for self.rollout_len
         and pass the batched data through to the given agents
         update step.
 
@@ -111,15 +114,14 @@ class BaseRunner:
 
         eval_episodes: int = 0
             How many episodes to perform during evaluation
-        '''
+        """
 
         for i in trange(rollouts):
             data = self.step()
-            self.agent.update(data)
+            self.agent.update(data)  # type: ignore
 
     def evaluate(self, episodes: int) -> dict:
-        """To be returned to when updating logging
-        """
+        """To be returned to when updating logging"""
         return {}
         # metrics = {"return": np.zeros(episodes), "length": np.zeros(episodes)}
         # for e in range(episodes):
@@ -140,7 +142,7 @@ class BaseRunner:
         # return metrics
 
     def transform_batch(self, batch: list[Transition]) -> Transition:
-        '''Perform some transformation of a given list of Transitions
+        """Perform some transformation of a given list of Transitions
 
         Parameters
         ----------
@@ -152,19 +154,17 @@ class BaseRunner:
         transformed_batch: Transition
             Single Transition that is the stacked combination of
             inputted list of Transitions
-        '''
+        """
 
         transformed_batch = crl.tree.stack(batch)
         return transformed_batch
 
     def update_agent(self, new_agent: Agent):
-        '''Update the Agent being used in the Runner
-        '''
+        """Update the Agent being used in the Runner"""
 
         self.agent = new_agent
 
     def reset(self) -> None:
-        '''Perform any necessary resets, such as for the gatherer
-        '''
+        """Perform any necessary resets, such as for the gatherer"""
 
         self.gatherer.reset()
