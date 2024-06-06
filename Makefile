@@ -6,3 +6,7 @@ precommit_setup:
 .PHONY: precommit_run
 precommit_run:
 	pre-commit run --all-files
+
+.PHONY: install_cpu
+install_cpu:
+	pip install -e ".[dev,exp,cpu]"

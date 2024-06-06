@@ -1,0 +1,6 @@
+# Optional dependencies for development
+ruff
+mypy
+pre-commit
+isort
+pytest

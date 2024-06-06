@@ -1,0 +1,3 @@
+# Optional dependencies for experimenting
+hydra-core
+rich
