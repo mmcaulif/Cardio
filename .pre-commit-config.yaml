@@ -1,6 +1,7 @@
 default_stages: [ "commit", "commit-msg", "push" ]
 default_language_version:
   python: python
+exclude: WIP/
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -10,10 +11,14 @@ repos:
     - id: end-of-file-fixer
     - id: trailing-whitespace
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: ''  # Use the sha / tag you want to point at
+  - repo: local
     hooks:
-    - id: mypy
+      - id: mypy
+        name: "Static type checker"
+        entry: python -m mypy cardio_rl/
+        language: system
+        types: [ python ]
+        pass_filenames: false
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
