@@ -11,6 +11,14 @@ repos:
     - id: end-of-file-fixer
     - id: trailing-whitespace
 
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        name: "Import sorter"
+        args:
+          - "--settings-file pyproject.toml"
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.991
     hooks:
@@ -24,3 +32,13 @@ repos:
       - id: ruff
         args: [ --fix ]
       - id: ruff-format
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.13.0
+    hooks:
+      - id: commitlint
+        name: "Commit linter"
+        stages:
+          - commit-msg
+        additional_dependencies:
+          - "@commitlint/config-angular"
