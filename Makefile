@@ -1,8 +1,8 @@
-.PHONY: setup_precommmit
-setup_precommmit:
+.PHONY: precommit_setup
+precommit_setup:
 	pre-commit --version
 	pre-commit install
 
-.PHONY: run_precommit
-run_precommmit:
+.PHONY: precommit_run
+precommit_run:
 	pre-commit run --all-files
