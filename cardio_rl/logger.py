@@ -52,11 +52,11 @@ class Logger:
 
         self.logger = logging.getLogger()
 
-    def step(self, reward, done, truncated):
+    def step(self, reward, done):
         self.timestep += 1
         self.running_reward += reward
 
-        if done or truncated:
+        if done:
             self.episodes += 1
             self.episodic_rewards.append(self.running_reward)
             self.running_reward = 0

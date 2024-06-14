@@ -4,7 +4,6 @@ from typing import Deque, Optional
 
 import numpy as np
 from gymnasium import Env
-from numpy.typing import NDArray
 
 from cardio_rl.agent import Agent
 from cardio_rl.logger import Logger
@@ -30,17 +29,17 @@ class Gatherer:
         self.env = env
         self.state, _ = self.env.reset()
 
-    def _env_step(self, agent: Agent, s: NDArray):
-        a, ext = agent.step(s)
-        s_p, r, d, t, _ = self.env.step(a)
-        self.logger.step(r, d, t)
-        d = d or t
+    # def _env_step(self, agent: Agent, s: NDArray):
+    #     a, ext = agent.step(s)
+    #     s_p, r, d, t, _ = self.env.step(a)
+    #     d = d or t
+    #     self.logger.step(r, d)
 
-        transition = {"s": s, "a": a, "r": r, "s_p": s_p, "d": d}
-        ext = agent.view(transition, ext)
-        transition.update(ext)
+    #     transition = {"s": s, "a": a, "r": r, "s_p": s_p, "d": d}
+    #     ext = agent.view(transition, ext)
+    #     transition.update(ext)
 
-        return transition, s_p, d, t
+    #     return transition, s_p, d
 
     def step(
         self,
@@ -49,7 +48,17 @@ class Gatherer:
     ) -> list[Transition]:
         iterable = range(length) if length > 0 else itertools.count()
         for _ in iterable:
-            transition, next_state, done, trun = self._env_step(agent, self.state)
+            # transition, next_state, done = self._env_step(agent, self.state)
+
+            a, ext = agent.step(self.state)
+            next_state, r, d, t, _ = self.env.step(a)
+            done = d or t
+            self.logger.step(r, done)
+
+            transition = {"s": self.state, "a": a, "r": r, "s_p": next_state, "d": done}
+            ext = agent.view(transition, ext)
+            transition.update(ext)
+
             self.step_buffer.append(transition)
 
             if len(self.step_buffer) == self.n_step:
@@ -63,7 +72,7 @@ class Gatherer:
                 self.transition_buffer.append(step)
 
             self.state = next_state
-            if done or trun:
+            if done:
                 if self.n_step > 1:
                     self._flush_step_buffer()
                 self.state, _ = self.env.reset()
