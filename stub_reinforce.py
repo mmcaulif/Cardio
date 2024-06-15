@@ -30,7 +30,7 @@ class Reinforce(crl.Agent):
         self.optimizer = th.optim.Adam(self.actor.parameters(), lr=3e-4)
 
     def update(self, data):
-        data = jax.tree.map(crl.transitions.to_torch, data)
+        data = jax.tree.map(crl.utils.to_torch, data[0])
         s, a, r = data["s"], data["a"], data["r"]
 
         returns = th.zeros_like(r)
