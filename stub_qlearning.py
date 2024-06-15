@@ -51,22 +51,15 @@ class DQN(crl.Agent):
         loss.backward()
         self.optimizer.step()
 
-    def _step(self, state):
-        th_state = th.from_numpy(state).unsqueeze(0).float()
-        action = self.critic(th_state).argmax().detach().numpy()
-        return action
-
     def step(self, state):
         if np.random.rand() > self.eps:
-            action = self._step(state)
+            th_state = th.from_numpy(state).unsqueeze(0).float()
+            action = self.critic(th_state).argmax().detach().numpy()
         else:
             action = self.env.action_space.sample()
 
         self.eps = max(self.min_eps, self.eps * self.ann_coeff)
         return action, {}
-
-    def eval_step(self, state):
-        return self._step(state), {}
 
 
 def main():
