@@ -5,7 +5,7 @@
     * describe the edgecases accounted for in the code (i.e. n-step transitions and terminal steps)
     * describe the vocabulary used in the code base
 1. Testing (rigorous testing of gatherer and runner)
-1. clean up repo but be sure to keep dev and WIP features in a branch
+1. clean up repo but be sure to keep WIP features in a branch
 
 Once done with the 0.0.1 version, send to different people for feedback
 
@@ -49,7 +49,7 @@ Once done with the 0.0.1 version, send to different people for feedback
   * [ ] Simple examples
   * [x] Linting and typing
   * [ ] Readme and docs, look at stoix for inspo
-    * [ ] Pseudocode for gatherer and runner internals
+    * [x] Pseudocode for gatherer internals
   * [ ] Extensive and widespread testing!!!
   * [x] Precommit hooks
   * [x] Make file
@@ -62,5 +62,5 @@ Once done with the 0.0.1 version, send to different people for feedback
 __Focus on getting some form of Cardio as a finished deliverable__
 
 ## Post-release
-* [ ] Github integrations for ruff, type checking
-* [ ] More test coverage and github integration
+* [x] Github integrations for ruff, type checking
+* [x] More test coverage and github integration
