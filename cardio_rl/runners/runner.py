@@ -31,7 +31,7 @@ class BaseRunner:
         env: Env,
         agent: Agent,
         rollout_len: int = 1,
-        warmup_len: int = 1_000,
+        warmup_len: int = 0,
         n_step: int = 1,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
