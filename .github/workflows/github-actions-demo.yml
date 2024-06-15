@@ -14,12 +14,19 @@ jobs:
             python-version: '3.10'
             # Optional - x64 or x86 architecture, defaults to x64
             architecture: 'x64'
-        - name: pre-commit
-          uses: pre-commit/action@v3.0.1
 
-        # Testing
-
+        # Install requirements
         - name: Install dependencies
           run: |
             python -m pip install --upgrade pip
             make install_cpu
+
+        # Precommit
+        - name: pre-commit
+          uses: pre-commit/action@v3.0.1
+
+        # Testing
+        - name: Test with pytest
+          run: |
+            pip install pytest pytest-cov
+            pytest tests
