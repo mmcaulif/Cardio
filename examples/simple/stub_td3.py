@@ -87,7 +87,8 @@ class TD3(crl.Agent):
         self.c_optimizer.step()
 
         if self.update_count % 2 == 0:
-            policy_loss = -(self.critic.q1(s, self.actor(s_p))).mean()
+            q1, q2 = self.critic(s, self.actor(s_p))
+            policy_loss = -((q1 + q2) * 0.5).mean()
 
             self.a_optimizer.zero_grad()
             policy_loss.backward()
