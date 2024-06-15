@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import gymnasium as gym
 from cardio_rl import Runner
 from cardio_rl import Gatherer
-from cardio_rl.policies import EpsilonArgmax
 
 
 class Critic(nn.Module):

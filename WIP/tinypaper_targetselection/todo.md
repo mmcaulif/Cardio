@@ -2,7 +2,7 @@ Small code for tiny paper submission for target network action selection to comb
 Example DQN: https://github.com/kenjyoung/MinAtar/blob/master/examples/dqn.py
 MinAtar paper: https://arxiv.org/pdf/1903.03176.pdf
 Small batch anomaly tiny paper: https://openreview.net/forum?id=G0heahVv5Y
-[x] Install MinAtar 
+[x] Install MinAtar
 [x] Setup conv net architecture for Q-func
 [x] List hyperparams
 [x] Create config (base config + override configs per algorithm + environment (1 for MinAtar, 1 for LunarLander))!
@@ -17,7 +17,7 @@ Small batch anomaly tiny paper: https://openreview.net/forum?id=G0heahVv5Y
     [ ] Implement controlled seeding and verify it works
     [ ] Reread over Tim Rocktaschel's blog post and also Jakob foersters
     [ ] Conduct main experiment
-        
+
 
 Next:
 [ ] Do the same for SAC and TD3

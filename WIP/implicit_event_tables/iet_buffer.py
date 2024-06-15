@@ -3,7 +3,6 @@ from collections import deque
 from sklearn.cluster import KMeans
 from cardio_rl.transitions import TorchTransition
 from cardio_rl.buffers.er_buffer import ErTable
-from collections import deque
 
 
 class IeTable:

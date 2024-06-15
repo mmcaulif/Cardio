@@ -49,7 +49,7 @@ optimizer = th.optim.RMSprop(net.parameters(), lr=7e-4, eps=1e-5)
 """
 Need to implement parallel environments
 -Implement timestep-based logging!
--Debug and benchmark, doesn't seem like it works rn 
+-Debug and benchmark, doesn't seem like it works rn
 -Maybe merge actor and critic into one nn.Module
 
 https://github.com/sweetice/Deep-reinforcement-learning-with-pytorch/blob/master/Char04%20A2C/A2C.py

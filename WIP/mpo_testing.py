@@ -10,7 +10,7 @@ from cardio_rl import Gatherer
 To do:
 -figure out how many e-pochs to do for E and M step
 -look into what hyperparams to use, maybe good time to try optuna
--look into Acme impl. 
+-look into Acme impl.
 Resources:
 -https://github.com/ethanluoyc/magi/pull/59
 -https://github.com/vwxyzjn/cleanrl/pull/392

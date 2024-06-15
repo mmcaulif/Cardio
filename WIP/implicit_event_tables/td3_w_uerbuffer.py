@@ -1,5 +1,4 @@
 import copy
-import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
@@ -68,7 +67,7 @@ runner = Runner(
             episode_window=50,
             tensorboard=True,
             log_dir="implicit_event_tables/tb_logs/" + env_name,
-            exp_name=f"vanilla_td3",
+            exp_name="vanilla_td3",
         ),
     ),
 )

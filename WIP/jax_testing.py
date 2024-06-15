@@ -97,7 +97,7 @@ for steps in range(20_000):
 	a_p = (dist.sample(jax.random.PRNGKey(0)) * 4) - 2
 	return -jnp.mean(critic.apply(q_params, x, a_p))
 	q_p = critic.apply(targ_c_params, s_p, a_p) - ent_coeff*dist.entropy()
-	y = jax.lax.stop_gradient(r + 0.99 *  q_p * (1 - d))	
+	y = jax.lax.stop_gradient(r + 0.99 *  q_p * (1 - d))
 	"""
 
     y = jax.lax.stop_gradient(r + 0.99 * q_p * (1 - d))

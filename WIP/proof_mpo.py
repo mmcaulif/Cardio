@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import sys
 
 n = nn.Parameter(torch.ones(1) * 100)
 a = nn.Parameter()

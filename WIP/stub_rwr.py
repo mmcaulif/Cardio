@@ -2,10 +2,8 @@ from cardio_rl import Runner, Gatherer
 import torch as th
 import gymnasium as gym
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.distributions import Categorical
 import copy
-import numpy as np
 
 
 class Critic(nn.Module):

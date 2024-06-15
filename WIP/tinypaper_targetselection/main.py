@@ -1,10 +1,7 @@
-import torch as th
-import numpy as np
 import gymnasium as gym
 import hydra
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 from rich import print as rprint
-from gymnasium.wrappers import TransformObservation
 from dqn import dqn_trial
 from wrapper import TransformObsWrapper
 

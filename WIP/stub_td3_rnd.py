@@ -3,7 +3,6 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import gymnasium as gym
-import numpy as np
 from gymnasium.wrappers import RescaleAction
 from cardio_rl.policies import BasePolicy
 from cardio_rl import Runner, Gatherer

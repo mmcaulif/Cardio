@@ -1,4 +1,3 @@
-import copy
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,7 +7,7 @@ from cardio_rl import Gatherer
 from cardio_rl.policies import EpsilonArgmax
 from cardio_rl.buffers.circular_buffer import ReplayBuffer
 
-from tinypaper_targetselection.models import QNetConv, QNetMLP
+from tinypaper_targetselection.models import QNetConv
 
 
 def dqn_trial(cfg, env, logger_dict, grad_steps):

@@ -1,7 +1,6 @@
 import copy
 import torch as th
 import torch.nn as nn
-import torch.nn.functional as F
 import gymnasium as gym
 from cardio_rl import Runner
 from cardio_rl import Gatherer
