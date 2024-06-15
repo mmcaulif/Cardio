@@ -28,7 +28,7 @@ class TestTreeBuffer:
             "d": d,
         }
         expanded_transition = crl.tree.stack([transition])
-        buffer.store(expanded_transition)
+        buffer.store(expanded_transition, 1)
         sample = buffer.sample(1)
 
         assert sample["s"].shape == (1, 5)
