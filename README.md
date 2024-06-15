@@ -1,5 +1,7 @@
 > **NOTE**: _note about cardio being made for myself first and foremost, and being a WIP_
 
+# :running: Cardio: Runners for Deep Reinforcement Learning in Gym Environments :running:
+
 <div align="center">
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -8,30 +10,22 @@
 
 </div>
 
-<h2 align="center">
-    <p>Cardio: Runners for Deep Reinforcement Learning in Gym Environments</p>
-</h2>
-
-<div align="center">
-
-**Tidy RL**
-
-</div>
+[Getting Started](#getting-started) | [Installation](#installation) | [Motivation](#motivation) | [Simple Examples](#simple-examples) | [Under the hood](#under-the-hood) | [Development](#development) | [Contributing](#contributing)
 
 So many reinforcement learning libraries, what makes Cardio different? _answer_
 
-## Overview
+<!-- Below is taken from Dopamine
+Our design principles are:
+* _Easy experimentation_:
+* _Flexible development_:
+* _Compact and reliable_:
+* _Reproducible_: -->
+
 Cardio aims to make new algorithm implementations easy to do, readable and framework agnostic by providing a collection of modular environment interaction loops for the research and implementation of deep reinforcement learning (RL) algorithms in Gymnasium environments. By default these loops are capable of more complex experience collection approaches such as n-step transitions, trajectories, and storing of auxiliary values to a replay buffer. Accompanying these core components are helpful utilities (such as replay buffers and data transformations), and single-file reference implementations for state-of-the-art algorithms.
 
+<!-- Merge the above with the design principles -->
 
-## Table of Contents
-1. [Installation](#installation)
-1. [Motivation](#motivation)
-1. [Simple Examples](#simple-examples)
-1. [Under the hood](#under-the-hood)
-1. [Intermediate Examples](#intermediate-examples)
-1. [Development](#development)
-1. [Contributing](#contributing)
+## Getting Started
 
 
 ## Installation
@@ -76,6 +70,7 @@ Secondly, taking a modular approach leaves us less immediately extensible than t
 
 ### n-step DQN
 
+
 ## Under the hood
 Below we'll go over the inner workings of Cardio. The intention was to make Cardio quite minimal and easy to parse, akin to [Dopamine](https://github.com/google/dopamine), but I hope it is interesting to practitioners and I'm eager to hear any feedback/opinions on the design paradigm. This section also serves to highlight a couple of the nuances of Cardio's components.
 
@@ -108,10 +103,13 @@ Due to the nature of n-step transitions, sometimes the gatherer's transition buf
 ### Runner
 The runner is the high level orchestrator that deals with the different components and data, it contains a gatherer, your agent and any replay buffer you might have. The runner step function calls the gatherer's step function as part its own step function, or as part of its built in warmup (for collecting a large amount of initial data with your agent) and burnin (for randomly stepping through an environment, not collecting data, such as for initialising normalisation values) methods. The runner can either be used via its run method (which iteratively calls the runner.step and the agent.update methods) or just with its step method if you'd like more finegrained control.
 
+
 ## Intermediate Examples
 _coming soon_
 
+
 ## Development
+
 
 ## Contributing
 <!-- You'll need to change the relative path once making this the actual readme -->
@@ -120,6 +118,8 @@ _coming soon_
         <img src="docs/images/cat_pr_image.jpg" alt="Cat pull request image" width="40%"/>
     </a>
 </p>
+
+## Acknowledgements
 
 ## License
 This repository is licensed under the [Apache 2.0 License](https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt)
