@@ -16,3 +16,10 @@ jobs:
             architecture: 'x64'
         - name: pre-commit
           uses: pre-commit/action@v3.0.1
+
+        # Testing
+
+        - name: Install dependencies
+          run: |
+            python -m pip install --upgrade pip
+            make install_cpu
