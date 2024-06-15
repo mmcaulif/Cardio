@@ -30,9 +30,9 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
 * [ ] QOL Runner and Gatherer changes
   * [x] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
   * [ ] Write up documents and doc strings for Runner and Gatherer to make it easier to understand!!!
-    * Include dimensions etc.
-    * Use NumPy style docs
+    * Use google style docstrings
   * [ ] Verify that Runner can be used without supplying an agent in a manner as expected
+    * an agent will need to be initially supplied for warmup but allow for it afterwards
   * [ ] Implement sequence/trajectory collection to runner/gatherer, have it be compatible with n-step
     * This is can be done via the replay buffer most likely!
 
@@ -74,11 +74,11 @@ Think of the replay buffer and internal buffers as just larger/longer versions o
     * [ ] Data efficient Rainbow
     * [ ] HL-Gauss
     * [ ] Soft MOE
-  * [ ] Linting and typing
+  * [x] Linting and typing
   * [ ] Readme and docs, look at stoicx for inspo
   * [ ] Extensive and widespread testing!!!
-  * [ ] Precommit hooks
-  * [ ] Make file
+  * [x] Precommit hooks
+  * [x] Make file
   * [ ] Docker file (?)
 
 __Focus on getting some form of Cardio as a finished deliverable__
@@ -112,13 +112,15 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [ ] Makes sure vector collector work as intended for off-policy methods and n-step collector work as intended for on-policy methods etc.
 
-## Longer hoziron priority
+## Longer horizon priority
 * [ ] Benchmark each implementation wrt. SB3 (change logging to timestep based first though)
 
 * [ ] Make library faster and performant!!!
 
 * [ ] Offline gatherer
   * on pause until mujoco sorted
+
+* [ ] A modern sb3-style collection of baselines as a submodule
 
 ## Completed
 * [x] Implement multibatch sampling for off-policy runner
