@@ -1,10 +1,11 @@
+import gymnasium as gym
 import jax
 import numpy as np
-import cardio_rl as crl
-import gymnasium as gym
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
+
+import cardio_rl as crl
 
 
 class Q_critic(nn.Module):
@@ -86,9 +87,14 @@ class DQN(crl.Agent):
 def main():
     env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
-        env=env, agent=DQN(env, n_step=2), rollout_len=5, batch_size=32, n_step=2
+        env=env,
+        agent=DQN(env, n_step=3),
+        rollout_len=1,
+        batch_size=32,
+        n_batches=4,
+        n_step=3,
     )
-    runner.run(50_000, eval_interval=10_000, eval_episodes=1)
+    runner.run(rollouts=50_000)
 
 
 if __name__ == "__main__":

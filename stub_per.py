@@ -1,10 +1,11 @@
+import gymnasium as gym
 import jax
 import numpy as np
-import cardio_rl as crl
-import gymnasium as gym
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
+
+import cardio_rl as crl
 
 
 class Q_critic(nn.Module):
