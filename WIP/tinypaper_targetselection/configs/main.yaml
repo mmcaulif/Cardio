@@ -1,7 +1,0 @@
-defaults:
-  - alg: dqn_minatar
-  - exp: standard_run
-
-hydra:
-  run:
-    dir:  outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
