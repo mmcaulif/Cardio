@@ -30,11 +30,7 @@ class DQN(crl.Agent):
         self.env = env
         self.critic = Q_critic(4, 2)
         self.optimizer = th.optim.Adam(self.critic.parameters(), lr=7e-4)
-
-        self.eps = 0.9
-        self.min_eps = 0.05
-        schedule_steps = 5000
-        self.ann_coeff = self.min_eps ** (1 / schedule_steps)
+        self.eps = 0.2
 
     def update(self, batch):
         data = jax.tree.map(crl.utils.to_torch, batch[0])
@@ -43,7 +39,6 @@ class DQN(crl.Agent):
         q = self.critic(s).gather(-1, a.unsqueeze(-1).long())
 
         q_p = self.critic(s_p).max(dim=-1, keepdim=True).values
-
         y = r + 0.99 * q_p * (1 - d.unsqueeze(-1))
 
         loss = F.mse_loss(q, y.detach())
@@ -57,8 +52,6 @@ class DQN(crl.Agent):
             action = self.critic(th_state).argmax().detach().numpy()
         else:
             action = self.env.action_space.sample()
-
-        self.eps = max(self.min_eps, self.eps * self.ann_coeff)
         return action, {}
 
 

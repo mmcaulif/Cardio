@@ -4,6 +4,7 @@ import torch as th
 import torch.nn as nn
 
 import cardio_rl as crl
+from cardio_rl.types import Transition
 
 
 class Policy(nn.Module):
@@ -29,13 +30,13 @@ class Reinforce(crl.Agent):
         self.actor = Policy(4, 2)
         self.optimizer = th.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-    def update(self, data):
-        data = jax.tree.map(crl.utils.to_torch, data[0])
-        s, a, r = data["s"], data["a"], data["r"]
+    def update(self, data: list[Transition]):
+        batch = jax.tree.map(crl.utils.to_torch, data[0])
+        s, a, r = batch["s"], batch["a"], batch["r"]
 
         returns = th.zeros_like(r)
 
-        rtg = 0
+        rtg = 0.0
         for i in reversed(range(len(r))):
             rtg *= 0.99
             rtg += r[i]
@@ -55,13 +56,12 @@ class Reinforce(crl.Agent):
         probs = self.actor(input_state)
         dist = th.distributions.Categorical(probs)
         action = dist.sample().squeeze()
-        log_probs = dist.log_prob(action).detach().numpy()
-        return action.detach().numpy(), {"log_probs": log_probs}
+        return action.detach().numpy(), {}
 
 
 def main():
     runner = crl.BaseRunner(
-        env=gym.make("CartPole-v1"), agent=Reinforce(), rollout_len=-1, warmup_len=0
+        env=gym.make("CartPole-v1"), agent=Reinforce(), rollout_len=-1
     )
     runner.run(10_000)
 
