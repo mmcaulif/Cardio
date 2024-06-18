@@ -61,12 +61,118 @@ Secondly, taking a modular approach leaves us less immediately extensible than t
 
 
 ## Simple Examples
+Below is a collection of simple examples (using the CartPole environment) leveraging Cardio's runners to help write some simple implementations of core deep RL algorithms. It will be assumed that you have an beginners understanding of deep RL and this section just serves to demonstrate how Cardio might fit into different algorithm implementations.
 
 ### Q-Learning
+Lets start with a very simple algorithm, vanilla deep Q-learning with no replay buffer or target networks! In this algorithm our agent performs a fixed number of environment steps (aka a rollout) and saves the transitions experienced for performing an update step. Once the rollout is done, we use the transitions to update our Q-network using the 1-step temporal difference error between our Q-value estimate and the bellman backup of the current state. To implement our agent we will use the provided Cardio Agent class and override the init, update and step methods:
+
+```python
+class DQN(crl.Agent):
+    def __init__(self, env: gym.Env):
+        self.env = env
+        self.critic = Q_critic(4, 2)
+        self.optimizer = th.optim.Adam(self.critic.parameters(), lr=7e-4)
+        self.eps = 0.2
+
+    def update(self, batch):
+        data = jax.tree.map(crl.utils.to_torch, batch[0])
+        s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
+        q = self.critic(s).gather(-1, a.unsqueeze(-1).long())
+        q_p = self.critic(s_p).max(dim=-1, keepdim=True).values
+        y = r + 0.99 * q_p * (1 - d.unsqueeze(-1))
+        loss = F.mse_loss(q, y.detach())
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+    def step(self, state):
+        if np.random.rand() > self.eps:
+            th_state = th.from_numpy(state).unsqueeze(0).float()
+            action = self.critic(th_state).argmax().detach().numpy()
+        else:
+            action = self.env.action_space.sample()
+        return action, {}
+```
+
+Next we instantiate our runner. The BaseRunner performs experience collection in an on-policy manner and thus fits our needs with our simple Q-learning agent. When we instantiate a runner we pass it our environment, our agent, and the rollout length.
+
+```python
+env = gym.make("CartPole-v1")
+runner = crl.BaseRunner(
+    env=env,
+    agent=DQN(env),
+    rollout_len=32,
+)
+```
+
+And finally, to run 50,000 rollouts (in this case, 50,000 x 32 environment steps) and perform an agent update after each one, we just use the run method:
+
+```python
+runner.run(rollouts=50_000)
+```
+
+>{'Timesteps': 5000, 'Episodes': 470, 'Episodic reward': 10.46}
+>{'Timesteps': 10000, 'Episodes': 876, 'Episodic reward': 17.52}
+>{'Timesteps': 15000, 'Episodes': 1120, 'Episodic reward': 35.9}
+>{'Timesteps': 20000, 'Episodes': 1246, 'Episodic reward': 41.6}
+>{'Timesteps': 25000, 'Episodes': 1341, 'Episodic reward': 55.72}
+>{'Timesteps': 30000, 'Episodes': 1445, 'Episodic reward': 34.54}
+>{'Timesteps': 35000, 'Episodes': 1472, 'Episodic reward': 117.92}
+>{'Timesteps': 40000, 'Episodes': 1540, 'Episodic reward': 72.74}
+>{'Timesteps': 45000, 'Episodes': 1583, 'Episodic reward': 119.08}
+>{'Timesteps': 50000, 'Episodes': 1626, 'Episodic reward': 117.3}
 
 ### Reinforce
+To implement the [vanilla policy gradient (aka Reinforce)](https://spinningup.openai.com/en/latest/algorithms/vpg.html) algorithm, all we need is the Cardio's BaseRunner class. But first we must define our agent! Similarly to the above, we will inherit from the Agent class and override the following methods:
+
+For the update method...
+```python
+s, a, r = batch["s"], batch["a"], batch["r"]
+
+returns = th.zeros_like(r)
+
+rtg = 0.0
+for i in reversed(range(len(r))):
+    rtg *= 0.99
+    rtg += r[i]
+    returns[i] = rtg
+
+probs = self.actor(s)
+dist = th.distributions.Categorical(probs)
+log_probs = dist.log_prob(a)
+
+loss = th.mean(-log_probs * (returns - 100))
+self.optimizer.zero_grad()
+loss.backward()
+self.optimizer.step()
+```
+
+For the step method...
+```python
+probs = self.actor(input_state)
+dist = th.distributions.Categorical(probs)
+action = dist.sample()
+```
+
+If we set the rollout length to -1, then the the runner will perform episodic rollouts (which we will use for Reinforce). Lets define our runner now:
+
+```python
+runner = crl.BaseRunner(
+    env = gym.make("CartPole-v1"),
+    agent = Reinforce(),
+    rollout_len = -1
+)
+```
+
+Now we will perform 10,000 rollouts (in this case, episodes):
+
+```python
+runner.run(10_000)
+```
+
 
 ### TD3
+
 
 ### n-step DQN
 
@@ -104,12 +210,16 @@ Due to the nature of n-step transitions, sometimes the gatherer's transition buf
 The runner is the high level orchestrator that deals with the different components and data, it contains a gatherer, your agent and any replay buffer you might have. The runner step function calls the gatherer's step function as part its own step function, or as part of its built in warmup (for collecting a large amount of initial data with your agent) and burnin (for randomly stepping through an environment, not collecting data, such as for initialising normalisation values) methods. The runner can either be used via its run method (which iteratively calls the runner.step and the agent.update methods) or just with its step method if you'd like more finegrained control.
 
 
-## Intermediate Examples
-_coming soon_
-
-
 ## Development
-
+* [ ] Agentless runners
+* [ ] Parallel environment gatherering (try make this compatible with replay buffers)
+* [ ] Transition replay buffer
+* [ ] Torch/Jax/framework specific agent classes
+* [ ] Agent level logging?
+* [ ] Supplementary SB3-like API
+* [ ] Multiagent gatherer
+* [ ] Performance/speed focussed improvements
+* [ ] Benchmarking
 
 ## Contributing
 <!-- You'll need to change the relative path once making this the actual readme -->
