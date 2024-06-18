@@ -112,14 +112,23 @@ runner.run(rollouts=50_000)
 ```
 
 >{'Timesteps': 5000, 'Episodes': 470, 'Episodic reward': 10.46}
+>
 >{'Timesteps': 10000, 'Episodes': 876, 'Episodic reward': 17.52}
+>
 >{'Timesteps': 15000, 'Episodes': 1120, 'Episodic reward': 35.9}
+>
 >{'Timesteps': 20000, 'Episodes': 1246, 'Episodic reward': 41.6}
+>
 >{'Timesteps': 25000, 'Episodes': 1341, 'Episodic reward': 55.72}
+>
 >{'Timesteps': 30000, 'Episodes': 1445, 'Episodic reward': 34.54}
+>
 >{'Timesteps': 35000, 'Episodes': 1472, 'Episodic reward': 117.92}
+>
 >{'Timesteps': 40000, 'Episodes': 1540, 'Episodic reward': 72.74}
+>
 >{'Timesteps': 45000, 'Episodes': 1583, 'Episodic reward': 119.08}
+>
 >{'Timesteps': 50000, 'Episodes': 1626, 'Episodic reward': 117.3}
 
 ### Reinforce
