@@ -204,7 +204,15 @@ By using dictionaries, new entries are easy to add and thus the storing of user-
 Much like [Acme](https://github.com/google-deepmind/acme) the Cardio agent class is very minimal, simply defining some base methods that are used by the environment interaction loops. The most important thing to know is when they are called, what data is provided, and which component is calling it. The most important of which are the step (given a state, return an action and any extras), view (given a step transition, return any extras) and update methods (given a batch of transitions).
 
 ### Gatherer
-The gatherer is the primary component in Cardio and serves the purpose of stepping through the environment directly with a provided agent, or a random policy. The gatherer has two buffers that are used to package the transitions for the Runner in the desired manner. The step buffer collects transitions optained from singular environment steps and has a capacity equal to _n_. When the step buffer is full, it transforms its elements into one n-step transition and adds that transition to the transition buffer. The step buffer is emptied after terminal states to prevent transitions overlapping across episodes. When _n_ > 1, the step buffer needs to be "flushed", i.e. create transitions from steps that would otherwise be thrown away. Please refer to the example below provided by my esteemed colleage, ChatGPT:
+The gatherer is the primary component in Cardio and serves the purpose of stepping through the environment directly with a provided agent, or a random policy. The gatherer has two buffers that are used to package the transitions for the Runner in the desired manner. The step buffer collects transitions optained from singular environment steps and has a capacity equal to _n_. When the step buffer is full, it transforms its elements into one n-step transition and adds that transition to the transition buffer.
+
+<p align="center">
+    <a href="docs/images/cardio_gather_pseudocode.png">
+        <img src="docs/images/cardio_gather_pseudocode.png" alt="Gatherer pseudocode" width="80%"/>
+    </a>
+</p>
+
+The step buffer is emptied after terminal states to prevent transitions overlapping across episodes. When _n_ > 1, the step buffer needs to be "flushed", i.e. create transitions from steps that would otherwise be thrown away. Please refer to the example below provided by my esteemed colleage, ChatGPT:
 
 > If you are collecting 3-step transitions, here's how you handle the transitions where s_3 is a terminal state:
 > 1. __Transition from s\_0__: (s_0, a_0, [r_0, r_1, r_2], s_3)
@@ -231,7 +239,6 @@ The runner is the high level orchestrator that deals with the different componen
 * [ ] Benchmarking
 
 ## Contributing
-<!-- You'll need to change the relative path once making this the actual readme -->
 <p align="center">
     <a href="docs/images/cat_pr_image.jpg">
         <img src="docs/images/cat_pr_image.jpg" alt="Cat pull request image" width="40%"/>
