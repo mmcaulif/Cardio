@@ -4,7 +4,6 @@
 <div align="center">
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![coverage report](https://gitlab.com/mmcaulif/Cardio/badges/master/coverage.svg)](https://gitlab.com/mmcaulif/Cardio/-/commits/alpha)
 [![Pythonver](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://www.python.org/doc/versions/)
 [![License](https://img.shields.io/badge/python-3.10-blue)](https://github.com/mmcaulif/Cardio/blob/main/LICENSE.txt)
 
