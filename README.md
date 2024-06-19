@@ -1,12 +1,12 @@
-> **NOTE**: _note about cardio being made for myself first and foremost, and being a WIP_
 
 # :running: Cardio: Runners for Deep Reinforcement Learning in Gym Environments :running:
 
 <div align="center">
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![coverage report](https://gitlab.com/mmcaulif/Cardio/badges/master/coverage.svg)](https://gitlab.com/mmcaulif/Cardio/-/commits/alpha)
 [![Pythonver](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://www.python.org/doc/versions/)
-[![License](https://img.shields.io/badge/python-3.10-blue)](https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt)
+[![License](https://img.shields.io/badge/python-3.10-blue)](https://github.com/mmcaulif/Cardio/blob/main/LICENSE.txt)
 
 </div>
 
@@ -204,7 +204,7 @@ By using dictionaries, new entries are easy to add and thus the storing of user-
 Much like [Acme](https://github.com/google-deepmind/acme) the Cardio agent class is very minimal, simply defining some base methods that are used by the environment interaction loops. The most important thing to know is when they are called, what data is provided, and which component is calling it. The most important of which are the step (given a state, return an action and any extras), view (given a step transition, return any extras) and update methods (given a batch of transitions).
 
 ### Gatherer
-The gatherer is the primary component in Cardio and serves the purpose of stepping through the environment directly with a provided agent, or a random policy. The gatherer has two buffers that are used to package the transitions for the Runner in the desired manner. The step buffer collects transitions optained from singular environment steps and has a capacity equal to _n_. When the step buffer is full, it transforms its elements into one n-step transition and adds that transition to the transition buffer.
+The gatherer is the primary component in Cardio and serves the purpose of stepping through the environment directly with a provided agent, or a random policy. The gatherer has two buffers that are used to package the transitions for the Runner in the desired manner. The step buffer collects transitions optained from singular environment steps and has a capacity equal to _n_. When the step buffer is full, it transforms its elements into one n-step transition and adds that transition to the transition buffer. Some rough pseudocode is provided below.
 
 <p align="center">
     <a href="docs/images/cardio_gather_pseudocode.png">
@@ -245,7 +245,6 @@ The runner is the high level orchestrator that deals with the different componen
     </a>
 </p>
 
-## Acknowledgements
 
 ## License
 This repository is licensed under the [Apache 2.0 License](https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt)
