@@ -82,3 +82,6 @@ class OffPolicyRunner(BaseRunner):
         del self.buffer
         self.buffer = TreeBuffer(self.env, self.capacity, self.extra_specs)
         super().reset()
+
+    def update(self, data):
+        self.buffer.update(data)

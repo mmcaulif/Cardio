@@ -15,7 +15,7 @@ class BaseRunner:
     The Vehicles object contains lots of vehicles
 
     Args:
-        env (Env): The arg is used for...
+        env (Env): The arg is used for
         agent (Agent):
         rollout_len (int):
         warmup_len (int):
@@ -114,12 +114,7 @@ class BaseRunner:
         batch = [self.transform_batch(rollout_batch)]
         return batch
 
-    def run(
-        self,
-        rollouts: int = 1_000_000,
-        eval_interval: int = 0,
-        eval_episodes: int = 0,
-    ) -> None:
+    def run(self, rollouts: int = 1_000_000) -> None:
         """Iteratively run runner.step() for self.rollout_len
         and pass the batched data through to the agents update
         step.
@@ -131,35 +126,11 @@ class BaseRunner:
             eval_episodes (int): How many episodes to perform during evaluation
         """
 
-        for i in trange(rollouts):
+        for _ in trange(rollouts):
             data = self.step()
-            self.agent.update(data)  # type: ignore
-
-    def evaluate(self, episodes: int) -> dict:
-        """To be returned to when updating logging
-
-        Args:
-            episodes (int): number of episodes to evaluate over
-        """
-
-        return {}
-        # metrics = {"return": np.zeros(episodes), "length": np.zeros(episodes)}
-        # for e in range(episodes):
-        #     state, _ = self.eval_env.reset()
-        #     returns = 0.0
-        #     steps: int = 0
-        #     while True:
-        #         action, _ = self.agent.eval_step(state)
-        #         next_state, reward, done, trun, _ = self.eval_env.step(action)
-        #         returns += reward  # type: ignore
-        #         steps += 1
-        #         state = next_state
-        #         if done or trun:
-        #             metrics["return"][e] = returns
-        #             metrics["length"][e] = steps
-        #             break
-
-        # return metrics
+            updated_data = self.agent.update(data)  # type: ignore
+            if updated_data:
+                self.update(updated_data)
 
     def transform_batch(self, batch: list[Transition]) -> Transition:
         """Perform some transformation of a given list of Transitions
@@ -178,10 +149,13 @@ class BaseRunner:
 
     def update_agent(self, new_agent: Agent):
         """Update the Agent being used in the Runner"""
-
         self.agent = new_agent
 
     def reset(self) -> None:
         """Perform any necessary resets, such as for the gatherer"""
-
         self.gatherer.reset()
+
+    def update(self, data: dict) -> None:
+        """Perform any necessary updates, such as for the replay buffer"""
+        del data
+        pass

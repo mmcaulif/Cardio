@@ -14,7 +14,6 @@ class TreeBuffer:
         capacity: int = 1_000_000,
         extra_specs: dict = {},
         n_steps: int = 1,
-        traj_len: int = 1,
     ):
         obs_space = env.observation_space
         obs_dims = obs_space.shape
@@ -28,26 +27,25 @@ class TreeBuffer:
 
         self.pos = 0
         self.capacity = capacity
-        base_shape = [capacity]
-        if traj_len > 1:
-            if n_steps > 1:
-                raise ValueError  # TODO: make the buffer compatible with both n_steps and trajectories
-            base_shape += [traj_len]
+        self.base_shape = [capacity]
+
+        # if traj_len > 1:
+        #     base_shape += [traj_len]
 
         self.full = False
 
-        self.table = {
-            "s": np.zeros((*base_shape, *obs_dims), dtype=obs_space.dtype),
+        self.table: dict = {
+            "s": np.zeros((*self.base_shape, *obs_dims), dtype=obs_space.dtype),
             "a": np.zeros(
                 (
-                    *base_shape,
+                    *self.base_shape,
                     act_dim,
                 ),
                 dtype=act_space.dtype,
             ),
-            "r": np.zeros((*base_shape, n_steps)),
-            "s_p": np.zeros((*base_shape, *obs_dims), dtype=obs_space.dtype),
-            "d": np.zeros((*base_shape, 1)),
+            "r": np.zeros((*self.base_shape, n_steps)),
+            "s_p": np.zeros((*self.base_shape, *obs_dims), dtype=obs_space.dtype),
+            "d": np.zeros((*self.base_shape, 1)),
         }
 
         if extra_specs:
@@ -59,24 +57,18 @@ class TreeBuffer:
             self.table.update(extras)
 
     def __len__(self):
-        if self.full:
-            return self.capacity
-        return self.pos
+        return self.capacity if self.full else self.pos
+
+    def __call__(self, key: str):
+        return self.table[key]
 
     def store(self, batch: dict, num: int):
         def _place(arr, x, idx):
-            """
-            Instead of reshaping in this function maybe look into doing it in the gatherer
-            """
             if len(x.shape) == 1:
                 x = np.expand_dims(x, -1)
 
             arr[idx] = x
             return arr
-
-        """
-		Need to verify this works as expected and there's no silent bugs,
-        """
 
         idxs = np.arange(self.pos, self.pos + num) % self.capacity
         place = functools.partial(_place, idx=idxs)
@@ -94,16 +86,26 @@ class TreeBuffer:
         batch.update({"idxs": sample_indxs})
         return batch
 
-    def update(self, new_dict: dict):
-        """
-        Should be overhauled to be able to see and edit the entire table, or based on indices etc.
-        """
-        self.table.update(new_dict)
+    def update(self, data: dict):
+        idxs = data.pop("idxs")
+        for key, val in data.items():
+            if key in self.table:
+                self.table[key][idxs] = val
 
 
 def main():
     env = gym.make("CartPole-v1")
-    buffer = TreeBuffer(env, capacity=100)
+    buffer = TreeBuffer(env, capacity=10)
+
+    print(buffer("p"))
+    buffer.update(
+        {
+            "idxs": np.arange(8),
+            "p": np.expand_dims(np.sin(np.arange(8)), -1),
+        }
+    )
+    print(buffer("p"))
+    exit()
 
     s, _ = env.reset()
 
