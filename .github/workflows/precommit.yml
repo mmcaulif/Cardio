@@ -1,6 +1,6 @@
 name: Cardio Precommits
 run-name: ${{ github.actor }}
-on: [push, pull_request]
+on: [push]
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
