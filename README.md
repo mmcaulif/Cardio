@@ -11,18 +11,13 @@
 
 [Getting Started](#getting-started) | [Installation](#installation) | [Motivation](#motivation) | [Simple Examples](#simple-examples) | [Under the hood](#under-the-hood) | [Development](#development) | [Contributing](#contributing)
 
-So many reinforcement learning libraries, what makes Cardio different? _answer_
+So many reinforcement learning libraries, what makes Cardio different?
 
-<!-- Below is taken from Dopamine
-Our design principles are:
-* _Easy experimentation_:
-* _Flexible development_:
-* _Compact and reliable_:
-* _Reproducible_: -->
+* _Easy and readable_: Focus on the agent and leave the boilerplate code to Cardio
+* _Extensible_: Easy progression from simple algorithms all the way up to Rainbow and beyond
+* _Research friendly_: Cardio was designed to be a whiteboard for your RL research
 
-Cardio aims to make new algorithm implementations easy to do, readable and framework agnostic by providing a collection of modular environment interaction loops for the research and implementation of deep reinforcement learning (RL) algorithms in Gymnasium environments. By default these loops are capable of more complex experience collection approaches such as n-step transitions, trajectories, and storing of auxiliary values to a replay buffer. Accompanying these core components are helpful utilities (such as replay buffers and data transformations), and single-file reference implementations for state-of-the-art algorithms.
-
-<!-- Merge the above with the design principles -->
+Cardio aims to make new algorithm implementations easy to do, readable and framework agnostic by providing a collection of modular environment interaction loops for the research and implementation of deep reinforcement learning (RL) algorithms in Gymnasium environments. Out of the box these loops are capable of more complex experience collection approaches such as n-step transitions, trajectories, and storing of auxiliary values to a replay buffer. Accompanying these core components are helpful utilities (such as replay buffers and data transformations), and single-file reference implementations for state-of-the-art algorithms.
 
 ## Getting Started
 
@@ -180,10 +175,26 @@ runner.run(10_000)
 
 
 ### TD3
+Now lets introduce an off-policy algorithm, Twin delayed DDPG. The most important change with this algorithm is to move from using the BaseRunner to the OffpolicyRunner. The OffpolicyRunner incorporates a replay buffer that stores all transitions experienced by the agent during rollouts, then the step function samples from this buffer and provides the sampled transitions to the agent. The changes to the update and step function can be seen in the implementation within the Cardio examples.
 
+```python
+env = gym.make("Pendulum-v1")
+runner = crl.OffPolicyRunner(
+    env=env,
+    agent=TD3(env),
+    rollout_len=1,
+    batch_size=256,
+)
+```
 
-### n-step DQN
+### And more
+To view the above implementations in full (and more), please check out the examples provided. Our current implmentations as of now are:
+* Reinforce
+* On-policy Q-learning
+* TD3
+* N-step DQN
 
+We will actively be introducing more and more as time goes by, with an emphasis on implementing modern and novel algorithms.
 
 ## Under the hood
 Below we'll go over the inner workings of Cardio. The intention was to make Cardio quite minimal and easy to parse, akin to [Dopamine](https://github.com/google/dopamine), but I hope it is interesting to practitioners and I'm eager to hear any feedback/opinions on the design paradigm. This section also serves to highlight a couple of the nuances of Cardio's components.
@@ -227,15 +238,20 @@ The runner is the high level orchestrator that deals with the different componen
 
 
 ## Development
-* [ ] Agentless runners
-* [ ] Parallel environment gatherering (try make this compatible with replay buffers)
-* [ ] Transition replay buffer
-* [ ] Torch/Jax/framework specific agent classes
-* [ ] Agent level logging?
+There's quite a few different avenues of dvelopment that are all promising and will be acted on in time. In terms of functionality:
+* [ ] Vectorised gatherer: This is a large missing piece in Cardio and essentially prevents on-policy implementations. In practice I'd like this to be compatible with n-step returns and also wih the OffpolicyRunner (or at least function with replay buffers) for algorithms like NGU to be implemented.
+* [ ] Trajectory replay buffer: Ability to store trajectories with a controllable level of overlapping, to be used for recurrent implementations or algorithms that leverage Retrace
+* [ ] Framework specific agent base classes: Remove more boilerplate by having base classes that automatically convert data from a chosen framework to numpy for use with Gym (and vice versa).
+
+For quality of life:
+* [ ] Dramatically improve logging: needs to be brainstormed
+* [ ] Performance/speed focused improvements
+* [ ] Thorough benchmarking
+
+Misc:
 * [ ] Supplementary SB3-like API
-* [ ] Multiagent gatherer
-* [ ] Performance/speed focussed improvements
-* [ ] Benchmarking
+
+Any suggestions or feature requests are greatly appreciated!
 
 ## Contributing
 <p align="center">
