@@ -238,10 +238,11 @@ The runner is the high level orchestrator that deals with the different componen
 
 
 ## Development
-There's quite a few different avenues of dvelopment that are all promising and will be acted on in time. In terms of functionality:
+There's quite a few different avenues of development that are promising and will be acted on in time. In terms of functionality:
 * [ ] Vectorised gatherer: This is a large missing piece in Cardio and essentially prevents on-policy implementations. In practice I'd like this to be compatible with n-step returns and also wih the OffpolicyRunner (or at least function with replay buffers) for algorithms like NGU to be implemented.
 * [ ] Trajectory replay buffer: Ability to store trajectories with a controllable level of overlapping, to be used for recurrent implementations or algorithms that leverage Retrace
-* [ ] Framework specific agent base classes: Remove more boilerplate by having base classes that automatically convert data from a chosen framework to numpy for use with Gym (and vice versa).
+* [ ] Framework specific agent base classes: Reduce boilerplate by having base classes that automatically convert data from a chosen framework to numpy for use with Gym (and vice versa).
+* [ ] Overhaul logging; Currently logging isn't very extensible or easy, try and improve, suggestions wlecome!
 
 For quality of life:
 * [ ] Dramatically improve logging: needs to be brainstormed
@@ -249,7 +250,24 @@ For quality of life:
 * [ ] Thorough benchmarking
 
 Misc:
-* [ ] Supplementary SB3-like API
+* [ ] Supplementary SB3-like agents API
+
+Algorithm roadmap:
+
+* Discrete:
+    * Rainbow
+    * DER
+    * DrQ
+    * SPR
+    * BBF
+    * MPO
+    * Munchausen DQN
+    * IQN
+
+* Continuous
+    * SAC
+    * TQC
+
 
 Any suggestions or feature requests are greatly appreciated!
 
