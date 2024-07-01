@@ -29,18 +29,6 @@ class Gatherer:
         self.env = env
         self.state, _ = self.env.reset()
 
-    # def _env_step(self, agent: Agent, s: NDArray):
-    #     a, ext = agent.step(s)
-    #     s_p, r, d, t, _ = self.env.step(a)
-    #     d = d or t
-    #     self.logger.step(r, d)
-
-    #     transition = {"s": s, "a": a, "r": r, "s_p": s_p, "d": d}
-    #     ext = agent.view(transition, ext)
-    #     transition.update(ext)
-
-    #     return transition, s_p, d
-
     def step(
         self,
         agent: Agent,
@@ -48,8 +36,6 @@ class Gatherer:
     ) -> list[Transition]:
         iterable = range(length) if length > 0 else itertools.count()
         for _ in iterable:
-            # transition, next_state, done = self._env_step(agent, self.state)
-
             a, ext = agent.step(self.state)
             next_state, r, d, t, _ = self.env.step(a)
             done = d or t
