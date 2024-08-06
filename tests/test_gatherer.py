@@ -6,7 +6,7 @@ class TestGatherer:
     def test_step(self):
         env = ToyEnv()
         gatherer = crl.Gatherer()
-        gatherer._init_env(env)
+        gatherer.init_env(env)
         agent = crl.Agent(env)
         rollout_batch = gatherer.step(agent, 1)
         assert len(rollout_batch) == 1
@@ -14,7 +14,7 @@ class TestGatherer:
     def test_episode_rollout(self):
         env = ToyEnv()
         gatherer = crl.Gatherer(n_step=3)
-        gatherer._init_env(env)
+        gatherer.init_env(env)
         agent = crl.Agent(env)
         rollout_batch = gatherer.step(agent, -1)
         assert len(rollout_batch) == env.maxlen
@@ -22,7 +22,7 @@ class TestGatherer:
     def test_empty_nstep(self):
         env = ToyEnv()
         gatherer = crl.Gatherer(n_step=3)
-        gatherer._init_env(env)
+        gatherer.init_env(env)
         agent = crl.Agent(env)
         rollout_batch = gatherer.step(agent, 2)
         assert len(rollout_batch) == 0
@@ -30,7 +30,7 @@ class TestGatherer:
     def test_nstep(self):
         env = ToyEnv()
         gatherer = crl.Gatherer(n_step=3)
-        gatherer._init_env(env)
+        gatherer.init_env(env)
         agent = crl.Agent(env)
         _ = gatherer.step(agent, 2)
         assert len(gatherer.step_buffer) == 2
