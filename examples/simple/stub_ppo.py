@@ -55,7 +55,6 @@ class PPO(crl.Agent):
         self.minibatches = minibatches
 
     def update(self, batches: list[Transition]):
-        # TODO: cleaner?
         data = jax.tree.map(crl.utils.to_torch, batches[0])
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
@@ -63,42 +62,43 @@ class PPO(crl.Agent):
         dist = th.distributions.Categorical(probs)
         old_log_probs = dist.log_prob(a).detach()
 
+        v = self.critic(s).squeeze(-1)
+        v_p = self.critic(s_p).squeeze(-1)
+        td_error = (r + 0.99 * (v_p * (1 - d))).detach() - v
+
+        gae = th.zeros_like(r)
+
+        for i in reversed(range(len(r))):
+            if i == (len(r) - 1):
+                gae[i] = td_error[i]
+            else:
+                gae[i] = td_error[i] + (0.95 * 0.99 * gae[i + 1])
+
+        returns = (gae + v).detach()
+
         batchsize = len(s)
         idxs = np.arange(batchsize)
-
         mb_size = batchsize // self.minibatches
 
         for _ in range(self.epochs):
             np.random.shuffle(idxs)
             for n in range(self.minibatches):
-                # TODO: add minibatching, look at CleanRL
                 mb_idxs = idxs[n * mb_size : (n + 1) * mb_size]
-                del mb_idxs
 
-                v = self.critic(s).squeeze(-1)
-                v_p = self.critic(s_p).squeeze(-1)
+                new_v = self.critic(s[mb_idxs]).squeeze(-1)
+                critic_loss = th.mean((new_v - returns[mb_idxs]) ** 2)
 
-                td_error = (r + 0.99 * (v_p * (1 - d))).detach() - v
-
-                gae = th.zeros_like(r)
-
-                for i in reversed(range(len(r))):
-                    if i == (len(r) - 1):
-                        gae[i] = td_error[i]
-                    else:
-                        gae[i] = td_error[i] + (0.95 * 0.99 * gae[i + 1])
-
-                returns = (gae + v_p).detach()  # TODO: double check this is correct
-                critic_loss = th.mean((v - returns) ** 2)
-
-                probs = self.actor(s)
+                probs = self.actor(s[mb_idxs])
                 dist = th.distributions.Categorical(probs)
-                log_probs = dist.log_prob(a)
+                log_probs = dist.log_prob(a[mb_idxs])
 
-                ratio = log_probs - old_log_probs  # TODO: check and add clipping
-                policy_loss = -th.mean(
-                    ratio * td_error.detach()
-                )  # TODO: gae or td-error for policy adv?
+                ratio = log_probs - old_log_probs[mb_idxs]
+
+                mb_gae = gae[mb_idxs].detach()
+
+                policy_loss1 = -mb_gae * ratio
+                policy_loss2 = -mb_gae * th.clamp(ratio, 1 - 0.2, 1 + 0.2)
+                policy_loss = th.max(policy_loss1, policy_loss2).mean()
 
                 entropy = -dist.entropy().mean()
 
