@@ -25,7 +25,7 @@ class Gatherer:
         self.transition_buffer: Deque = deque()
         self.step_buffer: Deque = deque(maxlen=n_step)
 
-    def _init_env(self, env: Env):
+    def init_env(self, env: Env):
         self.env = env
         self.state, _ = self.env.reset()
 

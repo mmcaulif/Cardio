@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Callable, Optional
 
 from gymnasium import Env
 
@@ -11,7 +11,7 @@ class OffPolicyRunner(BaseRunner):
     def __init__(
         self,
         env: Env,
-        agent: Agent,
+        agent: Optional[Agent] = None,
         extra_specs: dict = {},
         capacity: int = 1_000_000,
         rollout_len: int = 1,
@@ -30,31 +30,9 @@ class OffPolicyRunner(BaseRunner):
 
         super().__init__(env, agent, rollout_len, warmup_len, n_step)
 
-    def _rollout(
-        self, steps: int, agent: Optional[Agent]
-    ) -> tuple[list[Transition], int]:
-        """Internal method to step through environment for a
-        provided number of steps. Return the collected
-        transitions and how many were collected, then stores
-        transitions in the replay buffer.
-
-        Args:
-            steps (int): Number of steps to take in environment
-            agent (Agent): Can optionally pass a specific agent to
-                step through environment with
-
-        Returns:
-            rollout_transitions (Transition): stacked Transitions
-                from environment
-            num_transitions (int): number of Transitions collected
-        """
-        rollout_transitions, num_transitions = super()._rollout(steps, agent)  # type: ignore
-        if num_transitions:
-            prepped_batch = self.transform_batch(rollout_transitions)
-            self.buffer.store(prepped_batch, num_transitions)
-        return rollout_transitions, num_transitions
-
-    def step(self, agent: Optional[Agent] = None) -> list[Transition]:
+    def step(
+        self, transform: Optional[Callable] = None, agent: Optional[Agent] = None
+    ) -> list[Transition]:
         """Main method to step through environment with
         agent, to collect transitions, add them to your replay
         buffer and then sample batches from the buffer to pass
@@ -70,7 +48,11 @@ class OffPolicyRunner(BaseRunner):
                 is equal to self.num_batches
         """
         agent = agent if self.agent is None else self.agent
-        _, _ = self._rollout(self.rollout_len, agent)
+        rollout_transitions, num_transitions = self._rollout(
+            self.rollout_len, agent, transform
+        )
+        if num_transitions:
+            self.buffer.store(rollout_transitions, num_transitions)
         k = min(self.batch_size, len(self.buffer))
         batch_samples = [self.buffer.sample(k) for _ in range(self.n_batches)]
         return batch_samples

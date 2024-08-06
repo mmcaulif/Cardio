@@ -1,7 +1,7 @@
-import copy
 import logging
-from typing import Optional
+from typing import Callable, Optional
 
+import jax
 from gymnasium import Env
 from tqdm import trange
 
@@ -29,14 +29,14 @@ class BaseRunner:
     def __init__(
         self,
         env: Env,
-        agent: Agent,
+        agent: Optional[Agent] = None,
         rollout_len: int = 1,
         warmup_len: int = 0,
         n_step: int = 1,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
         self.env = env
-        self.eval_env = copy.deepcopy(env)
+        # self.eval_env = copy.deepcopy(env)    # not compatible with gymnasium VecEnv's
         self.rollout_len = rollout_len
         self.warmup_len = warmup_len
 
@@ -48,7 +48,7 @@ class BaseRunner:
         self.n_step = n_step
         self.agent = agent
 
-        self.gatherer._init_env(self.env)
+        self.gatherer.init_env(self.env)
         self.burn_in_len = 0
         if self.burn_in_len:
             self._burn_in()  # TODO: implement argument
@@ -65,7 +65,21 @@ class BaseRunner:
         """
         self._rollout(self.burn_in_len, Agent(self.env))
 
-    def _rollout(self, steps: int, agent: Agent) -> tuple[list[Transition], int]:
+    def _warm_start(self):
+        """Step through environment with freshly initialised
+        agent, to collect transitions before training via
+        the _rollout internal method.
+        """
+        agent = crl.Agent(self.env) or self.agent
+        self._rollout(self.warmup_len, agent)
+        logging.info("### Warm up finished ###")
+
+    def _rollout(
+        self,
+        steps: int,
+        agent: Optional[Agent] = None,
+        transform: Optional[Callable] = None,
+    ) -> tuple[Transition, int]:
         """Internal method to step through environment for a
         provided number of steps. Return the collected
         transitions and how many were collected.
@@ -80,20 +94,15 @@ class BaseRunner:
                 from environment
             num_transitions (int): number of Transitions collected
         """
-        rollout_transitions = self.gatherer.step(agent, steps)
-        num_transition = len(rollout_transitions)
-        return rollout_transitions, num_transition
+        rollout_transitions = self.gatherer.step(agent, steps)  # type: ignore
+        num_transitions = len(rollout_transitions)
+        if num_transitions:
+            rollout_transitions = self.transform_batch(rollout_transitions, transform)  # type: ignore
+        return rollout_transitions, num_transitions  # type: ignore
 
-    def _warm_start(self):
-        """Step through environment with freshly initialised
-        agent, to collect transitions before training via
-        the _rollout internal method.
-        """
-
-        self._rollout(self.warmup_len, self.agent)
-        logging.info("### Warm up finished ###")
-
-    def step(self, agent: Optional[Agent] = None) -> list[Transition]:
+    def step(
+        self, transform: Optional[Callable] = None, agent: Optional[Agent] = None
+    ) -> list[Transition]:
         """Main method to step through environment with
         agent, to collect transitions and pass them to your
         agent's update function.
@@ -109,10 +118,11 @@ class BaseRunner:
         """
 
         agent = agent if self.agent is None else self.agent
-        rollout_batch, num_transitions = self._rollout(self.rollout_len, agent)  # type: ignore
+        rollout_batch, num_transitions = self._rollout(
+            self.rollout_len, agent, transform
+        )  # type: ignore
         del num_transitions
-        batch = [self.transform_batch(rollout_batch)]
-        return batch
+        return [rollout_batch]
 
     def run(self, rollouts: int = 1_000_000) -> None:
         """Iteratively run runner.step() for self.rollout_len
@@ -132,7 +142,9 @@ class BaseRunner:
             if updated_data:
                 self.update(updated_data)
 
-    def transform_batch(self, batch: list[Transition]) -> Transition:
+    def transform_batch(
+        self, batch: list[Transition], transform: Optional[Callable] = None
+    ) -> Transition:
         """Perform some transformation of a given list of Transitions
 
         Args:
@@ -145,6 +157,8 @@ class BaseRunner:
         """
 
         transformed_batch = crl.tree.stack(batch)
+        if transform:
+            transformed_batch = jax.tree.map(transform, transformed_batch)
         return transformed_batch
 
     def update_agent(self, new_agent: Agent):

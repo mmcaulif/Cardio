@@ -6,6 +6,8 @@ import jax
 import numpy as np
 from gymnasium import Env, spaces
 
+from cardio_rl.types import Transition
+
 
 class TreeBuffer:
     def __init__(
@@ -62,7 +64,7 @@ class TreeBuffer:
     def __call__(self, key: str):
         return self.table[key]
 
-    def store(self, batch: dict, num: int):
+    def store(self, batch: Transition, num: int):
         def _place(arr, x, idx):
             if len(x.shape) == 1:
                 x = np.expand_dims(x, -1)
