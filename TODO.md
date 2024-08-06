@@ -1,31 +1,66 @@
 # General to do list in advance of an initial 0.0.1 release
 
-## Primary goals rn
-1. Documentation (docstrings, readme, basic examples)
-    * describe the edgecases accounted for in the code (i.e. n-step transitions and terminal steps)
-    * describe the vocabulary used in the code base
-1. Testing (rigorous testing of gatherer and runner)
-1. clean up repo but be sure to keep WIP features in a branch
+## Primary goals
+1. [ ] Testing (rigorous testing of gatherer and runner)
+  * [ ] Parameterised testing
+1. [x] clean up repo but be sure to keep WIP features in a branch
+1. [x] decouple the actions into seperate files per action (?)
+1. [x] add gatherer pseudocode to readme
+1. [ ] finish readme and docstrings
+  * [ ] contributing
+  * [x] examples, include code snippets
+  * [x] development
+  * [x] write a better description
+  * [ ] look at other repo's for inspo
+  * [x] add some emoji's for fun
+1. [ ] add custom templates for issues and PR's
+  * look at other repo's for inspo and give credit
+1. [ ] Buffer overriding in OffpolicyRunner
+  * Verify it works and add tests
+1. [ ] add a logo to top of readme
+  * A robot version of the running man emoji maybe? Or something similar
 
-Once done with the 0.0.1 version, send to different people for feedback
+Once done with the 0.1.0 version, send to different people for feedback
 
 ## Specific tasks
-* [ ] Refactor Gatherer and Runners, keep minimalist and introduce an agent class
-  * [x] Get rid of the use of "__call__" methods for runner etc. use .step() and .run() instead
-  * [x] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
-  * [x] Cleaner passing of rollout step and warmup length handling
-  * [ ] Review Gatherer inner workings and runner inner workings
-    * [ ] You'll absolutely need to document these well and understand them well (incl. edge cases)
-  * [x] Add evaluation methodology
-  * [x] Add reset, update_agent and load methods for runner/agent (e.g. for use in Reptile impl)
-  * [x] Add n-step collection
-
 * [ ] QOL Runner and Gatherer changes
   * [x] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
   * [ ] Write up documents and doc strings for Runner and Gatherer to make it easier to understand!!!
     * Use google style docstrings
-  * [ ] Verify that Runner can be used without supplying an agent in a manner as expected
+  * [x] Verify that Runner can be used without supplying an agent in a manner as expected
     * an agent will need to be initially supplied for warmup but allow for it afterwards
+  * [ ] try make it so if an agent isnt passed initially, the warmup will use a random policy
+
+* [ ] Improve extensibility
+  * [x] Agents should be able to use and save extras (such as log probs)
+    * add indices sampled to batch data outputted (?)
+  * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
+    * this ties into the above with using pytree's internally within the gatherer
+  * [ ] Implement dopamine Rainbow as an example
+
+* [ ] Make library presentable
+  * [x] Simple examples
+  * [x] Linting and typing
+  * [ ] Readme and docs, look at stoix for inspo
+    * [x] Pseudocode for gatherer internals
+  * [ ] Extensive and widespread testing!!!
+  * [x] Precommit hooks
+  * [x] Make file
+  * [ ] Docker file (?)
+  * [ ] Jax agent stubs
+    * [ ] Will need to get access to a linux machine with a GPU to properly evaluate performance/speed
+    * [ ] Consider different popular algorithms and how they could be implemented easily
+
+* [ ] While trying to implement A2C and PPO, you broke the runner/gatherer, it is mostly fixed
+      but double check everything! Further proof that testing is needed
+
+* [ ] MinAtar or Atari examples
+  * MinAtar seems to work seamlessly so far, need to write a network for it and train DQN
+
+__Focus on getting some form of Cardio as a finished deliverable__
+
+## Post-release
+* [ ] add a system design diagram to readme
 
 * [ ] Improve logging
   * [x] Current time spent
@@ -37,30 +72,16 @@ Once done with the 0.0.1 version, send to different people for feedback
   * [ ] Figure out a way to make logging extensible and customisable
   * [ ] Gatherer should return the number of steps taken and episodes completed
 
-* [ ] Improve extensibility
-  * [x] Agents should be able to use and save extras (such as log probs)
-    * add indices sampled to batch data outputted (?)
-  * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
-    * this ties into the above with using pytree's internally within the gatherer
-  * [ ] Implement dopamine Rainbow as an example
-    * [ ] Add buffer overriding via extra info from agent update method
+# Done
+* [x] Refactor Gatherer and Runners, keep minimalist and introduce an agent class
+  * [x] Get rid of the use of "__call__" methods for runner etc. use .step() and .run() instead
+  * [x] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
+  * [x] Cleaner passing of rollout step and warmup length handling
+  * [x] Review Gatherer inner workings and runner inner workings
+    * You'll absolutely need to document these well and understand them well (incl. edge cases)
+  * [x] Add evaluation methodology
+  * [x] Add reset, update_agent and load methods for runner/agent (e.g. for use in Reptile impl)
+  * [x] Add n-step collection
 
-* [ ] Make library presentable
-  * [ ] Simple examples
-  * [x] Linting and typing
-  * [ ] Readme and docs, look at stoix for inspo
-    * [x] Pseudocode for gatherer internals
-  * [ ] Extensive and widespread testing!!!
-  * [x] Precommit hooks
-  * [x] Make file
-  * [ ] Docker file (?)
-  * [ ] Jax agent stubs
-    * [ ] Will need to get access to a linux machine with a GPU to properly evaluate performance/speed
-    * [ ] Consider different popular algorithms and how they could be implemented easily
-    * [ ] MinAtar baselines
-
-__Focus on getting some form of Cardio as a finished deliverable__
-
-## Post-release
 * [x] Github integrations for ruff, type checking
 * [x] More test coverage and github integration
