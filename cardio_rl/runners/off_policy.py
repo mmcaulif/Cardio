@@ -1,7 +1,9 @@
+import logging
 from typing import Callable, Optional
 
 from gymnasium import Env
 
+import cardio_rl as crl
 from cardio_rl import Agent, BaseRunner
 from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.types import Transition
@@ -29,6 +31,17 @@ class OffPolicyRunner(BaseRunner):
         self.n_step = n_step
 
         super().__init__(env, agent, rollout_len, warmup_len, n_step)
+
+    def _warm_start(self):
+        """Step through environment with freshly initialised
+        agent, to collect transitions before training via
+        the _rollout internal method.
+        """
+        agent = crl.Agent(self.env) or self.agent
+        rollout_transitions, num_transitions = self._rollout(self.warmup_len, agent)
+        if num_transitions:
+            self.buffer.store(rollout_transitions, num_transitions)
+        logging.info("### Warm up finished ###")
 
     def step(
         self, transform: Optional[Callable] = None, agent: Optional[Agent] = None
