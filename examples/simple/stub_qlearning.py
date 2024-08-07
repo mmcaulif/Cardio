@@ -49,7 +49,7 @@ class DQN(crl.Agent):
     def step(self, state):
         if np.random.rand() > self.eps:
             th_state = th.from_numpy(state).unsqueeze(0).float()
-            action = self.critic(th_state).argmax().detach().numpy()
+            action = self.critic(th_state).argmax(-1).squeeze(0).detach().numpy()
         else:
             action = self.env.action_space.sample()
         return action, {}
