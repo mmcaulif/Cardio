@@ -18,8 +18,7 @@ class PrioritisedBuffer(TreeBuffer):
         n_steps: int = 1,
     ):
         super().__init__(env, capacity, extra_specs, n_steps)
-        priority_shape = self.base_shape[0]
-        self.table.update({"p": np.zeros((priority_shape, 1))})
+        self.table.update({"p": np.zeros((capacity, 1))})
 
     def store(self, transition: Transition, num: int):
         def _place(arr, x, idx):
