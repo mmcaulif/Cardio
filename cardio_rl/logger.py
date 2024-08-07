@@ -69,7 +69,7 @@ class Logger:
             metrics = {
                 "Timesteps": self.timestep,
                 "Episodes": self.episodes,
-                "Episodic reward": np.mean(self.episodic_rewards),
+                "Episodic reward": np.round(np.mean(self.episodic_rewards), 4),
                 "Time passed": round(total_time, 2),
                 "Env steps per second": int(fps),
             }
