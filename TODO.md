@@ -19,17 +19,16 @@
   * Verify it works and add tests
 1. [ ] add a logo to top of readme
   * A robot version of the running man emoji maybe? Or something similar
+1. [ ] Final review and draft of Readme
 
 Once done with the 0.1.0 version, send to different people for feedback
 
 ## Specific tasks
 * [ ] QOL Runner and Gatherer changes
   * [x] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
-  * [ ] Write up documents and doc strings for Runner and Gatherer to make it easier to understand!!!
-    * Use google style docstrings
   * [x] Verify that Runner can be used without supplying an agent in a manner as expected
     * an agent will need to be initially supplied for warmup but allow for it afterwards
-  * [ ] try make it so if an agent isnt passed initially, the warmup will use a random policy
+  * [ ] Make it so if an agent isnt passed initially, the warmup will use a random policy
 
 * [ ] Improve extensibility
   * [x] Agents should be able to use and save extras (such as log probs)
@@ -39,28 +38,37 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [ ] Implement dopamine Rainbow as an example
 
 * [ ] Make library presentable
-  * [x] Simple examples
-  * [x] Linting and typing
+  * [ ] Doc strings for Runner, Gatherer and other components to make it easier to understand!!!
+    * Use google style docstrings
   * [ ] Readme and docs, look at stoix for inspo
     * [x] Pseudocode for gatherer internals
-  * [ ] Extensive and widespread testing!!!
-  * [x] Precommit hooks
-  * [x] Make file
-  * [ ] Docker file (?)
+  * [ ] Extensive testing!!!
   * [ ] Jax agent stubs
     * [ ] Will need to get access to a linux machine with a GPU to properly evaluate performance/speed
     * [ ] Consider different popular algorithms and how they could be implemented easily
 
 * [ ] While trying to implement A2C and PPO, you broke the runner/gatherer, it is mostly fixed
-      but double check everything! Further proof that testing is needed
+      but double check everything! Further proof that testing is needed...
 
-* [ ] MinAtar or Atari examples
-  * MinAtar seems to work seamlessly so far, need to write a network for it and train DQN
+* [ ] MinAtar and Atari examples
+  * [x] MinAtar: Seems to work seamlessly so far, need to write a network for it and train DQN
+    * MinAtar DQN appears to match performance from paper in initial benchmarks of Freeway!
+  * [ ] Atari:
+  * [ ] Envpool:
 
 __Focus on getting some form of Cardio as a finished deliverable__
 
-## Post-release
-* [ ] add a system design diagram to readme
+## Post alpha release
+* [ ] Pip package with github actions for releases
+
+* [ ] Docker file
+
+* [ ] Envpool Atari DQN using flax and network resets for Atari 100k benchmarking
+  * Will need to make this as quick as possible, use scans for updating over multiple batches
+
+* [ ] Outline benchmarking roadmap
+* [ ] Outline speed, profiling and optimisation roadmap
+* [ ] Add a system design diagram to readme
 
 * [ ] Improve logging
   * [x] Current time spent
@@ -73,6 +81,10 @@ __Focus on getting some form of Cardio as a finished deliverable__
   * [ ] Gatherer should return the number of steps taken and episodes completed
 
 # Done
+* [x] Simple examples
+* [x] Linting and typing
+* [x] Precommit hooks
+* [x] Make file
 * [x] Refactor Gatherer and Runners, keep minimalist and introduce an agent class
   * [x] Get rid of the use of "__call__" methods for runner etc. use .step() and .run() instead
   * [x] Add easier appending to replay buffer, no for loops (specified below, implement a pytree replay buffer)
