@@ -87,7 +87,7 @@ class Gatherer:
         """
 
         remainder = len(self.step_buffer)
-
+        diff = self.n_step - remainder
         if remainder < self.n_step:
             start = 0
         else:
@@ -95,7 +95,7 @@ class Gatherer:
 
         for i in range(start, remainder):
             temp = list(self.step_buffer)[i:]
-            pad = [0.0] * i
+            pad = [0.0] * (i + diff)    # Ensures reward seq length is fixed to n_steps
             step = {
                 "s": temp[0]["s"],
                 "a": temp[0]["a"],
