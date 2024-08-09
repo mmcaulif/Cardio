@@ -11,11 +11,19 @@ from cardio_rl.types import Transition
 
 
 class Gatherer:
+    """_summary_"""
+
     def __init__(
         self,
         n_step: int = 1,
         logger_kwargs: Optional[dict] = None,
     ) -> None:
+        """_summary_
+
+        Args:
+            n_step (int, optional): _description_. Defaults to 1.
+            logger_kwargs (Optional[dict], optional): _description_. Defaults to None.
+        """
         self.n_step = n_step
 
         if logger_kwargs is None:
@@ -26,6 +34,11 @@ class Gatherer:
         self.step_buffer: Deque = deque(maxlen=n_step)
 
     def init_env(self, env: Env):
+        """_summary_
+
+        Args:
+            env (Env): _description_
+        """
         self.env = env
         self.state, _ = self.env.reset()
 
@@ -34,6 +47,15 @@ class Gatherer:
         agent: Agent,
         length: int,
     ) -> list[Transition]:
+        """_summary_
+
+        Args:
+            agent (Agent): _description_
+            length (int): _description_
+
+        Returns:
+            list[Transition]: _description_
+        """
         iterable = range(length) if length > 0 else itertools.count()
         for _ in iterable:
             a, ext = agent.step(self.state)
@@ -74,6 +96,7 @@ class Gatherer:
         return transitions
 
     def reset(self) -> None:
+        """_summary_"""
         self.step_buffer.clear()
         self.transition_buffer.clear()
         self.env.reset()
@@ -95,7 +118,7 @@ class Gatherer:
 
         for i in range(start, remainder):
             temp = list(self.step_buffer)[i:]
-            pad = [0.0] * (i + diff)    # Ensures reward seq length is fixed to n_steps
+            pad = [0.0] * (i + diff)  # Ensures reward seq length is fixed to n_steps
             step = {
                 "s": temp[0]["s"],
                 "a": temp[0]["a"],
