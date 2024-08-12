@@ -145,9 +145,8 @@ class TreeBuffer:
         """
         # TODO: raise an error/warning when batch_size and sample_indxs are both passed.
         if batch_size:
-            sample_size = int(min(batch_size, self.__len__()))
             sample_indxs = np.random.randint(
-                low=0, high=self.__len__(), size=sample_size
+                low=0, high=self.__len__(), size=batch_size
             )
 
         batch: dict = jax.tree.map(lambda arr: arr[sample_indxs], self.table)

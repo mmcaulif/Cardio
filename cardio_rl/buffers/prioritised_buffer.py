@@ -44,8 +44,7 @@ class PrioritisedBuffer(TreeBuffer):
 
         # probs = priorities/(sum(priorities) + 1e-8)
 
-        # sample_size = int(min(batch_size, self.__len__()))
-        # sample_indxs = np.random.choice(self.__len__(), sample_size, p=probs)
+        # sample_indxs = np.random.choice(self.__len__(), batch_size, p=probs)
 
         # return super().sample(sample_indxs=sample_indxs) # type: ignore
 
