@@ -15,8 +15,6 @@
   * [x] add some emoji's for fun
 1. [ ] add custom templates for issues and PR's
   * look at other repo's for inspo and give credit
-1. [ ] Buffer overriding in OffpolicyRunner
-  * Verify it works and add tests
 1. [ ] add a logo to top of readme
   * A robot version of the running man emoji maybe? Or something similar
 1. [ ] Final review and draft of Readme
@@ -28,14 +26,14 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [x] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
   * [x] Verify that Runner can be used without supplying an agent in a manner as expected
     * an agent will need to be initially supplied for warmup but allow for it afterwards
-  * [ ] Make it so if an agent isnt passed initially, the warmup will use a random policy
+  * [ ] Make it so if an agent isnt passed initially, the warmup will use a random policy (necessary?)
 
 * [ ] Improve extensibility
   * [x] Agents should be able to use and save extras (such as log probs)
     * add indices sampled to batch data outputted (?)
   * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
     * this ties into the above with using pytree's internally within the gatherer
-  * [ ] Implement dopamine Rainbow as an example
+  * [ ] Implement dopamine Rainbow as an intermediate example
 
 * [ ] Make library presentable
   * [ ] Doc strings for Runner, Gatherer and other components to make it easier to understand!!!
@@ -56,6 +54,9 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [ ] Atari:
   * [ ] Envpool:
 
+* Maybe make evaluation done within an agent, the runner can pass it metrics like steps taken or
+  episodes completed. Will need to be experimented with...
+
 __Focus on getting some form of Cardio as a finished deliverable__
 
 ## Post alpha release
@@ -63,11 +64,22 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [ ] Docker file
 
+* [ ] Other replay buffers:
+  * [ ] trajectory
+  * [x] prioritised
+  * [ ] mixed
+  * [ ] simple/base
+
 * [ ] Envpool Atari DQN using flax and network resets for Atari 100k benchmarking
   * Will need to make this as quick as possible, use scans for updating over multiple batches
+    and XLA environment with scan for evaluation.
 
 * [ ] Outline benchmarking roadmap
+  * [ ] Make seperate repo
 * [ ] Outline speed, profiling and optimisation roadmap
+
+* [ ] Make seperate repo for research/experimenting template
+
 * [ ] Add a system design diagram to readme
 
 * [ ] Improve logging
