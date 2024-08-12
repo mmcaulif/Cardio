@@ -25,7 +25,7 @@ class Q_critic(nn.Module):
         return q
 
 
-class DQN(crl.Agent):
+class DDQN(crl.Agent):
     def __init__(self, env: gym.Env):
         self.env = env
         self.critic = Q_critic(4, 2)
@@ -44,7 +44,9 @@ class DQN(crl.Agent):
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
         q = self.critic(s).gather(-1, a.long())
-        q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
+
+        a_p = self.critic(s_p).argmax(-1, keepdim=True)
+        q_p = self.targ_critic(s_p).gather(-1, a_p.long())
         y = r + 0.99 * q_p * (1 - d)
 
         loss = F.mse_loss(q, y.detach())
@@ -71,7 +73,7 @@ def main():
     env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
         env=env,
-        agent=DQN(env),
+        agent=DDQN(env),
         rollout_len=1,
         batch_size=32,
         n_batches=4,

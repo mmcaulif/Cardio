@@ -25,9 +25,10 @@ class Q_critic(nn.Module):
         return q
 
 
-class DQN(crl.Agent):
-    def __init__(self, env: gym.Env):
+class NstepDDQN(crl.Agent):
+    def __init__(self, env: gym.Env, n_step: int):
         self.env = env
+        self.n_step = n_step
         self.critic = Q_critic(4, 2)
         self.targ_critic = Q_critic(4, 2)
         self.targ_critic.load_state_dict(self.critic.state_dict())
@@ -43,9 +44,17 @@ class DQN(crl.Agent):
         data = jax.tree.map(crl.utils.to_torch, batches[0])
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
+        returns = th.zeros(r.shape[0])
+        for i in reversed(range(r.shape[1])):
+            returns += 0.99 * r[:, i]
+
+        r = returns.unsqueeze(-1)
+
         q = self.critic(s).gather(-1, a.long())
-        q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
-        y = r + 0.99 * q_p * (1 - d)
+
+        a_p = self.critic(s_p).argmax(-1, keepdim=True)
+        q_p = self.targ_critic(s_p).gather(-1, a_p.long())
+        y = r + np.power(0.99, self.n_step) * q_p * (1 - d)
 
         loss = F.mse_loss(q, y.detach())
         self.optimizer.zero_grad()
@@ -71,10 +80,11 @@ def main():
     env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
         env=env,
-        agent=DQN(env),
+        agent=NstepDDQN(env, n_step=3),
         rollout_len=1,
         batch_size=32,
         n_batches=4,
+        n_step=3,
     )
     runner.run(rollouts=50_000)
 
