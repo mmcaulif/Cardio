@@ -1,3 +1,19 @@
+"""
+Prioritized Experience Replay from 'Prioritized Experience
+Replay' for discrete environments.
+
+Paper:
+Hyperparameters:
+Experiment details:
+
+DQN with double Q-learning, duellining nets
+
+Notes:
+
+To do:
+* implement sum tree and compare speed
+"""
+
 import gymnasium as gym
 import jax
 import numpy as np

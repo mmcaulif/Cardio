@@ -1,19 +1,19 @@
 """
 Rainbow from 'Rainbow: Combining Improvements in Deep Reinforcement
-Learning' for discrete environments (Atari 100k).
+Learning' for discrete environments.
 
 Paper:
-Hyperparameters: page
-Experiment details: page
+Hyperparameters:
+Experiment details:
 
 DQN with double Q-learning, duelling Q-network, n-step returns,
 prioritised experience replay, distributional Q-network, and noisy
 networks.
 
 Notes:
-PER beta value is fixed as 0.5, instead of the linearly annealed original
-value. Additionally noisy networks are left out of this implementation
-for now.
+Implementation is based on Dopamine: PER beta value is fixed as 0.5,
+instead of the linearly annealed original value. Additionally noisy
+networks are left out of this implementation for now.
 
 To do:
 * C51

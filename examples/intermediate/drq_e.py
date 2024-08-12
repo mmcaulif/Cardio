@@ -11,6 +11,7 @@ Image augmentation details: page 22
 DQN with double Q-learning, duellingn nets, n-step returns, tuned
 hyperpameters and M/K random augmentations applied to S/S_p respectively.
 
+Notes:
 Target networks are seemingly removed as target update period = 1.
 
 To do:
