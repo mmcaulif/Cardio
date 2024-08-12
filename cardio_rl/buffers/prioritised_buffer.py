@@ -15,13 +15,15 @@ class PrioritisedBuffer(TreeBuffer):
         capacity: int = 1_000_000,
         extra_specs: dict = {},
         n_steps: int = 1,
+        alpha: float = 0.5,  # Rainbow default
     ):
         extra_specs.update({"p": [1]})
+        self.alpha = alpha
         super().__init__(env, capacity, extra_specs, n_steps)
 
     def store(self, transition: Transition, num: int):
         if self.__len__() == 0:
-            max_p = 0.0
+            max_p = 1.0
         else:
             # TODO: replace with sum tree
             priorities: np.ndarray = self.table["p"][: self.__len__()]
@@ -36,19 +38,12 @@ class PrioritisedBuffer(TreeBuffer):
         batch_size: Optional[int] = None,
         sample_indxs: Optional[np.ndarray] = None,
     ):
-        del sample_indxs
-
         # TODO: replace with sum tree
-        # priorities: np.ndarray = self.table["p"][:self.__len__()]
-        # max_p = priorities.max()
-
-        # probs = priorities/(sum(priorities) + 1e-8)
-
-        # sample_indxs = np.random.choice(self.__len__(), batch_size, p=probs)
-
-        # return super().sample(sample_indxs=sample_indxs) # type: ignore
-
-        return super().sample(batch_size)  # type: ignore
+        priorities: np.ndarray = np.squeeze(self.table["p"][: self.__len__()], axis=-1)
+        priorities = np.power(priorities, self.alpha)
+        probs = priorities / sum(priorities)
+        sample_indxs = np.random.choice(self.__len__(), size=batch_size, p=probs)  # type: ignore
+        return super().sample(sample_indxs=sample_indxs)
 
 
 def main():

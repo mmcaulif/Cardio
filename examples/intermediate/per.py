@@ -26,8 +26,9 @@ class Q_critic(nn.Module):
 
 
 class PER(crl.Agent):
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: gym.Env, beta: float = 0.5):
         self.env = env
+        self.beta = beta
         self.critic = Q_critic(4, 2)
         self.targ_critic = Q_critic(4, 2)
         self.targ_critic.load_state_dict(self.critic.state_dict())
@@ -45,13 +46,17 @@ class PER(crl.Agent):
 
         q = self.critic(s).gather(-1, a.long())
 
-        a_p = self.critic(s_p).argmax(-1, keepdim=True)
-        q_p = self.targ_critic(s_p).gather(-1, a_p.long())
+        # a_p = self.critic(s_p).argmax(-1, keepdim=True)
+        # q_p = self.targ_critic(s_p).gather(-1, a_p.long())
+        q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
         y = r + 0.99 * q_p * (1 - d)
-
-        # TODO: add importance weighting
         error = q - y.detach()
-        loss = th.mean(error**2)
+
+        probs = data["p"] / th.sum(data["p"])
+        w = probs**-self.beta  # equivelant to inverse square root of the probabilities
+        w /= th.max(w)
+        loss = th.mean((w * error) ** 2)
+
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -60,7 +65,7 @@ class PER(crl.Agent):
         if self.update_count % 1_000 == 0:
             self.targ_critic.load_state_dict(self.critic.state_dict())
 
-        return {"idxs": batches[0]["idxs"], "p": error.numpy(force=True)}
+        return {"idxs": batches[0]["idxs"], "p": np.abs(error.numpy(force=True))}
 
     def step(self, state):
         if np.random.rand() > self.eps:
@@ -79,15 +84,12 @@ def main():
     runner = crl.OffPolicyRunner(
         env,
         agent,
-        buffer=crl.buffers.PrioritisedBuffer(
-            env,
-            capacity=100_000,
-        ),
+        buffer=crl.buffers.PrioritisedBuffer(env),
         rollout_len=4,
         batch_size=32,
     )
 
-    rollouts = 10_000
+    rollouts = 50_000
 
     for _ in trange(rollouts):
         data = runner.step(agent=agent)
