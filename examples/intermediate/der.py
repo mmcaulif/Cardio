@@ -1,7 +1,7 @@
 import gymnasium as gym
+from rainbow import Rainbow
 
 import cardio_rl as crl
-from examples.intermediate.rainbow import Rainbow
 
 
 def main():
