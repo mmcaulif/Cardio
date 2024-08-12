@@ -14,7 +14,6 @@ hyperpameters and M/K random augmentations applied to S/S_p respectively.
 Target networks are seemingly removed as target update period = 1.
 
 To do:
-* Duelling nets
 * Image augmentation
 * Benchmarking (Atari 100k)
 * Review differences between DrQ and DrQ(e)
@@ -34,16 +33,21 @@ class Q_critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Q_critic, self).__init__()
 
-        self.net = nn.Sequential(
+        self.torso = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
             nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(64, action_dim),
         )
 
+        self.v = nn.Linear(64, 1)
+        self.a = nn.Linear(64, action_dim)
+
     def forward(self, state):
-        q = self.net(state)
+        z = self.torso(state)
+        v = self.v(z)
+        a = self.a(z)
+        q = v + a - a.mean(-1, keepdim=True)
         return q
 
 
@@ -60,7 +64,7 @@ class DrQ(crl.Agent):
         )
 
         self.eps = 1.0
-        self.min_eps = 0.01
+        self.min_eps = 0.05
         schedule_steps = 5000
         self.ann_coeff = self.min_eps ** (1 / schedule_steps)
 
