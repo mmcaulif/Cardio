@@ -77,6 +77,10 @@ class Gatherer:
                     "s_p": self.step_buffer[-1]["s_p"],
                     "d": self.step_buffer[-1]["d"],
                 }
+                for key, value in self.step_buffer[0].items():
+                    if key not in ["s", "a", "r", "s_p", "d"]:
+                        step.update({key: value})
+
                 self.transition_buffer.append(step)
 
             self.state = next_state

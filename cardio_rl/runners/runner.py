@@ -11,20 +11,7 @@ from cardio_rl.types import Transition
 
 
 class BaseRunner:
-    """
-    The Vehicles object contains lots of vehicles
-
-    Args:
-        env (Env): The arg is used for
-        agent (Agent):
-        rollout_len (int):
-        warmup_len (int):
-        n_step (int):
-        gatherer (Optional[Gatherer]):
-
-    Attributes:
-        eval_env (Env):
-    """
+    """_summary_"""
 
     def __init__(
         self,
@@ -35,6 +22,16 @@ class BaseRunner:
         n_step: int = 1,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
+        """_summary_
+
+        Args:
+            env (Env): _description_
+            agent (Optional[Agent], optional): _description_. Defaults to None.
+            rollout_len (int, optional): _description_. Defaults to 1.
+            warmup_len (int, optional): _description_. Defaults to 0.
+            n_step (int, optional): _description_. Defaults to 1.
+            gatherer (Optional[Gatherer], optional): _description_. Defaults to None.
+        """
         self.env = env
         # self.eval_env = copy.deepcopy(env)    # not compatible with gymnasium VecEnv's
         self.rollout_len = rollout_len
@@ -70,9 +67,10 @@ class BaseRunner:
         agent, to collect transitions before training via
         the _rollout internal method.
         """
-        agent = crl.Agent(self.env) or self.agent
-        self._rollout(self.warmup_len, agent)
+        agent = self.agent or crl.Agent(self.env)  # Needs to be ordered like this!
+        rollout_transitions, num_transitions = self._rollout(self.warmup_len, agent)
         logging.info("### Warm up finished ###")
+        return rollout_transitions, num_transitions
 
     def _rollout(
         self,

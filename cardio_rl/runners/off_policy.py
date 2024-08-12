@@ -1,28 +1,47 @@
-import logging
 from typing import Callable, Optional
 
 from gymnasium import Env
 
-import cardio_rl as crl
 from cardio_rl import Agent, BaseRunner
 from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.types import Transition
 
 
 class OffPolicyRunner(BaseRunner):
+    """_summary_"""
+
     def __init__(
         self,
         env: Env,
         agent: Optional[Agent] = None,
         extra_specs: dict = {},
         capacity: int = 1_000_000,
+        buffer: Optional[TreeBuffer] = None,
         rollout_len: int = 1,
         batch_size: int = 100,
         warmup_len: int = 10_000,
         n_batches: int = 1,
         n_step: int = 1,
     ) -> None:
-        self.buffer = TreeBuffer(env, capacity, extra_specs, n_step)
+        """_summary_
+
+        Args:
+            env (Env): _description_
+            agent (Optional[Agent], optional): _description_. Defaults to None.
+            extra_specs (dict, optional): _description_. Defaults to {}.
+            capacity (int, optional): _description_. Defaults to 1_000_000.
+            rollout_len (int, optional): _description_. Defaults to 1.
+            batch_size (int, optional): _description_. Defaults to 100.
+            warmup_len (int, optional): _description_. Defaults to 10_000.
+            n_batches (int, optional): _description_. Defaults to 1.
+            n_step (int, optional): _description_. Defaults to 1.
+        """
+
+        if buffer is not None:
+            self.buffer = buffer
+        else:
+            self.buffer = TreeBuffer(env, capacity, extra_specs, n_step)
+
         self.capacity = capacity
         self.extra_specs = extra_specs
 
@@ -33,15 +52,9 @@ class OffPolicyRunner(BaseRunner):
         super().__init__(env, agent, rollout_len, warmup_len, n_step)
 
     def _warm_start(self):
-        """Step through environment with freshly initialised
-        agent, to collect transitions before training via
-        the _rollout internal method.
-        """
-        agent = crl.Agent(self.env) or self.agent
-        rollout_transitions, num_transitions = self._rollout(self.warmup_len, agent)
+        rollout_transitions, num_transitions = super()._warm_start()
         if num_transitions:
             self.buffer.store(rollout_transitions, num_transitions)
-        logging.info("### Warm up finished ###")
 
     def step(
         self, transform: Optional[Callable] = None, agent: Optional[Agent] = None
@@ -71,12 +84,17 @@ class OffPolicyRunner(BaseRunner):
         return batch_samples
 
     def reset(self) -> None:
-        """Perform any necessary resets, for the replay buffer
-        and gatherer
+        """Perform any necessary resets, such as for the replay buffer
+        and gatherer.
         """
+        super().reset()
         del self.buffer
         self.buffer = TreeBuffer(self.env, self.capacity, self.extra_specs)
-        super().reset()
 
-    def update(self, data):
+    def update(self, data: dict):
+        """_summary_
+
+        Args:
+            data (_type_): _description_
+        """
         self.buffer.update(data)
