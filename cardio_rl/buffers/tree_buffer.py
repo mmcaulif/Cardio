@@ -1,5 +1,5 @@
 import functools
-import random
+from typing import Optional
 
 import jax
 import numpy as np
@@ -126,7 +126,11 @@ class TreeBuffer:
             self.full = True
             self.pos = self.pos % self.capacity
 
-    def sample(self, batch_size: int) -> Transition:
+    def sample(
+        self,
+        batch_size: Optional[int] = None,
+        sample_indxs: Optional[np.ndarray] = None,
+    ) -> Transition:
         """Sample batch_size number of indices between 0 and the current
         length of the replay buffer. Take each corresponding transition
         and compile into a new dictionary.
@@ -139,9 +143,13 @@ class TreeBuffer:
             sampled from the buffer as well as the indices used (accessed
             using the "idxs" key).
         """
+        # TODO: raise an error/warning when batch_size and sample_indxs are both passed.
+        if batch_size:
+            sample_size = int(min(batch_size, self.__len__()))
+            sample_indxs = np.random.randint(
+                low=0, high=self.__len__(), size=sample_size
+            )
 
-        sample_size = int(min(batch_size, self.__len__()))
-        sample_indxs = random.sample(range(self.__len__()), sample_size)
         batch: dict = jax.tree.map(lambda arr: arr[sample_indxs], self.table)
         batch.update({"idxs": sample_indxs})
         return batch

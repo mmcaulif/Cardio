@@ -1,7 +1,6 @@
-import functools
+from typing import Optional
 
 import gymnasium as gym
-import jax
 import numpy as np
 from gymnasium import Env
 
@@ -17,39 +16,40 @@ class PrioritisedBuffer(TreeBuffer):
         extra_specs: dict = {},
         n_steps: int = 1,
     ):
+        extra_specs.update({"p": [1]})
         super().__init__(env, capacity, extra_specs, n_steps)
-        self.table.update({"p": np.zeros((capacity, 1))})
 
     def store(self, transition: Transition, num: int):
-        def _place(arr, x, idx):
-            if len(x.shape) == 1:
-                x = np.expand_dims(x, -1)
+        if self.__len__() == 0:
+            max_p = 0.0
+        else:
+            # TODO: replace with sum tree
+            priorities: np.ndarray = self.table["p"][: self.__len__()]
+            max_p = priorities.max()
 
-            arr[idx] = x
-            return arr
+        p = np.ones(num) * max_p
+        transition.update({"p": p})
+        super().store(transition, num)
 
-        max_prob = 1.0  # max(self.table["p"])
-        transition.update({"p": np.full(shape=(num, 1), fill_value=max_prob)})
-        idxs = np.arange(self.pos, self.pos + num) % self.capacity
-        place = functools.partial(_place, idx=idxs)
+    def sample(
+        self,
+        batch_size: Optional[int] = None,
+        sample_indxs: Optional[np.ndarray] = None,
+    ):
+        del sample_indxs
 
-        self.table = jax.tree.map(place, self.table, transition)
+        # TODO: replace with sum tree
+        # priorities: np.ndarray = self.table["p"][:self.__len__()]
+        # max_p = priorities.max()
 
-        self.pos += num
-        if self.pos >= self.capacity:
-            self.full = True
-            self.pos = self.pos % self.capacity
+        # probs = priorities/(sum(priorities) + 1e-8)
 
-    def sample(self, batch_size: int):
-        sample_size = int(min(batch_size, self.__len__()))
-        priorities = np.squeeze(self.table["p"][np.arange(self.__len__())], -1)
-        probs = priorities / np.sum(
-            priorities
-        )  # Need to implement the actual probability calculation
-        sample_indxs = np.random.choice(self.__len__(), sample_size, p=probs)
-        batch: dict = jax.tree.map(lambda arr: arr[sample_indxs], self.table)
-        batch.update({"idxs": sample_indxs})
-        return batch
+        # sample_size = int(min(batch_size, self.__len__()))
+        # sample_indxs = np.random.choice(self.__len__(), sample_size, p=probs)
+
+        # return super().sample(sample_indxs=sample_indxs) # type: ignore
+
+        return super().sample(batch_size)  # type: ignore
 
 
 def main():
