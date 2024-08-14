@@ -97,7 +97,7 @@ class TreeBuffer:
         """
         return self.table[key]
 
-    def store(self, data: Transition, num: int) -> None:
+    def store(self, data: Transition, num: int) -> np.ndarray:
         """Store the given transitions in the replay buffer. The buffer
         is circular and determines the indices to be used before placing
         the MDP elements in the internal table. Also accounts for storing
@@ -108,6 +108,10 @@ class TreeBuffer:
                 transitions worth of MDP elements.
             num (int): The amount of transitions contained in the
                 data.
+
+        Returns:
+            The entire numpy array of the indices used to store
+            the provided data.
         """
 
         def _place(arr, x, idx):
@@ -125,6 +129,8 @@ class TreeBuffer:
         if self.pos >= self.capacity:
             self.full = True
             self.pos = self.pos % self.capacity
+
+        return idxs
 
     def sample(
         self,
