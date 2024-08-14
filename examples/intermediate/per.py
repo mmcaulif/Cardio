@@ -22,6 +22,7 @@ import torch.nn as nn
 from tqdm import trange
 
 import cardio_rl as crl
+from cardio_rl.buffers.sumtree_buffer import PrioritisedBuffer as SumtreeBuffer
 
 
 class Q_critic(nn.Module):
@@ -62,16 +63,12 @@ class PER(crl.Agent):
 
         q = self.critic(s).gather(-1, a.long())
 
-        # a_p = self.critic(s_p).argmax(-1, keepdim=True)
-        # q_p = self.targ_critic(s_p).gather(-1, a_p.long())
-        q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
+        a_p = self.critic(s_p).argmax(-1, keepdim=True)
+        q_p = self.targ_critic(s_p).gather(-1, a_p.long())
         y = r + 0.99 * q_p * (1 - d)
         error = q - y.detach()
 
-        probs = data["p"] / th.sum(data["p"])
-        w = probs**-self.beta  # equivelant to inverse square root of the probabilities
-        w /= th.max(w)
-        loss = th.mean((w * error) ** 2)
+        loss = th.mean((data["w"] * error) ** 2)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -81,7 +78,7 @@ class PER(crl.Agent):
         if self.update_count % 1_000 == 0:
             self.targ_critic.load_state_dict(self.critic.state_dict())
 
-        return {"idxs": batches[0]["idxs"], "p": np.abs(error.numpy(force=True))}
+        return {"idxs": batches[0]["idxs"], "p": np.abs(error.numpy(force=True) + 1e-8)}
 
     def step(self, state):
         if np.random.rand() > self.eps:
@@ -97,25 +94,28 @@ class PER(crl.Agent):
 def main():
     env = gym.make("CartPole-v1")
     agent = PER(env)
+
+    # alpha and beta = 0 should reduce to uniform replay buffer
+
+    # buffer = crl.buffers.PrioritisedBuffer(env)
+    buffer = SumtreeBuffer(env)
+
     runner = crl.OffPolicyRunner(
         env,
         agent,
-        buffer=crl.buffers.PrioritisedBuffer(env),
+        buffer=buffer,
         rollout_len=4,
         batch_size=32,
     )
 
     rollouts = 50_000
+    runner.run(rollouts)
+    return
 
     for _ in trange(rollouts):
         data = runner.step(agent=agent)
-        updated_data = agent.update(data)  # type: ignore
-        # idxs = updated_data['idxs']
-        # print(np.squeeze(runner.buffer('p')[idxs], axis=-1))
-        # print(np.squeeze(updated_data['p'], axis=-1))
+        updated_data = agent.update(data)
         runner.update(updated_data)
-        # print(np.squeeze(runner.buffer('p')[idxs], axis=-1))
-        # print()
 
 
 if __name__ == "__main__":
