@@ -23,10 +23,6 @@ class SumTree:
         self.data = np.zeros(self.n)
         self.tree = np.zeros((2 * self.n) - 1)
 
-    def update(self, indices, priorities):
-        for i, p in zip(indices, priorities):
-            self._update(i, p)
-
     def _update(self, data_idx, value):
         value = np.random.randint(0, 10)
 
@@ -42,14 +38,9 @@ class SumTree:
             self.tree[parent] += change
             parent = (parent - 1) // 2
 
-    def sample(self, batch_size):
-        seg_length = self.total / batch_size
-        idxs = []
-        for i in range(batch_size):
-            uni = np.random.uniform(i * seg_length, (i + 1) * seg_length)
-            idxs.append(self._sample(uni))
-
-        return idxs
+    def update(self, indices, priorities):
+        for i, p in zip(indices, priorities):
+            self._update(i, p)
 
     def _sample(self, cumsum):
         idx = 0
@@ -64,6 +55,18 @@ class SumTree:
 
         data_idx = idx - self.n + 1
         return data_idx
+
+    def sample(self, batch_size):
+        span = self.total / batch_size
+        # idxs = []
+        # for i in range(batch_size):
+        #     uni = np.random.uniform(i * span, (i + 1) * span)
+        #     idxs.append(self._sample(uni))
+        idxs = [
+            self._sample(np.random.uniform(i * span, (i + 1) * span))
+            for i in range(batch_size)
+        ]
+        return idxs
 
     @property
     def total(self):
@@ -81,7 +84,7 @@ class PrioritisedBuffer(TreeBuffer):
         capacity: int = 1_000_000,
         extra_specs: dict = {},
         n_steps: int = 1,
-        alpha: float = 0.5,  # Rainbow default
+        alpha: float = 0.6,  # PER paper default
         beta: float = 1.0,  # Fixed schedule from dopamine
     ):
         self.sumtree = SumTree(np.zeros(capacity))
@@ -93,8 +96,8 @@ class PrioritisedBuffer(TreeBuffer):
         if self.__len__() == 0:
             max_p = 1.0
         else:
-            max_p = np.power(self.sumtree.max, 1 / self.alpha)  # Unsure about this
-            # max_p = self.sumtree.max
+            # max_p = np.power(self.sumtree.max, 1 / self.alpha)  # Unsure about this
+            max_p = self.sumtree.max
 
         p = np.ones(num) * max_p
         idxs = super().store(data, num)
@@ -109,18 +112,18 @@ class PrioritisedBuffer(TreeBuffer):
         sample_indxs = self.sumtree.sample(batch_size)
         data = super().sample(sample_indxs=sample_indxs)
 
-        priorities = self.sumtree.data[sample_indxs]
-        probs = np.expand_dims(priorities / self.sumtree.total, -1)
+        probs = self.sumtree.data[sample_indxs] / self.sumtree.total
+        probs = np.expand_dims(probs, -1)
         data.update({"p": probs})
 
-        w = (self.__len__() * probs) ** -self.beta
+        w = (1 / (self.__len__() * probs)) ** self.beta
         w = w / np.max(w)
         data.update({"w": w})
         return data
 
     def update(self, data: dict):
-        p = np.squeeze(data.pop("p"), -1)
-        p = np.power(p, self.alpha)
+        p = np.power(data.pop("p"), self.alpha)
+        p = np.squeeze(p, -1)
         self.sumtree.update(data["idxs"], p)
         super().update(data)
 
