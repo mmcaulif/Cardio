@@ -150,10 +150,8 @@ class TreeBuffer:
             using the "idxs" key).
         """
         # TODO: raise an error/warning when batch_size and sample_indxs are both passed.
-        if batch_size:
-            sample_indxs = np.random.randint(
-                low=0, high=self.__len__(), size=batch_size
-            )
+        if batch_size and sample_indxs is None:
+            sample_indxs = np.random.randint(low=0, high=self.len, size=batch_size)
 
         batch: dict = jax.tree.map(lambda arr: arr[sample_indxs], self.table)
         batch.update({"idxs": sample_indxs})
@@ -171,6 +169,10 @@ class TreeBuffer:
         for key, val in data.items():
             if key in self.table:
                 self.table[key][idxs] = val
+
+    @property
+    def len(self):
+        return self.__len__()
 
 
 # def main():
