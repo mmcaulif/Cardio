@@ -8,12 +8,13 @@ from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.types import Transition
 
 """
-Sum tree is extremely slow, 1 iteration a second...
+Links:
+* https://github.com/Howuhh/prioritized_experience_replay/blob/main/memory/buffer.py
+* https://github.com/google/dopamine/blob/master/dopamine/replay_memory/prioritized_replay_buffer.py
 
-Current understanding is very wrong, there are lots mroe technical details
-in the paper, need to review further.
+Both implementations have maximum priority as the maximum ever seen, not current maximum
 
-Link: https://github.com/Howuhh/prioritized_experience_replay/blob/main/memory/buffer.py
+Should document implementation details as they were important!
 """
 
 
@@ -58,10 +59,6 @@ class SumTree:
 
     def sample(self, batch_size):
         span = self.total / batch_size
-        # idxs = []
-        # for i in range(batch_size):
-        #     uni = np.random.uniform(i * span, (i + 1) * span)
-        #     idxs.append(self._sample(uni))
         idxs = [
             self._sample(np.random.uniform(i * span, (i + 1) * span))
             for i in range(batch_size)
@@ -72,9 +69,9 @@ class SumTree:
     def total(self):
         return self.tree[0]
 
-    @property
-    def max(self):
-        return self._sample(self.total)
+    # @property
+    # def max(self):
+    #     return self._sample(self.total)
 
 
 class PrioritisedBuffer(TreeBuffer):
@@ -84,22 +81,17 @@ class PrioritisedBuffer(TreeBuffer):
         capacity: int = 1_000_000,
         extra_specs: dict = {},
         n_steps: int = 1,
-        alpha: float = 0.6,  # PER paper default
         beta: float = 1.0,  # Fixed schedule from dopamine
+        eps: float = 1e-2,  # No mention in paper, going off of implementations TODO: check dopamine
     ):
         self.sumtree = SumTree(np.zeros(capacity))
-        self.alpha = alpha
         self.beta = beta
+        self.eps = eps
+        self.max_p = 1.0
         super().__init__(env, capacity, extra_specs, n_steps)
 
     def store(self, data: Transition, num: int):
-        if self.__len__() == 0:
-            max_p = 1.0
-        else:
-            # max_p = np.power(self.sumtree.max, 1 / self.alpha)  # Unsure about this
-            max_p = self.sumtree.max
-
-        p = np.ones(num) * max_p
+        p = np.ones(num) * np.sqrt(self.max_p)
         idxs = super().store(data, num)
         self.sumtree.update(idxs, p)
         return idxs
@@ -116,14 +108,15 @@ class PrioritisedBuffer(TreeBuffer):
         probs = np.expand_dims(probs, -1)
         data.update({"p": probs})
 
-        w = (1 / (self.__len__() * probs)) ** self.beta
+        w = (1 / (self.len * probs)) ** self.beta
         w = w / np.max(w)
         data.update({"w": w})
         return data
 
     def update(self, data: dict):
-        p = np.power(data.pop("p"), self.alpha)
+        p = np.sqrt(data.pop("p")) + self.eps
         p = np.squeeze(p, -1)
+        self.max_p = max(p.max(), self.max_p)
         self.sumtree.update(data["idxs"], p)
         super().update(data)
 
