@@ -86,21 +86,20 @@ class Rainbow(crl.Agent):
         r = returns.unsqueeze(-1)
 
         # TODO: C51 loss function
-        q = self.critic(s).gather(-1, a.repeat(1, 51).unsqueeze(-2).long())
+        q = self.critic(s).gather(-1, a.repeat(1, self.n_atoms).unsqueeze(-2).long())
 
         dist_p = self.critic(s_p)
         a_p = (dist_p * self.bins).sum(-1).argmax(-1, keepdim=True)
-        q_p = self.targ_critic(s_p).gather(-1, a_p.repeat(1, 51).unsqueeze(-2).long())
+        q_p = self.targ_critic(s_p).gather(
+            -1, a_p.repeat(1, self.n_atoms).unsqueeze(-2).long()
+        )
         print(q.shape, q_p.shape)
 
         raise NotImplementedError
 
-        a_p = self.critic(s_p).argmax(-1, keepdim=True)
-        q_p = self.targ_critic(s_p).gather(-1, a_p.long())
         y = r + 0.99 * q_p * (1 - d)
-        error = q - y.detach()
 
-        # error = F.cross_entropy(q, y.detach())
+        error = F.cross_entropy(q, y.detach())
 
         probs = data["p"] / th.sum(data["p"])
         w = probs**-self.beta  # equivelant to inverse square root of the probabilities
