@@ -109,6 +109,7 @@ class TD3(crl.Agent):
                 )
 
         self.update_count += 1
+        return {}
 
     def step(self, state):
         th_state = th.from_numpy(state).float()

@@ -97,6 +97,8 @@ class DrQ(crl.Agent):
             # Target update period == 1 so effectively no target net?
             self.targ_critic.load_state_dict(self.critic.state_dict())
 
+        return {}
+
     def step(self, state):
         if np.random.rand() > self.eps:
             th_state = th.from_numpy(state).unsqueeze(0).float()
