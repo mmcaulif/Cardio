@@ -3,7 +3,6 @@ import jax
 import numpy as np
 import torch as th
 import torch.nn as nn
-import torch.nn.functional as F
 
 import cardio_rl as crl
 
@@ -45,11 +44,11 @@ class DQN(crl.Agent):
         )  # TODO: change all other implementations to this
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
-        q = self.critic(s).gather(-1, a).float()
+        q = self.critic(s).gather(-1, a)
         q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
-        y = (r + 0.99 * q_p * (1 - d)).float()
+        y = r + 0.99 * q_p * (1 - d)
 
-        loss = F.mse_loss(q, y.detach())
+        loss = th.mean(((q - y.detach()) ** 2))
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -70,17 +69,21 @@ class DQN(crl.Agent):
         self.eps = max(self.min_eps, self.eps * self.ann_coeff)
         return action, {}
 
+    def eval_step(self, state: np.ndarray):
+        th_state = th.from_numpy(state).unsqueeze(0).float()
+        action = self.critic(th_state).argmax().detach().numpy()
+        return action
+
 
 def main():
     env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
         env=env,
         agent=DQN(env),
-        rollout_len=1,
+        rollout_len=4,
         batch_size=32,
-        n_batches=4,
     )
-    runner.run(rollouts=50_000)
+    runner.run(rollouts=50_000, eval_freq=1_250)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,6 @@ import jax
 import numpy as np
 import torch as th
 import torch.nn as nn
-import torch.nn.functional as F
 
 import cardio_rl as crl
 
@@ -40,16 +39,16 @@ class DDQN(crl.Agent):
         self.ann_coeff = self.min_eps ** (1 / schedule_steps)
 
     def update(self, batches):
-        data = jax.tree.map(crl.utils.to_torch, batches[0])
+        data = jax.tree.map(th.from_numpy, batches[0])
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
-        q = self.critic(s).gather(-1, a.long())
+        q = self.critic(s).gather(-1, a)
 
         a_p = self.critic(s_p).argmax(-1, keepdim=True)
-        q_p = self.targ_critic(s_p).gather(-1, a_p.long())
+        q_p = self.targ_critic(s_p).gather(-1, a_p)
         y = r + 0.99 * q_p * (1 - d)
 
-        loss = F.mse_loss(q, y.detach())
+        loss = th.mean(((q - y.detach()) ** 2))
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()

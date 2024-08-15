@@ -76,7 +76,7 @@ class Rainbow(crl.Agent):
         self.bins = th.linspace(self.v_min, self.v_max, self.n_atoms)
 
     def update(self, batches):
-        data = jax.tree.map(crl.utils.to_torch, batches[0])
+        data = jax.tree.map(th.from_numpy, batches[0])
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
         returns = th.zeros(r.shape[0])
@@ -86,12 +86,12 @@ class Rainbow(crl.Agent):
         r = returns.unsqueeze(-1)
 
         # TODO: C51 loss function
-        q = self.critic(s).gather(-1, a.repeat(1, self.n_atoms).unsqueeze(-2).long())
+        q = self.critic(s).gather(-1, a.repeat(1, self.n_atoms).unsqueeze(-2))
 
         dist_p = self.critic(s_p)
         a_p = (dist_p * self.bins).sum(-1).argmax(-1, keepdim=True)
         q_p = self.targ_critic(s_p).gather(
-            -1, a_p.repeat(1, self.n_atoms).unsqueeze(-2).long()
+            -1, a_p.repeat(1, self.n_atoms).unsqueeze(-2)
         )
         print(q.shape, q_p.shape)
 
