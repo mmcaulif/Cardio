@@ -5,6 +5,7 @@ from typing import Callable, Optional
 
 import jax
 from gymnasium import Env
+from gymnasium.experimental.vector import VectorEnv
 from tqdm import trange
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -24,7 +25,7 @@ class BaseRunner:
 
     def __init__(
         self,
-        env: Env,
+        env: Env | VectorEnv,
         agent: Optional[Agent] = None,
         rollout_len: int = 1,
         warmup_len: int = 0,
@@ -35,14 +36,22 @@ class BaseRunner:
         """_summary_
 
         Args:
-            env (Env): _description_
+            env (Env | VectorEnv): _description_
             agent (Optional[Agent], optional): _description_. Defaults to None.
             rollout_len (int, optional): _description_. Defaults to 1.
             warmup_len (int, optional): _description_. Defaults to 0.
             n_step (int, optional): _description_. Defaults to 1.
+            eval_env (Env, optional): _description_. Defaults to None.
             gatherer (Optional[Gatherer], optional): _description_. Defaults to None.
         """
         self.env = env
+        # if isinstance(env, VectorEnv):
+        #     self.n_envs: int = env.num_envs
+        # else:
+        #     self.n_envs: int = 1
+
+        self.n_envs = 1 if not isinstance(env, VectorEnv) else env.num_envs
+
         self.agent = agent
         self.rollout_len = rollout_len
         self.warmup_len = warmup_len
@@ -179,7 +188,7 @@ class BaseRunner:
             if t % eval_freq == 0 and t > 0:
                 avg_returns = self.eval(eval_episodes, self.agent)
                 with logging_redirect_tqdm():
-                    env_steps = t * self.rollout_len + self.warmup_len
+                    env_steps = (self.n_envs * t * self.rollout_len) + self.warmup_len
                     curr_time = round(time.time() - self.initial_time, 2)
                     metrics = {
                         "Timesteps": env_steps,

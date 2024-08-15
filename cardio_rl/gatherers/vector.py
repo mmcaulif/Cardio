@@ -1,12 +1,11 @@
 import itertools
 from collections import deque
-from typing import Deque, Optional
+from typing import Deque
 
 import numpy as np
 from gymnasium import Env
 
 from cardio_rl.agent import Agent
-from cardio_rl.logger import Logger
 from cardio_rl.types import Transition
 
 
@@ -14,7 +13,6 @@ class VectorGatherer:
     def __init__(
         self,
         n_step: int = 1,
-        logger_kwargs: Optional[dict] = None,
     ) -> None:
         self.n_step = n_step
 
@@ -22,10 +20,6 @@ class VectorGatherer:
             self.n_step == 1
         ), "n-step greater than 1 not implemented for vector environments yet'"
 
-        if logger_kwargs is None:
-            logger_kwargs = {}
-
-        self.logger = Logger(**logger_kwargs)
         self.transition_buffer: Deque = deque()
         self.step_buffer: Deque = deque(maxlen=n_step)
 
@@ -43,7 +37,6 @@ class VectorGatherer:
             a, ext = agent.step(self.state)
             next_state, r, d, t, _ = self.env.step(a)
             done = np.logical_or(d, t)
-            # self.logger.step(r, done)
 
             transition = {"s": self.state, "a": a, "r": r, "s_p": next_state, "d": done}
             ext = agent.view(transition, ext)

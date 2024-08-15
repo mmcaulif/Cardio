@@ -1,5 +1,6 @@
 import numpy as np
 from gymnasium import Env
+from gymnasium.experimental.vector import VectorEnv
 
 from cardio_rl.types import Transition
 
@@ -7,7 +8,7 @@ from cardio_rl.types import Transition
 class Agent:
     """_summary_"""
 
-    def __init__(self, env: Env):
+    def __init__(self, env: Env | VectorEnv):
         """_summary_
 
         Args:

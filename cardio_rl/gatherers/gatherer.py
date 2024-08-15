@@ -4,6 +4,7 @@ from typing import Deque
 
 import numpy as np
 from gymnasium import Env
+from gymnasium.experimental.vector import VectorEnv
 
 from cardio_rl.agent import Agent
 from cardio_rl.types import Transition
@@ -26,7 +27,7 @@ class Gatherer:
         self.transition_buffer: Deque = deque()
         self.step_buffer: Deque = deque(maxlen=n_step)
 
-    def init_env(self, env: Env):
+    def init_env(self, env: Env | VectorEnv):
         """_summary_
 
         Args:

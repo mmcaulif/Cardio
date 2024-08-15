@@ -64,7 +64,7 @@ class PPO(crl.Agent):
 
         v = self.critic(s).squeeze(-1)
         v_p = self.critic(s_p).squeeze(-1)
-        td_error = (r + 0.99 * (v_p * (1 - d))).detach() - v
+        td_error = (r + 0.99 * (v_p * ~d)).detach() - v
 
         gae = th.zeros_like(r)
 
@@ -120,34 +120,16 @@ def main():
     N_ENVS = 16
     envs = gym.make_vec("CartPole-v1", num_envs=N_ENVS)
     eval_env = gym.make("CartPole-v1")
-    agent = PPO(2, 4)
 
     runner = crl.BaseRunner(
-        env=envs, agent=agent, rollout_len=32, gatherer=crl.VectorGatherer()
+        env=envs,
+        agent=PPO(2, 4),
+        rollout_len=32,
+        gatherer=crl.VectorGatherer(),
+        eval_env=eval_env,
     )
 
-    for i in range(50_000):
-        data = runner.step(agent=agent)
-        agent.update(data)
-
-        if i % 1_000 == 0 and i > 0:
-            evals = 5
-            returns = []
-            for _ in range(evals):
-                s, _ = eval_env.reset()
-                R = 0.0
-                while True:
-                    a, _ = runner.agent.step(s)
-                    s, r, d, t, _ = eval_env.step(a)
-                    R += r
-                    if d or t:
-                        returns.append(R)
-                        break
-
-            print(
-                f"Reward at {i*N_ENVS*runner.rollout_len} steps: {sum(returns)/evals:.2f}"
-            )
-            returns.clear()
+    runner.run(50_000, eval_freq=128)
 
 
 if __name__ == "__main__":
