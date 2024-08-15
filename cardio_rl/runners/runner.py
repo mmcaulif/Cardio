@@ -45,11 +45,6 @@ class BaseRunner:
             gatherer (Optional[Gatherer], optional): _description_. Defaults to None.
         """
         self.env = env
-        # if isinstance(env, VectorEnv):
-        #     self.n_envs: int = env.num_envs
-        # else:
-        #     self.n_envs: int = 1
-
         self.n_envs = 1 if not isinstance(env, VectorEnv) else env.num_envs
 
         self.agent = agent
