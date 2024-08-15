@@ -7,17 +7,22 @@ from cardio_rl.types import Transition
 
 
 class BaseBuffer:
-    """Simple replay buffer that stores transitions as a dictionary.
-
-    Longer class information...
-
-    s, a, r, s_p, and d.
+    """Simple replay buffer that stores transitions as individual
+    attributes.
 
     Attributes:
-        pos: Moving record of the current position to store transitions.
+        pos: Moving value of the current position to store transitions.
         capacity: Maximum size of buffer.
         full: Is the replay buffer full or not.
-        table: The main dictionary containing transitions.
+        s: Array of shape [capacity, |s|] containing the transitions state.
+        a: Array of shape [capacity, 1] (or [capacity, |a|] for
+            continuous environments) containing the transitions action.
+        r: Array of shape [capacity, n_steps] containing the reward
+            received.
+        s_p: Array of shape [capacity, |s|] containing the transitions
+            next state.
+        d: Array of shape [capacity, 1] containing the terminal boolean.
+        len: Number of transitions stored in the buffer.
     """
 
     def __init__(
@@ -31,7 +36,6 @@ class BaseBuffer:
         Args:
             env (Env): Gymnasium environment used to construct the buffer shapes.
             capacity (int, optional): Maximum size of buffer. Defaults to 1_000_000.
-            extra_specs (dict, optional): Any extra elements to store. Defaults to {}.
             n_steps (int, optional): Environment steps per transition. Defaults to 1.
         """
 
@@ -125,7 +129,12 @@ class BaseBuffer:
             sampled from the buffer as well as the indices used (accessed
             using the "idxs" key).
         """
-        # TODO: raise an error/warning when batch_size and sample_indxs are both passed.
+
+        if batch_size and sample_indxs:
+            raise ValueError(
+                "Passing both a batch size and indices to sample method, please only provide one"
+            )
+
         if batch_size and sample_indxs is None:
             sample_indxs = np.random.randint(low=0, high=self.len, size=batch_size)
 
@@ -148,8 +157,16 @@ class BaseBuffer:
                 indices to update and keys with the updated values.
         """
         del data
-        pass
+        raise UserWarning(
+            "Passing update data to the base buffer, use tree buffer instead"
+        )
 
     @property
     def len(self):
+        """The current amount of transitions stored in the internal
+        table.
+
+        Returns:
+            An integer describing the current length of stored data.
+        """
         return self.capacity if self.full else self.pos
