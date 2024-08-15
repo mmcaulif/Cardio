@@ -63,7 +63,7 @@ class SumTree:
             self._sample(np.random.uniform(i * span, (i + 1) * span))
             for i in range(batch_size)
         ]
-        return idxs
+        return np.array(idxs)
 
     @property
     def total(self):
