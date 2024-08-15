@@ -5,10 +5,11 @@ import jax
 import numpy as np
 from gymnasium import Env, spaces
 
+from cardio_rl.buffers.base_buffer import BaseBuffer
 from cardio_rl.types import Transition
 
 
-class TreeBuffer:
+class TreeBuffer(BaseBuffer):
     """Extensible replay buffer that stores transitions as a dictionary.
 
     Longer class information...
@@ -74,15 +75,6 @@ class TreeBuffer:
                 extras.update({key: np.zeros(shape)})
 
             self.table.update(extras)
-
-    def __len__(self) -> int:
-        """The current amount of transitions stored in the internal
-        table.
-
-        Returns:
-            An integer describing the current length of stored data.
-        """
-        return self.capacity if self.full else self.pos
 
     def __call__(self, key: str) -> np.array:
         """Access specific MDP elements in the internal table.
@@ -169,10 +161,6 @@ class TreeBuffer:
         for key, val in data.items():
             if key in self.table:
                 self.table[key][idxs] = val
-
-    @property
-    def len(self):
-        return self.__len__()
 
 
 # def main():

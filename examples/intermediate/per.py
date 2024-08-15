@@ -21,7 +21,6 @@ import torch as th
 import torch.nn as nn
 
 import cardio_rl as crl
-from cardio_rl.buffers.sumtree_buffer import PrioritisedBuffer as SumtreeBuffer
 
 
 class Q_critic(nn.Module):
@@ -96,7 +95,7 @@ def main():
     runner = crl.OffPolicyRunner(
         env,
         agent,
-        buffer=SumtreeBuffer(env),
+        buffer=crl.buffers.PrioritisedBuffer(env),
         rollout_len=4,
         batch_size=32,
     )
