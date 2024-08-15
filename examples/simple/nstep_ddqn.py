@@ -81,9 +81,8 @@ def main():
     runner = crl.OffPolicyRunner(
         env=env,
         agent=NstepDDQN(env, n_step=3),
-        rollout_len=1,
+        rollout_len=4,
         batch_size=32,
-        n_batches=4,
         n_step=3,
     )
     runner.run(rollouts=50_000)
