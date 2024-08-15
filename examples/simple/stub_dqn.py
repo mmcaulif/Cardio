@@ -40,12 +40,14 @@ class DQN(crl.Agent):
         self.ann_coeff = self.min_eps ** (1 / schedule_steps)
 
     def update(self, batches):
-        data = jax.tree.map(crl.utils.to_torch, batches[0])
+        data = jax.tree.map(
+            th.from_numpy, batches[0]
+        )  # TODO: change all other implementations to this
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
-        q = self.critic(s).gather(-1, a.long())
+        q = self.critic(s).gather(-1, a).float()
         q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
-        y = r + 0.99 * q_p * (1 - d)
+        y = (r + 0.99 * q_p * (1 - d)).float()
 
         loss = F.mse_loss(q, y.detach())
         self.optimizer.zero_grad()
