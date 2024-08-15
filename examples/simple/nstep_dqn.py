@@ -25,7 +25,7 @@ class Q_critic(nn.Module):
         return q
 
 
-class NstepDDQN(crl.Agent):
+class NstepDQN(crl.Agent):
     def __init__(self, env: gym.Env, n_step: int):
         self.env = env
         self.n_step = n_step
@@ -52,8 +52,7 @@ class NstepDDQN(crl.Agent):
 
         q = self.critic(s).gather(-1, a.long())
 
-        a_p = self.critic(s_p).argmax(-1, keepdim=True)
-        q_p = self.targ_critic(s_p).gather(-1, a_p.long())
+        q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
         y = r + np.power(0.99, self.n_step) * q_p * (1 - d)
 
         loss = F.mse_loss(q, y.detach())
@@ -64,6 +63,8 @@ class NstepDDQN(crl.Agent):
         self.update_count += 1
         if self.update_count % 1_000 == 0:
             self.targ_critic.load_state_dict(self.critic.state_dict())
+
+        return {}
 
     def step(self, state):
         if np.random.rand() > self.eps:
@@ -80,7 +81,7 @@ def main():
     env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
         env=env,
-        agent=NstepDDQN(env, n_step=3),
+        agent=NstepDQN(env, n_step=3),
         rollout_len=4,
         batch_size=32,
         n_step=3,
