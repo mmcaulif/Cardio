@@ -1,13 +1,22 @@
+import copy
 import logging
+import time
 from typing import Callable, Optional
 
 import jax
 from gymnasium import Env
 from tqdm import trange
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 import cardio_rl as crl
 from cardio_rl import Agent, Gatherer
 from cardio_rl.types import Transition
+
+logging.basicConfig(
+    format="%(asctime)s: %(message)s",
+    datefmt=" %I:%M:%S %p",
+    level=logging.INFO,
+)
 
 
 class BaseRunner:
@@ -20,6 +29,7 @@ class BaseRunner:
         rollout_len: int = 1,
         warmup_len: int = 0,
         n_step: int = 1,
+        eval_env: Optional[Env] = None,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
         """_summary_
@@ -33,7 +43,7 @@ class BaseRunner:
             gatherer (Optional[Gatherer], optional): _description_. Defaults to None.
         """
         self.env = env
-        # self.eval_env = copy.deepcopy(env)    # not compatible with gymnasium VecEnv's
+        self.agent = agent
         self.rollout_len = rollout_len
         self.warmup_len = warmup_len
 
@@ -43,15 +53,22 @@ class BaseRunner:
             self.gatherer = gatherer
 
         self.n_step = n_step
-        self.agent = agent
 
+        if eval_env is None:
+            self.eval_env = copy.deepcopy(env)
+        else:
+            self.eval_env = eval_env
+
+        self.logger = logging.getLogger()
+        self.initial_time = time.time()
+
+        # Initialise components
         self.gatherer.init_env(self.env)
         self.burn_in_len = 0
         if self.burn_in_len:
             self._burn_in()  # TODO: implement argument
         self.gatherer.reset()
 
-        # Logging should only start now
         if self.warmup_len:
             self._warm_start()
 
@@ -122,7 +139,27 @@ class BaseRunner:
         del num_transitions
         return [rollout_batch]
 
-    def run(self, rollouts: int = 1_000_000) -> None:
+    def eval(self, episodes: int, agent: Optional[Agent] = None) -> float:
+        agent = agent if self.agent is None else self.agent
+        avg_returns = 0.0
+        for _ in range(episodes):
+            s, _ = self.eval_env.reset()
+            returns = 0.0
+            while True:
+                # TODO: fix this mypy issue
+                a = agent.eval_step(s)  # type: ignore
+                s_p, r, d, t, _ = self.eval_env.step(a)
+                returns += r
+                s = s_p
+                if d or t:
+                    avg_returns += returns
+                    break
+
+        return avg_returns / episodes
+
+    def run(
+        self, rollouts: int = 1_000_000, eval_freq: int = 1_000, eval_episodes: int = 10
+    ) -> None:
         """Iteratively run runner.step() for self.rollout_len
         and pass the batched data through to the agents update
         step.
@@ -130,15 +167,28 @@ class BaseRunner:
         Args:
             rollouts (int): The number of rollouts of length self.rollout_len to
                 undertake
-            eval_interval (int): How many rollouts to take in between evaluations
+            eval_freq (int): How many rollouts to take in between evaluations
             eval_episodes (int): How many episodes to perform during evaluation
         """
 
-        for _ in trange(rollouts):
+        for t in trange(rollouts):
             data = self.step()
             updated_data = self.agent.update(data)  # type: ignore
             if updated_data:
                 self.update(updated_data)
+            if t % eval_freq == 0 and t > 0:
+                avg_returns = self.eval(eval_episodes, self.agent)
+                with logging_redirect_tqdm():
+                    env_steps = t * self.rollout_len + self.warmup_len
+                    curr_time = round(time.time() - self.initial_time, 2)
+                    metrics = {
+                        "Timesteps": env_steps,
+                        # "Episodes": self.episodes,    # TODO: find a way to implement this
+                        "Avg eval returns": avg_returns,
+                        "Time passed": curr_time,
+                        "Env steps per second": int(env_steps / curr_time),
+                    }
+                    self.logger.info(metrics)
 
     def transform_batch(
         self, batch: list[Transition], transform: Optional[Callable] = None

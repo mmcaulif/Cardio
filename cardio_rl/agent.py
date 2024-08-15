@@ -47,7 +47,8 @@ class Agent:
         Returns:
             _type_: _description_
         """
-        return self.step(state)
+        a, _ = self.step(state)
+        return a
 
     def update(self, data: list[Transition]):
         """_summary_
