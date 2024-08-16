@@ -63,9 +63,9 @@ class TreeBuffer(BaseBuffer):
                 ),
                 dtype=act_space.dtype,
             ),
-            "r": np.zeros((capacity, n_steps)),
+            "r": np.zeros((capacity, n_steps), dtype=np.float32),
             "s_p": np.zeros((capacity, *obs_dims), dtype=obs_space.dtype),  # type: ignore
-            "d": np.zeros((capacity, 1)),
+            "d": np.zeros((capacity, 1), dtype=bool),
         }
 
         if extra_specs:
