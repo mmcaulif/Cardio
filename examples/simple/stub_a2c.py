@@ -83,12 +83,17 @@ class A2C(crl.Agent):
         probs = self.actor(input_state)
         dist = th.distributions.Categorical(probs)
         action = dist.sample().squeeze()
-        return action.detach().numpy(), {}
+        return action.numpy(force=True), {}
+
+    def eval_step(self, state):
+        input_state = th.from_numpy(state).unsqueeze(0).float()
+        probs = self.actor(input_state)
+        action = th.argmax(probs, dim=-1).squeeze()
+        return action.numpy(force=True)
 
 
 def main():
-    N_ENVS = 16
-    envs = gym.make_vec("CartPole-v1", num_envs=N_ENVS)
+    envs = gym.make_vec("CartPole-v1", num_envs=16)
     eval_env = gym.make("CartPole-v1")
 
     runner = crl.BaseRunner(
