@@ -53,8 +53,8 @@ class Gatherer:
         iterable = range(length) if length > 0 else itertools.count()
         for _ in iterable:
             a, ext = agent.step(self.state)
-            next_state, r, d, t, _ = self.env.step(a)
-            done = d or t
+            next_state, r, term, trun, _ = self.env.step(a)
+            done = term or trun
 
             transition = {"s": self.state, "a": a, "r": r, "s_p": next_state, "d": done}
             ext = agent.view(transition, ext)
