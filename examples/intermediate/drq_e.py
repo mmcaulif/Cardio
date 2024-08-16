@@ -17,8 +17,13 @@ Target networks are seemingly removed as target update period = 1.
 To do:
 * Image augmentation
 * Benchmarking (Atari 100k)
-* Review differences between DrQ and DrQ(e)
+* Review differences between DrQ and DrQ(e) from Deep RL at the edge of the
+    statistical precipice: Difference is purely in the epsilon parameters,
+    differences can be found here:
+    https://github.com/google/dopamine/tree/master/dopamine/labs/atari_100k/configs
 """
+
+import copy
 
 import gymnasium as gym
 import jax
@@ -52,20 +57,30 @@ class Q_critic(nn.Module):
 
 
 class DrQ(crl.Agent):
-    def __init__(self, env: gym.Env, n_step: int):
+    def __init__(
+        self,
+        env: gym.Env,
+        critic: nn.Module,
+        n_step: int = 10,
+        gamma: float = 0.99,
+        targ_freq: int = 1,
+        optim_kwargs: dict = {"lr": 1e-4, "eps": 0.00015},
+        init_eps: float = 1.0,
+        min_eps: float = 0.05,
+        schedule_len: int = 5000,
+    ):
         self.env = env
+        self.critic = critic
+        self.targ_critic = copy.deepcopy(critic)
         self.n_step = n_step
-        self.critic = Q_critic(4, 2)
-        self.targ_critic = Q_critic(4, 2)
-        self.targ_critic.load_state_dict(self.critic.state_dict())
+        self.gamma = gamma
+        self.targ_freq = targ_freq
         self.update_count = 0
-        self.optimizer = th.optim.Adam(
-            params=self.critic.parameters(), lr=1e-4, eps=0.00015
-        )
+        self.optimizer = th.optim.Adam(self.critic.parameters(), **optim_kwargs)
 
-        self.eps = 1.0
-        self.min_eps = 0.05
-        schedule_steps = 5000
+        self.eps = init_eps
+        self.min_eps = min_eps
+        schedule_steps = schedule_len
         self.ann_coeff = self.min_eps ** (1 / schedule_steps)
 
     def update(self, batches):
@@ -74,7 +89,7 @@ class DrQ(crl.Agent):
 
         returns = th.zeros(r.shape[0])
         for i in reversed(range(r.shape[1])):
-            returns += 0.99 * r[:, i]
+            returns += self.gamma * r[:, i]
 
         r = returns.unsqueeze(-1)
 
@@ -83,7 +98,7 @@ class DrQ(crl.Agent):
         # If no targ critic why use double Q-learning???
         a_p = self.critic(s_p).argmax(-1, keepdim=True)
         q_p = self.targ_critic(s_p).gather(-1, a_p)
-        y = r + np.power(0.99, self.n_step) * q_p * (1 - d)
+        y = r + np.power(self.gamma, self.n_step) * q_p * ~d
 
         loss = th.mean(((q - y.detach()) ** 2))
         self.optimizer.zero_grad()
@@ -108,12 +123,17 @@ class DrQ(crl.Agent):
         self.eps = max(self.min_eps, self.eps * self.ann_coeff)
         return action, {}
 
+    def eval_step(self, state: np.ndarray):
+        th_state = th.from_numpy(state)
+        action = self.critic(th_state).argmax().numpy(force=True)
+        return action
+
 
 def main():
     env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
         env=env,
-        agent=DrQ(env, n_step=10),
+        agent=DrQ(env, Q_critic(4, 2)),
         rollout_len=1,
         batch_size=32,
         warmup_len=1_600,

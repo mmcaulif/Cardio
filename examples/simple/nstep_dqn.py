@@ -1,8 +1,11 @@
+import copy
+
 import gymnasium as gym
 import jax
 import numpy as np
 import torch as th
 import torch.nn as nn
+import torch.nn.functional as F
 
 import cardio_rl as crl
 
@@ -25,19 +28,30 @@ class Q_critic(nn.Module):
 
 
 class NstepDQN(crl.Agent):
-    def __init__(self, env: gym.Env, n_step: int):
+    def __init__(
+        self,
+        env: gym.Env,
+        critic: nn.Module,
+        n_step: int = 3,
+        gamma: float = 0.99,
+        targ_freq: int = 1_000,
+        optim_kwargs: dict = {"lr": 1e-4},
+        init_eps: float = 0.9,
+        min_eps: float = 0.05,
+        schedule_len: int = 5000,
+    ):
         self.env = env
+        self.critic = critic
+        self.targ_critic = copy.deepcopy(critic)
         self.n_step = n_step
-        self.critic = Q_critic(4, 2)
-        self.targ_critic = Q_critic(4, 2)
-        self.targ_critic.load_state_dict(self.critic.state_dict())
+        self.gamma = gamma
+        self.targ_freq = targ_freq
         self.update_count = 0
-        self.optimizer = th.optim.Adam(self.critic.parameters(), lr=1e-4)
+        self.optimizer = th.optim.Adam(self.critic.parameters(), **optim_kwargs)
 
-        self.eps = 0.9
-        self.min_eps = 0.05
-        schedule_steps = 5000
-        self.ann_coeff = self.min_eps ** (1 / schedule_steps)
+        self.eps = init_eps
+        self.min_eps = min_eps
+        self.ann_coeff = self.min_eps ** (1 / schedule_len)
 
     def update(self, batches):
         data = jax.tree.map(th.from_numpy, batches[0])
@@ -45,42 +59,47 @@ class NstepDQN(crl.Agent):
 
         returns = th.zeros(r.shape[0])
         for i in reversed(range(r.shape[1])):
-            returns += 0.99 * r[:, i]
+            returns += self.gamma * r[:, i]
 
         r = returns.unsqueeze(-1)
 
         q = self.critic(s).gather(-1, a)
 
         q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
-        y = r + np.power(0.99, self.n_step) * q_p * (1 - d)
+        y = r + np.power(self.gamma, self.n_step) * q_p * ~d
 
-        loss = th.mean(((q - y.detach()) ** 2))
+        loss = F.mse_loss(q, y.detach())
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
         self.update_count += 1
-        if self.update_count % 1_000 == 0:
+        if self.update_count % self.targ_freq == 0:
             self.targ_critic.load_state_dict(self.critic.state_dict())
 
         return {}
 
     def step(self, state):
         if np.random.rand() > self.eps:
-            th_state = th.from_numpy(state).unsqueeze(0).float()
-            action = self.critic(th_state).argmax().detach().numpy()
+            th_state = th.from_numpy(state)
+            action = self.critic(th_state).argmax().numpy(force=True)
         else:
             action = self.env.action_space.sample()
 
         self.eps = max(self.min_eps, self.eps * self.ann_coeff)
         return action, {}
 
+    def eval_step(self, state: np.ndarray):
+        th_state = th.from_numpy(state)
+        action = self.critic(th_state).argmax().numpy(force=True)
+        return action
+
 
 def main():
     env = gym.make("CartPole-v1")
     runner = crl.OffPolicyRunner(
         env=env,
-        agent=NstepDQN(env, n_step=3),
+        agent=NstepDQN(env, Q_critic(4, 2)),
         rollout_len=4,
         batch_size=32,
         n_step=3,
