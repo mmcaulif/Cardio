@@ -4,6 +4,7 @@ import time
 from typing import Callable, Optional
 
 import jax
+import numpy as np
 from gymnasium import Env
 from gymnasium.experimental.vector import VectorEnv
 from tqdm import trange
@@ -107,11 +108,11 @@ class BaseRunner:
             steps (int): Number of steps to take in environment
             agent (Agent): Can optionally pass a specific agent to
                 step through environment with
+            transform (Callable):
 
         Returns:
-            rollout_transitions (Transition): stacked Transitions
-                from environment
-            num_transitions (int): number of Transitions collected
+            Transition: stacked Transitions from environment
+            int: number of Transitions collected
         """
         rollout_transitions = self.gatherer.step(agent, steps)  # type: ignore
         num_transitions = len(rollout_transitions)
@@ -127,12 +128,13 @@ class BaseRunner:
         agent's update function.
 
         Args:
+            transform (Callable):
             agent (Agent): Can optionally pass a specific agent to
                 step through environment with
 
         Returns:
-            batch (list[Transition]): A list of Transitions
-                sampled from the environment
+            list[Transition]: A list of Transitions sampled from
+                the environment
 
         """
 
@@ -143,7 +145,19 @@ class BaseRunner:
         del num_transitions
         return [rollout_batch]
 
-    def eval(self, episodes: int, agent: Optional[Agent] = None) -> float:
+    def eval(
+        self, rollouts: int, episodes: int, agent: Optional[Agent] = None
+    ) -> float:
+        """_summary_
+
+        Args:
+            episodes (int): _description_
+            agent (Optional[Agent], optional): _description_. Defaults to None.
+
+        Returns:
+            float: _description_
+        """
+        eval_t = time.time()
         agent = agent if self.agent is None else self.agent
         avg_returns = 0.0
         for _ in range(episodes):
@@ -152,14 +166,29 @@ class BaseRunner:
             while True:
                 # TODO: fix this mypy issue
                 a = agent.eval_step(s)  # type: ignore
-                s_p, r, d, t, _ = self.eval_env.step(a)
+                s_p, r, term, trun, _ = self.eval_env.step(a)
+                done = term or trun
                 returns += r
                 s = s_p
-                if d or t:
+                if done:
                     avg_returns += returns
                     break
 
-        return avg_returns / episodes
+        avg_returns = avg_returns / episodes
+        with logging_redirect_tqdm():
+            env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
+            curr_time = round(time.time() - self.initial_time, 2)
+            metrics = {
+                "Timesteps": env_steps,
+                # "Episodes": self.episodes,    # TODO: find a way to implement this
+                "Avg eval returns": avg_returns,
+                "Time passed": curr_time,
+                "Evaluation time": round(time.time() - eval_t, 2),
+                "Steps per second": int(env_steps / curr_time),
+            }
+            logging.info(metrics)
+
+        return avg_returns
 
     def run(
         self, rollouts: int = 1_000_000, eval_freq: int = 1_000, eval_episodes: int = 10
@@ -181,18 +210,7 @@ class BaseRunner:
             if updated_data:
                 self.update(updated_data)
             if t % eval_freq == 0 and t > 0:
-                avg_returns = self.eval(eval_episodes, self.agent)
-                with logging_redirect_tqdm():
-                    env_steps = (self.n_envs * t * self.rollout_len) + self.warmup_len
-                    curr_time = round(time.time() - self.initial_time, 2)
-                    metrics = {
-                        "Timesteps": env_steps,
-                        # "Episodes": self.episodes,    # TODO: find a way to implement this
-                        "Avg eval returns": avg_returns,
-                        "Time passed": curr_time,
-                        "Env steps per second": int(env_steps / curr_time),
-                    }
-                    self.logger.info(metrics)
+                self.eval(t, eval_episodes, self.agent)
 
     def transform_batch(
         self, batch: list[Transition], transform: Optional[Callable] = None
@@ -209,6 +227,15 @@ class BaseRunner:
         """
 
         transformed_batch = crl.tree.stack(batch)
+
+        def _expand(arr):
+            if len(arr.shape) == 1:
+                arr = np.expand_dims(arr, -1)
+
+            return arr
+
+        transformed_batch = jax.tree.map(_expand, transformed_batch)
+
         if transform:
             transformed_batch = jax.tree.map(transform, transformed_batch)
         return transformed_batch
