@@ -59,8 +59,7 @@ class A2C(crl.Agent):
         v_p = self.critic(s_p).squeeze(-1)
 
         td_error = (
-            # r + 0.99 * (v_p * (1 - d))    # TODO: Why does this not work for a2c?
-            r + 0.99 * (v_p * ~d)
+            r + 0.99 * v_p * ~d
         ).detach() - v  # TODO: move to traditional adv calculation
 
         critic_loss = th.mean((td_error) ** 2)
@@ -79,16 +78,16 @@ class A2C(crl.Agent):
         self.optimizer.step()
 
     def step(self, state):
-        input_state = th.from_numpy(state).unsqueeze(0).float()
+        input_state = th.from_numpy(state)
         probs = self.actor(input_state)
         dist = th.distributions.Categorical(probs)
-        action = dist.sample().squeeze()
+        action = dist.sample()
         return action.numpy(force=True), {}
 
     def eval_step(self, state):
-        input_state = th.from_numpy(state).unsqueeze(0).float()
+        input_state = th.from_numpy(state)
         probs = self.actor(input_state)
-        action = th.argmax(probs, dim=-1).squeeze()
+        action = th.argmax(probs, dim=-1)
         return action.numpy(force=True)
 
 
@@ -96,7 +95,7 @@ def main():
     envs = gym.make_vec("CartPole-v1", num_envs=16)
     eval_env = gym.make("CartPole-v1")
 
-    runner = crl.BaseRunner(
+    runner = crl.OnPolicyRunner(
         env=envs,
         agent=A2C(),
         rollout_len=32,
