@@ -50,6 +50,7 @@ class DQN(crl.Agent):
         if not use_rmsprop:
             self.optimizer = th.optim.Adam(self.critic.parameters(), **optim_kwargs)
         else:
+            # TODO: fix mypy crying about return type
             self.optimizer = th.optim.RMSprop(self.critic.parameters(), **optim_kwargs)
 
         self.eps = init_eps
@@ -57,7 +58,7 @@ class DQN(crl.Agent):
         self.ann_coeff = self.min_eps ** (1 / schedule_len)
 
     def update(self, batches):
-        data = jax.tree.map(th.from_numpy, batches[0])
+        data = jax.tree.map(th.from_numpy, batches)
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
         q = self.critic(s).gather(-1, a)

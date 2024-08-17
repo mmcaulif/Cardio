@@ -6,6 +6,10 @@ import torch.nn as nn
 import cardio_rl as crl
 from cardio_rl.types import Transition
 
+"""
+TODO: debug reinforce, it seems to plateau at an average return of ~40
+"""
+
 
 class Policy(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -31,7 +35,7 @@ class Reinforce(crl.Agent):
         self.optimizer = th.optim.Adam(self.actor.parameters(), lr=3e-4)
 
     def update(self, data: list[Transition]):
-        batch = jax.tree.map(crl.utils.to_torch, data[0])
+        batch = jax.tree.map(th.from_numpy, data[0])
         s, a, r = batch["s"], batch["a"], batch["r"]
 
         returns = th.zeros_like(r)
@@ -52,11 +56,11 @@ class Reinforce(crl.Agent):
         self.optimizer.step()
 
     def step(self, state):
-        input_state = th.from_numpy(state).unsqueeze(0).float()
+        input_state = th.from_numpy(state)
         probs = self.actor(input_state)
         dist = th.distributions.Categorical(probs)
         action = dist.sample().squeeze()
-        return action.detach().numpy(), {}
+        return action.numpy(force=True), {}
 
 
 def main():

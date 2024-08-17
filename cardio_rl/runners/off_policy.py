@@ -1,18 +1,27 @@
 from typing import Callable, Optional
 
-from gymnasium import Env
+from gymnasium.experimental.vector import VectorEnv
 
-from cardio_rl import Agent, BaseRunner
+from cardio_rl import Agent, BaseRunner, Gatherer
 from cardio_rl.buffers.tree_buffer import TreeBuffer
-from cardio_rl.types import Transition
+from cardio_rl.types import Environment, Transition
 
 
 class OffPolicyRunner(BaseRunner):
-    """_summary_"""
+    """The runner is the high level orchestrator that deals with the different
+    components and data, it contains a gatherer, your agent and any replay buffer
+    you might have. The runner calls the gatherer's step function as part its own
+    step function, or as part of its built in warmup (for collecting a large amount
+    of initial data with your agent) and burnin (for randomly stepping through an
+    environment, not collecting data, such as for initialising normalisation values)
+    methods. The runner can either be used via its run method (which iteratively
+    calls the runner.step and the agent.update methods) or with each mothod individually
+    with its step method if you'd like more finegrained control.
+    """
 
     def __init__(
         self,
-        env: Env,
+        env: Environment,
         agent: Optional[Agent] = None,
         extra_specs: dict = {},
         capacity: int = 1_000_000,
@@ -22,6 +31,8 @@ class OffPolicyRunner(BaseRunner):
         warmup_len: int = 10_000,
         n_batches: int = 1,
         n_step: int = 1,
+        eval_env: Optional[Environment] = None,
+        gatherer: Optional[Gatherer] = None,
     ) -> None:
         """_summary_
 
@@ -35,7 +46,14 @@ class OffPolicyRunner(BaseRunner):
             warmup_len (int, optional): _description_. Defaults to 10_000.
             n_batches (int, optional): _description_. Defaults to 1.
             n_step (int, optional): _description_. Defaults to 1.
+            eval_env (Env, optional): _description_. Defaults to None.
+            gatherer (Optional[Gatherer], optional): _description_. Defaults to None.
+
+        Raises:
+            TypeError: Trying to use a VectorEnv with off-policy runner.
         """
+        if isinstance(env, VectorEnv):
+            raise TypeError("VectorEnv's not yet compatible with off-policy runner")
 
         if buffer is not None:
             self.buffer = buffer
@@ -49,7 +67,9 @@ class OffPolicyRunner(BaseRunner):
         self.n_batches = n_batches
         self.n_step = n_step
 
-        super().__init__(env, agent, rollout_len, warmup_len, n_step)
+        super().__init__(
+            env, agent, rollout_len, warmup_len, n_step, eval_env, gatherer
+        )  # type: ignore
 
     def _warm_start(self):
         rollout_transitions, num_transitions = super()._warm_start()
@@ -58,7 +78,7 @@ class OffPolicyRunner(BaseRunner):
 
     def step(
         self, transform: Optional[Callable] = None, agent: Optional[Agent] = None
-    ) -> list[Transition]:
+    ) -> Transition | list[Transition]:
         """Main method to step through environment with
         agent, to collect transitions, add them to your replay
         buffer and then sample batches from the buffer to pass
@@ -80,12 +100,17 @@ class OffPolicyRunner(BaseRunner):
         if num_transitions:
             self.buffer.store(rollout_transitions, num_transitions)
         k = min(self.batch_size, len(self.buffer))
-        batch_samples = [self.buffer.sample(k) for _ in range(self.n_batches)]
-        return batch_samples
+        if self.n_batches > 1:
+            return [self.buffer.sample(k) for _ in range(self.n_batches)]
+        else:
+            return self.buffer.sample(k)
 
     def reset(self) -> None:
         """Perform any necessary resets, such as for the replay buffer
         and gatherer.
+
+        TODO: Move resetting of buffer to itself, currently we end up defaulting
+        to a tree buffer even if not originally used.
         """
         super().reset()
         del self.buffer
@@ -95,6 +120,6 @@ class OffPolicyRunner(BaseRunner):
         """_summary_
 
         Args:
-            data (_type_): _description_
+            data (dict): _description_
         """
         self.buffer.update(data)

@@ -55,7 +55,7 @@ class PPO(crl.Agent):
         self.minibatches = minibatches
 
     def update(self, batches: list[Transition]):
-        data = jax.tree.map(th.from_numpy, batches[0])
+        data = jax.tree.map(th.from_numpy, batches)
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
         probs = self.actor(s)

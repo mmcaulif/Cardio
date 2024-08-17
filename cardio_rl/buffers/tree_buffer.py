@@ -3,10 +3,10 @@ from typing import Optional
 
 import jax
 import numpy as np
-from gymnasium import Env, spaces
+from gymnasium import spaces
 
 from cardio_rl.buffers.base_buffer import BaseBuffer
-from cardio_rl.types import Transition
+from cardio_rl.types import Environment, Transition
 
 
 class TreeBuffer(BaseBuffer):
@@ -25,7 +25,7 @@ class TreeBuffer(BaseBuffer):
 
     def __init__(
         self,
-        env: Env,
+        env: Environment,
         capacity: int = 1_000_000,
         extra_specs: dict = {},
         n_steps: int = 1,

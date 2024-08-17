@@ -84,7 +84,7 @@ class DrQ(crl.Agent):
         self.ann_coeff = self.min_eps ** (1 / schedule_steps)
 
     def update(self, batches):
-        data = jax.tree.map(th.from_numpy, batches[0])
+        data = jax.tree.map(th.from_numpy, batches)
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
 
         returns = th.zeros(r.shape[0])
