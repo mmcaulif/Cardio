@@ -8,6 +8,7 @@ from cardio_rl.agent import Agent
 from cardio_rl.gatherers import Gatherer, VectorGatherer
 from cardio_rl.runners.runner import BaseRunner
 from cardio_rl.runners.off_policy import OffPolicyRunner
+from cardio_rl.runners.on_policy import OnPolicyRunner
 
 __all__ = [
     # core classes
@@ -16,6 +17,7 @@ __all__ = [
     "VectorGatherer",
     "BaseRunner",
     "OffPolicyRunner",
+    "OnPolicyRunner",
     # module folders
     "buffers",
     "toy_env",
