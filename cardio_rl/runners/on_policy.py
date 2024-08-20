@@ -2,7 +2,6 @@ import logging
 from typing import Optional
 
 from gymnasium import Env
-from tqdm import trange
 
 from cardio_rl import Agent, BaseRunner, Gatherer
 from cardio_rl.types import Environment
@@ -42,7 +41,6 @@ class OnPolicyRunner(BaseRunner):
         gatherer (Optional[Gatherer], optional): An optional gatherer to be used by
             the runner. Defaults to None.
         _initial_time (float): The time in seconds when the runner was initialised.
-
     """
 
     def __init__(
@@ -68,32 +66,3 @@ class OnPolicyRunner(BaseRunner):
                 the runner. Defaults to None.
         """
         super().__init__(env, agent, rollout_len, 0, 1, eval_env, gatherer)
-
-    def run(
-        self, rollouts: int, eval_freq: int = 1_000, eval_episodes: int = 10
-    ) -> float:
-        """Iteratively run runner.step() for self.rollout_len and pass the
-        batched data through to the agents update step. Stops and calls self.eval
-        every eval_freq with eval_episodes. After all rollouts are taken, a final
-        evaluation step is called and the average episodic returns from the final
-        evaluation step are returned by this method.
-
-        Args:
-            rollouts (int): The number of rollouts of length self.rollout_len to
-                perform.
-            eval_freq (int): How many rollouts to take in between evaluations.
-            eval_episodes (int): How many episodes to perform during evaluation.
-
-        Returns:
-            float: Average episodic returns from the final evaluation step.
-        """
-
-        for t in trange(rollouts):
-            data = self.step()
-            self.agent.update(data)  # type: ignore
-            if t % eval_freq == 0 and t > 0:
-                self.eval(t, eval_episodes, self.agent)
-
-        logging.info("Performing final evaluation")
-        avg_returns = self.eval(t, eval_episodes, self.agent)
-        return avg_returns

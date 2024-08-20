@@ -44,12 +44,11 @@ class BaseRunner:
             regular rollouts begin. Defaults to 0.
         n_step (int, optional): Number of environment steps to store within a single
             transition. Defaults to 1.
-        eval_env (Optional[gym.Env], optional): An optional separate environment to
+        eval_env (Optional[Env], optional): An optional separate environment to
             be used for evaluation, must not be a VectorEnv. Defaults to None.
         gatherer (Optional[Gatherer], optional): An optional gatherer to be used by
             the runner. Defaults to None.
         _initial_time (float): The time in seconds when the runner was initialised.
-
     """
 
     def __init__(
@@ -62,7 +61,13 @@ class BaseRunner:
         eval_env: Optional[Env] = None,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
-        """Initialises the runner ...TODO...
+        """Initialises a generic runner, parent class of OnPolicyRunner and
+        OffPolicyRunner, which should be used instead of this. This base class is
+        extensible and contains all the necessary attributes for both collecting
+        transitions with the gatherer and formatting them correctly for later use by
+        the agent. Data is provided to the runner and from the runner to the agent as
+        a dictionary with the following keys: s, a, r, s_p and d, representing the state,
+        action, reward, next state and done features of an MDP transition.
 
         Args:
             env (Environment): The gym environment used to collect transitions and
