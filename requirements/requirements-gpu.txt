@@ -1,1 +1,5 @@
 jax[cuda12]
+distrax
+flax
+rlax
+optax
