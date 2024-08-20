@@ -99,11 +99,10 @@ def main():
         env=envs,
         agent=A2C(),
         rollout_len=32,
-        gatherer=crl.VectorGatherer(),
         eval_env=eval_env,
     )
 
-    runner.run(50_000, eval_freq=128)
+    runner.run(750, eval_freq=128, eval_episodes=20)
 
 
 if __name__ == "__main__":
