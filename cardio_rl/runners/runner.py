@@ -97,18 +97,9 @@ class BaseRunner:
         self.agent = agent
         self.rollout_len = rollout_len
         self.warmup_len = warmup_len
-
-        if gatherer is None:
-            self.gatherer: Gatherer = Gatherer(n_step=n_step)
-        else:
-            self.gatherer = gatherer
-
+        self.gatherer = gatherer or Gatherer(n_step=n_step)
         self.n_step = n_step
-
-        if eval_env is None:
-            self.eval_env = copy.deepcopy(env)
-        else:
-            self.eval_env = eval_env
+        self.eval_env = eval_env or copy.deepcopy(env)
 
         self._initial_time = time.time()
 
