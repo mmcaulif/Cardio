@@ -3,7 +3,7 @@ from typing import Optional
 
 from gymnasium import Env
 
-from cardio_rl import Agent, BaseRunner, Gatherer
+from cardio_rl import Agent, BaseRunner, Gatherer, VectorGatherer
 from cardio_rl.types import Environment
 
 logging.basicConfig(
@@ -43,6 +43,8 @@ class OnPolicyRunner(BaseRunner):
         _initial_time (float): The time in seconds when the runner was initialised.
     """
 
+    # TODO: use VectorGatherer as the default and explain it, and the differences
+
     def __init__(
         self,
         env: Environment,
@@ -65,4 +67,13 @@ class OnPolicyRunner(BaseRunner):
             gatherer (Optional[Gatherer], optional): An optional gatherer to be used by
                 the runner. Defaults to None.
         """
-        super().__init__(env, agent, rollout_len, 0, 1, eval_env, gatherer)
+        _gatherer = gatherer or VectorGatherer()
+        super().__init__(
+            env=env,
+            agent=agent,
+            rollout_len=rollout_len,
+            warmup_len=0,
+            n_step=1,
+            eval_env=eval_env,
+            gatherer=_gatherer,
+        )
