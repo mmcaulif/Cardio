@@ -181,10 +181,10 @@ class BaseRunner:
             Transition | list[Transition]: stacked Transitions from environment.
         """
 
-        agent = agent if self.agent is None else self.agent
+        agent = agent or self.agent
         rollout_batch, num_transitions = self._rollout(
             self.rollout_len, agent, transform
-        )  # type: ignore
+        )
         del num_transitions
         return rollout_batch
 
@@ -206,7 +206,7 @@ class BaseRunner:
                 evaluation episodes.
         """
         eval_t = time.time()
-        agent = agent if self.agent is None else self.agent
+        agent = agent or self.agent
         avg_returns = 0.0
         for _ in range(episodes):
             s, _ = self.eval_env.reset()
