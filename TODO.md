@@ -9,7 +9,7 @@
 1. [ ] finish readme and docstrings
   * [ ] contributing
   * [x] examples, include code snippets
-  * [x] development
+  * [ ] development
   * [x] write a better description
   * [ ] look at other repo's for inspo
   * [x] add some emoji's for fun
@@ -34,6 +34,10 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
     * this ties into the above with using pytree's internally within the gatherer
   * [ ] Implement dopamine Rainbow as an intermediate example
+    * [x] PER
+    * [x] n-step returns
+    * [ ] C51
+    * outline benchmark plan
 
 * [ ] Make library presentable
   * [ ] Doc strings for Runner, Gatherer and other components to make it easier to understand!!!
@@ -41,12 +45,6 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [ ] Readme and docs, look at stoix for inspo
     * [x] Pseudocode for gatherer internals
   * [ ] Extensive testing!!!
-  * [ ] Jax agent stubs
-    * [ ] Will need to get access to a linux machine with a GPU to properly evaluate performance/speed
-    * [ ] Consider different popular algorithms and how they could be implemented easily
-
-* [ ] While trying to implement A2C and PPO, you broke the runner/gatherer, it is mostly fixed
-      but double check everything! Further proof that testing is needed...
 
 * [ ] MinAtar and Atari examples
   * [x] MinAtar: Seems to work seamlessly so far, need to write a network for it and train DQN
@@ -54,13 +52,28 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [ ] Atari:
   * [ ] Envpool:
 
-* Maybe make evaluation done within an agent, the runner can pass it metrics like steps taken or
-  episodes completed. Will need to be experimented with...
+* [ ] Expose hyperparameters for all examples, have the benchmark directory import from examples
+
+* [ ] Improve logging
+  * [x] Current time spent
+  * [x] Env steps per second
+  * [x] Move logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
+  * [ ] Make logger/metrics system extensible (use dictionaries to pass around)
+    * [ ] Make agent's eval steps return extras dict that can be used during evaluation
+  * [ ] Rich logging, make it pretty and formatted well!!!
+  * [x] Explore if logging could be done outside the gatherer (as its very nested)
+  * [x] Figure out a way to make logging extensible and customisable
+  * [ ] Gatherer maybe return episodes completed?
+  * [ ] Integrated loggers: WandB, Neptune, Tensorboard etc.
 
 __Focus on getting some form of Cardio as a finished deliverable__
 
 ## Post alpha release
 * [ ] Pip package with github actions for releases
+
+* [ ] Jax agent stubs
+  * [ ] Will need to get access to a linux machine with a GPU to properly evaluate performance/speed
+  * [ ] Consider different popular algorithms and how they could be implemented easily
 
 * [ ] Docker file
 
@@ -68,7 +81,7 @@ __Focus on getting some form of Cardio as a finished deliverable__
   * [ ] trajectory
   * [x] prioritised
   * [ ] mixed
-  * [ ] simple/base
+  * [x] simple/base
 
 * [ ] Envpool Atari DQN using flax and network resets for Atari 100k benchmarking
   * Will need to make this as quick as possible, use scans for updating over multiple batches
@@ -81,16 +94,6 @@ __Focus on getting some form of Cardio as a finished deliverable__
 * [ ] Make seperate repo for research/experimenting template
 
 * [ ] Add a system design diagram to readme
-
-* [ ] Improve logging
-  * [x] Current time spent
-  * [x] Env steps per second
-  * [ ] Move logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
-  * [ ] Make logger/metrics system extensible (use dictionaries to pass around)
-  * [ ] Rich logging, make it pretty and formatted well!!!
-  * [ ] Explore if logging could be done outside the gatherer (as its very nested)
-  * [ ] Figure out a way to make logging extensible and customisable
-  * [ ] Gatherer should return the number of steps taken and episodes completed
 
 # Done
 * [x] Simple examples
@@ -109,3 +112,6 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [x] Github integrations for ruff, type checking
 * [x] More test coverage and github integration
+
+* [x] While trying to implement A2C and PPO, you broke the runner/gatherer, it is mostly fixed
+      but double check everything! Further proof that testing is needed...
