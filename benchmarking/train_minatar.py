@@ -1,13 +1,10 @@
-import copy
-
 import gymnasium as gym
-import jax
-import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 
 import cardio_rl as crl
+from examples.simple.stub_dqn import DQN
 
 
 class Q_critic(nn.Module):
@@ -23,81 +20,49 @@ class Q_critic(nn.Module):
         self.output = nn.Linear(in_features=128, out_features=num_actions)
 
     def forward(self, x: th.Tensor):
+        x = x.float()
+        if len(x.shape) == 3:
+            x = x.unsqueeze(0)
         x = th.permute(x, (0, 3, 1, 2))
         x = F.relu(self.conv(x))
         x = F.relu(self.fc_hidden(x.reshape(x.size(0), -1)))
         return self.output(x).squeeze(-1)
 
 
-class DQN(crl.Agent):
-    """All parameters from MinAtar repo:
-    https://github.com/kenjyoung/MinAtar/blob/master/examples/dqn.py
-    """
-
-    def __init__(self, env: gym.Env):
-        self.env = env
-        self.critic = Q_critic(env.observation_space.shape[-1], env.action_space.n)  # type: ignore
-        self.targ_critic = copy.deepcopy(self.critic)
-        self.update_count = 0
-        self.optimizer = th.optim.RMSprop(
-            params=self.critic.parameters(),
-            lr=0.00025,
-            alpha=0.95,
-            centered=True,
-            eps=0.01,
-        )
-
-        self.eps = 1.0
-        self.min_eps = 0.1
-        schedule_steps = 100_000
-        self.ann_coeff = self.min_eps ** (1 / schedule_steps)
-
-    def update(self, batch):
-        data = jax.tree.map(crl.utils.to_torch, batch[0])
-        s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
-
-        q = self.critic(s).gather(-1, a.long())
-        q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
-        y = r + 0.99 * q_p * (1 - d)
-
-        loss = F.smooth_l1_loss(q, y.detach())
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-        self.update_count += 1
-        if self.update_count % 1_000 == 0:
-            self.targ_critic.load_state_dict(self.critic.state_dict())
-
-    def step(self, state):
-        if np.random.rand() > self.eps:
-            th_state = th.from_numpy(state).unsqueeze(0).float()
-            action = self.critic(th_state).argmax().detach().numpy()
-        else:
-            action = self.env.action_space.sample()
-
-        self.eps = max(self.min_eps, self.eps * self.ann_coeff)
-        return action, {}
-
-
 def main():
-    def how_many_rollouts(env_steps: int, runner: crl.BaseRunner) -> int:
-        return int((env_steps - runner.warmup_len) / runner.rollout_len)
+    def how_many_rollouts(env_steps: int, warmup_len: int, rollout_len: int) -> int:
+        return int((env_steps - warmup_len) / rollout_len)
 
-    # env = gym.make("MinAtar/Freeway-v1")  # Matches paper performance
-    env = gym.make("MinAtar/Breakout-v1")
+    env = gym.make("MinAtar/Freeway-v1")  # Matches paper performance
+    # env = gym.make("MinAtar/Breakout-v1")
+
+    agent = DQN(
+        env=env,
+        critic=Q_critic(env.observation_space.shape[-1], env.action_space.n),
+        optim_kwargs={
+            "lr": 0.00025,
+            "alpha": 0.95,
+            "centered": True,
+            "eps": 0.01,
+        },
+        init_eps=1.0,
+        min_eps=0.1,
+        schedule_len=100_000,
+        use_rmsprop=True,
+    )
+
     runner = crl.OffPolicyRunner(
         env=env,
-        agent=DQN(env),
+        agent=agent,
         capacity=100_000,
         rollout_len=1,
         batch_size=32,
         warmup_len=5_000,
     )
 
-    n_steps = how_many_rollouts(env_steps=1_000_000, runner=runner)
+    n_steps = how_many_rollouts(1_000_000, runner.warmup_len, runner.rollout_len)
 
-    runner.run(rollouts=n_steps)
+    runner.run(rollouts=n_steps, eval_freq=25_000, eval_episodes=20)
 
 
 if __name__ == "__main__":
