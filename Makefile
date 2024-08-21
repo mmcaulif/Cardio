@@ -11,3 +11,8 @@ precommit_run:
 install_cpu:
 	pip install -e ".[dev,exp,cpu]"
 	make precommit_setup
+
+.PHONY: install_gpu
+install_gpu:
+	pip install -e ".[dev,exp,gpu]"
+	make precommit_setup
