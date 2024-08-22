@@ -216,23 +216,24 @@ class BaseRunner:
                 a = agent.eval_step(s)  # type: ignore
                 s_p, r, term, trun, _ = self.eval_env.step(a)
                 done = term or trun
-                # TODO: fix below mypy issue
-                returns += r  # type: ignore
+                returns += float(r)
                 s = s_p
                 if done:
                     avg_returns += returns
                     break
 
-        avg_returns = avg_returns / episodes
+        avg_returns = float(avg_returns / episodes)
         with logging_redirect_tqdm():
             env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
             curr_time = round(time.time() - self._initial_time, 2)
+            eval_time = round(time.time() - eval_t, 2)
             metrics = {
                 "Timesteps": env_steps,
+                "Training steps": rollouts,
                 # "Episodes": self.episodes,    # TODO: find a way to implement this
-                "Avg eval returns": avg_returns,
+                "Avg eval returns": round(avg_returns, 2),
                 "Time passed": curr_time,
-                "Evaluation time": round(time.time() - eval_t, 2),
+                "Evaluation time": eval_time,
                 "Steps per second": int(env_steps / curr_time),
             }
             logging.info(metrics)
@@ -257,6 +258,10 @@ class BaseRunner:
         Returns:
             float: Average episodic returns from the final evaluation step.
         """
+        logging.info("Performing initial evaluation")
+        _ = self.eval(
+            0, eval_episodes, self.agent
+        )  # TODO: have this before the warmup?
 
         for t in trange(rollouts):
             data = self.step()
@@ -283,6 +288,12 @@ class BaseRunner:
             Transition: The stacked input list of Transitions.
         """
 
+        # print([step['s'].shape for step in batch])
+        # print([step['a'].shape for step in batch])
+        # print([step['r'].shape for step in batch])
+        # print([step['s_p'].shape for step in batch])
+        # print([step['d'].shape for step in batch])
+        # exit()
         transformed_batch = crl.tree.stack(batch)
 
         def _expand(arr):
