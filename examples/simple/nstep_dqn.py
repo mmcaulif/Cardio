@@ -59,7 +59,7 @@ class NstepDQN(crl.Agent):
 
         returns = th.zeros(r.shape[0])
         for i in reversed(range(r.shape[1])):
-            returns += self.gamma * r[:, i]
+            returns = r[:, i] + 0.99 * returns
 
         r = returns.unsqueeze(-1)
 
