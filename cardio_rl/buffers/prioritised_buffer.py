@@ -25,7 +25,7 @@ class SumTree:
         self.tree = np.zeros((2 * self.n) - 1)
 
     def _update(self, data_idx, value):
-        value = np.random.randint(0, 10)
+        # value = np.random.randint(0, 10)  # TODO: never forget I left this in for weeks...
 
         self.data[data_idx] = value
 
@@ -111,7 +111,8 @@ class PrioritisedBuffer(TreeBuffer):
 
     def update(self, data: dict):
         p = np.sqrt(data.pop("p")) + self.eps
-        p = np.squeeze(p, -1)
+        if len(p.shape) == 2:
+            p = np.squeeze(p, -1)
         self.max_p = max(p.max(), self.max_p)
         self.sumtree.update(data["idxs"], p)
         super().update(data)
