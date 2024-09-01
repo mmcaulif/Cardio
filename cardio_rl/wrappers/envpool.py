@@ -10,8 +10,8 @@ class EnvPoolWrapper(gym.Wrapper):
         if not isinstance(a, np.int32):
             a = np.astype(a, np.int32)
 
-        if len(a.shape) < 2:
-            a = np.expand_dims(a, 0)
+        # if len(a.shape) < 2:
+        #     a = np.expand_dims(a, 0)
 
         s, r, d, t, info = super().step(a)
         return s[0], r[0], d[0], t[0], info
