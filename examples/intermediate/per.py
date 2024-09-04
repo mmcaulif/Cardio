@@ -86,7 +86,7 @@ class PER(crl.Agent):
         if self.update_count % self.targ_freq == 0:
             self.targ_critic.load_state_dict(self.critic.state_dict())
 
-        return {"idxs": batches[0]["idxs"], "p": error.abs().numpy(force=True)}
+        return {"idxs": batches["idxs"], "p": error.abs().numpy(force=True)}
 
     def step(self, state):
         if np.random.rand() > self.eps:
