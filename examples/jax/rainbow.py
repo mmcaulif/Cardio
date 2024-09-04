@@ -127,15 +127,13 @@ class Rainbow(crl.Agent):
                 error = _batch_categorical_double_q_learning(
                     support, q_logits, a, r, discount, support, q_p_logits, q_p
                 )
-                loss = error * w
-                print(loss.shape)
-                exit()
                 mse = jnp.mean(error * w)
                 return mse, error
 
             r = _batch_n_step_returns(0.99, r)
             a = jnp.squeeze(a, -1)
             d = jnp.squeeze(d, -1)
+            w = jnp.squeeze(w, -1)
 
             grads, error = jax.grad(loss_fn, has_aux=True)(
                 train_state.params, train_state, s, a, r, s_p, d, w
