@@ -1,5 +1,4 @@
-"""
-Rainbow from 'Rainbow: Combining Improvements in Deep Reinforcement
+"""Rainbow from 'Rainbow: Combining Improvements in Deep Reinforcement
 Learning' for discrete environments.
 
 Paper:

@@ -41,3 +41,10 @@ repos:
           - commit-msg
         additional_dependencies:
           - "@commitlint/config-angular"
+
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.5
+    hooks:
+      - id: docformatter
+        # additional_dependencies: [tomli]
+        # args: [--in-place --config] #  ./pyproject.toml]

@@ -15,14 +15,15 @@ logging.basicConfig(
 
 class OnPolicyRunner(BaseRunner):
     """The runner is the high level orchestrator that deals with the different
-    components and data, it contains a gatherer, your agent and any replay buffer
-    you might have. The runner calls the gatherer's step function as part its own
-    step function, or as part of its built in warmup (for collecting a large amount
-    of initial data with your agent) and burnin (for randomly stepping through an
-    environment, not collecting data, such as for initialising normalisation values)
-    methods. The runner can either be used via its run method (which iteratively
-    calls the runner.step and the agent.update methods) or with each mothod individually
-    with its step method if you'd like more finegrained control.
+    components and data, it contains a gatherer, your agent and any replay
+    buffer you might have. The runner calls the gatherer's step function as
+    part its own step function, or as part of its built in warmup (for
+    collecting a large amount of initial data with your agent) and burnin (for
+    randomly stepping through an environment, not collecting data, such as for
+    initialising normalisation values) methods. The runner can either be used
+    via its run method (which iteratively calls the runner.step and the
+    agent.update methods) or with each mothod individually with its step method
+    if you'd like more finegrained control.
 
     Attributes:
         env (Environment): The gym environment used to collect transitions and

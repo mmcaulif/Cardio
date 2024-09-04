@@ -8,8 +8,7 @@ from cardio_rl.types import Transition
 
 
 class EffBuffer(TreeBuffer):
-    """
-    In a deterministic setting this should perform the same as tree buffer
+    """In a deterministic setting this should perform the same as tree buffer
     as the sampling indices is the same, will need to investigate...
 
     * Need to sanity check this works as intended

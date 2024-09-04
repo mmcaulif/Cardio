@@ -99,11 +99,12 @@ class Gatherer:
         self.env.reset()
 
     def _flush_step_buffer(self) -> None:
-        """When using n-step transitions and reaching a terminal
-        state, use the remaining individual steps in the step_buffer
-        to not waste information i.e. iterate through states and
-        pad reward. Ignore first step as that has already been
-        added to transition buffer.
+        """When using n-step transitions and reaching a terminal state, use the
+        remaining individual steps in the step_buffer to not waste information
+        i.e. iterate through states and pad reward.
+
+        Ignore first step as that has already been added to transition
+        buffer.
         """
 
         remainder = len(self.step_buffer)

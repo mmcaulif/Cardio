@@ -1,6 +1,5 @@
-"""
-Prioritized Experience Replay from 'Prioritized Experience
-Replay' for discrete environments.
+"""Prioritized Experience Replay from 'Prioritized Experience Replay' for
+discrete environments.
 
 Paper:
 Hyperparameters:

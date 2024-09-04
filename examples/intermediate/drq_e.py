@@ -1,5 +1,4 @@
-"""
-Data regularised Q from 'Image Augmentation Is All You Need: Regularizing
+"""Data regularised Q from 'Image Augmentation Is All You Need: Regularizing
 Deep Reinforcement Learning from Pixels' for discrete environments (Atari
 100k).
 

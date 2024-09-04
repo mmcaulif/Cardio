@@ -90,10 +90,10 @@ class TreeBuffer(BaseBuffer):
         return self.table[key]
 
     def store(self, data: Transition, num: int) -> np.ndarray:
-        """Store the given transitions in the replay buffer. The buffer
-        is circular and determines the indices to be used before placing
-        the MDP elements in the internal table. Also accounts for storing
-        any extra specifications.
+        """Store the given transitions in the replay buffer. The buffer is
+        circular and determines the indices to be used before placing the MDP
+        elements in the internal table. Also accounts for storing any extra
+        specifications.
 
         Args:
             data (Transition): A dictionary containing 1 or more
@@ -129,9 +129,9 @@ class TreeBuffer(BaseBuffer):
         batch_size: Optional[int] = None,
         sample_indxs: Optional[np.ndarray] = None,
     ) -> Transition:
-        """Sample batch_size number of indices between 0 and the current
-        length of the replay buffer. Take each corresponding transition
-        and compile into a new dictionary.
+        """Sample batch_size number of indices between 0 and the current length
+        of the replay buffer. Take each corresponding transition and compile
+        into a new dictionary.
 
         Args:
             batch_size (int): The number of samples to take from the internal table.
@@ -150,8 +150,8 @@ class TreeBuffer(BaseBuffer):
         return batch
 
     def update(self, data: dict):
-        """Update specific keys and indices in the internal table with
-        new or updated data, e.g. latest priorities.
+        """Update specific keys and indices in the internal table with new or
+        updated data, e.g. latest priorities.
 
         Args:
             data (dict): A dictionary containing an "idxs" key with

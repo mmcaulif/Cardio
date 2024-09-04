@@ -23,14 +23,15 @@ logging.basicConfig(
 
 class BaseRunner:
     """The runner is the high level orchestrator that deals with the different
-    components and data, it contains a gatherer, your agent and any replay buffer
-    you might have. The runner calls the gatherer's step function as part its own
-    step function, or as part of its built in warmup (for collecting a large amount
-    of initial data with your agent) and burnin (for randomly stepping through an
-    environment, not collecting data, such as for initialising normalisation values)
-    methods. The runner can either be used via its run method (which iteratively
-    calls the runner.step and the agent.update methods) or with each mothod individually
-    with its step method if you'd like more finegrained control.
+    components and data, it contains a gatherer, your agent and any replay
+    buffer you might have. The runner calls the gatherer's step function as
+    part its own step function, or as part of its built in warmup (for
+    collecting a large amount of initial data with your agent) and burnin (for
+    randomly stepping through an environment, not collecting data, such as for
+    initialising normalisation values) methods. The runner can either be used
+    via its run method (which iteratively calls the runner.step and the
+    agent.update methods) or with each mothod individually with its step method
+    if you'd like more finegrained control.
 
     Attributes:
         env (Environment): The gym environment used to collect transitions and
@@ -114,16 +115,16 @@ class BaseRunner:
             self._warm_start()
 
     def _burn_in(self) -> None:
-        """Step through environment with random agent, e.g. to
-        initialise observation normalisation. Gatherer is
-        reset afterwards.
+        """Step through environment with random agent, e.g. to initialise
+        observation normalisation.
+
+        Gatherer is reset afterwards.
         """
         self._rollout(self.burn_in_len, Agent(self.env))
 
     def _warm_start(self) -> tuple[Transition, int]:
-        """Step through environment with freshly initialised
-        agent, to collect transitions before training via
-        the agents update method.
+        """Step through environment with freshly initialised agent, to collect
+        transitions before training via the agents update method.
 
         Returns:
             Transition: stacked Transitions from environment
@@ -140,9 +141,8 @@ class BaseRunner:
         agent: Optional[Agent] = None,
         transform: Optional[Callable] = None,
     ) -> tuple[Transition, int]:
-        """Internal method to step through environment for a
-        provided number of steps. Return the collected
-        transitions and how many were collected.
+        """Internal method to step through environment for a provided number of
+        steps. Return the collected transitions and how many were collected.
 
         Args:
             steps (int): Number of steps to take in environment.
@@ -191,9 +191,9 @@ class BaseRunner:
     def eval(
         self, rollouts: int, episodes: int, agent: Optional[Agent] = None
     ) -> float:
-        """Step through the eval_env for a given number of episodes using
-        the agents eval_step method, recording the episodic return and
-        calculating the average over all episodes.
+        """Step through the eval_env for a given number of episodes using the
+        agents eval_step method, recording the episodic return and calculating
+        the average over all episodes.
 
         Args:
             episodes (int): The number of episodes to perform with the agent.
@@ -244,10 +244,10 @@ class BaseRunner:
         self, rollouts: int, eval_freq: int = 1_000, eval_episodes: int = 10
     ) -> float:
         """Iteratively run runner.step() for self.rollout_len and pass the
-        batched data through to the agents update step. Stops and calls self.eval
-        every eval_freq with eval_episodes. After all rollouts are taken, a final
-        evaluation step is called and the average episodic returns from the final
-        evaluation step are returned by this method.
+        batched data through to the agents update step. Stops and calls
+        self.eval every eval_freq with eval_episodes. After all rollouts are
+        taken, a final evaluation step is called and the average episodic
+        returns from the final evaluation step are returned by this method.
 
         Args:
             rollouts (int): The number of rollouts of length self.rollout_len to
@@ -278,8 +278,8 @@ class BaseRunner:
     def transform_batch(
         self, batch: list[Transition], transform: Optional[Callable] = None
     ) -> Transition:
-        """Stack a list of Transitions via cardio_rl.tree.stack followed by
-        an optional transformation.
+        """Stack a list of Transitions via cardio_rl.tree.stack followed by an
+        optional transformation.
 
         Args:
             batch (list[Transition]): A list of the Transitions to be stacked.
@@ -318,14 +318,14 @@ class BaseRunner:
         self.agent = new_agent
 
     def reset(self) -> None:
-        """Perform any necessary resets, such as for the gatherer"""
+        """Perform any necessary resets, such as for the gatherer."""
         self.gatherer.reset()
 
     def update(self, data: dict) -> None:
-        """Perform any necessary updates, does nothing in the BaseRunner
+        """Perform any necessary updates, does nothing in the BaseRunner.
 
         data (dict): A dictionary containing the indices and keys/values
-            to be updated.
+        to be updated.
         """
         del data
         pass

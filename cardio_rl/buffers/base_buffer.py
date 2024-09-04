@@ -7,8 +7,7 @@ from cardio_rl.types import Transition
 
 
 class BaseBuffer:
-    """Simple replay buffer that stores transitions as individual
-    attributes.
+    """Simple replay buffer that stores transitions as individual attributes.
 
     Attributes:
         pos: Moving value of the current position to store transitions.
@@ -67,8 +66,7 @@ class BaseBuffer:
         self.d = np.zeros((capacity, 1))
 
     def __len__(self) -> int:
-        """The current amount of transitions stored in the internal
-        table.
+        """The current amount of transitions stored in the internal table.
 
         Returns:
             An integer describing the current length of stored data.
@@ -76,10 +74,10 @@ class BaseBuffer:
         return self.len
 
     def store(self, data: Transition, num: int) -> np.ndarray:
-        """Store the given transitions in the replay buffer. The buffer
-        is circular and determines the indices to be used before placing
-        the MDP elements in the internal table. Also accounts for storing
-        any extra specifications.
+        """Store the given transitions in the replay buffer. The buffer is
+        circular and determines the indices to be used before placing the MDP
+        elements in the internal table. Also accounts for storing any extra
+        specifications.
 
         Args:
             data (Transition): A dictionary containing 1 or more
@@ -117,9 +115,9 @@ class BaseBuffer:
         batch_size: Optional[int] = None,
         sample_indxs: Optional[np.ndarray] = None,
     ) -> Transition:
-        """Sample batch_size number of indices between 0 and the current
-        length of the replay buffer. Take each corresponding transition
-        and compile into a new dictionary.
+        """Sample batch_size number of indices between 0 and the current length
+        of the replay buffer. Take each corresponding transition and compile
+        into a new dictionary.
 
         Args:
             batch_size (int): The number of samples to take from the internal table.
@@ -149,8 +147,8 @@ class BaseBuffer:
         return batch
 
     def update(self, data: dict):
-        """Update specific keys and indices in the internal table with
-        new or updated data, e.g. latest priorities.
+        """Update specific keys and indices in the internal table with new or
+        updated data, e.g. latest priorities.
 
         Args:
             data (dict): A dictionary containing an "idxs" key with
@@ -163,8 +161,7 @@ class BaseBuffer:
 
     @property
     def len(self):
-        """The current amount of transitions stored in the internal
-        table.
+        """The current amount of transitions stored in the internal table.
 
         Returns:
             An integer describing the current length of stored data.

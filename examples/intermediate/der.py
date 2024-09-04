@@ -1,6 +1,5 @@
-"""
-Data Efficient Rainbow from 'When to use parametric models in
-reinforcement learning?' for discrete environments (Atari 100k).
+"""Data Efficient Rainbow from 'When to use parametric models in reinforcement
+learning?' for discrete environments (Atari 100k).
 
 Paper:
 Hyperparameters: https://github.com/google/dopamine/blob/master/dopamine/labs/atari_100k/configs/DER.gin

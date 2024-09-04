@@ -10,14 +10,15 @@ from cardio_rl.types import Environment, Transition
 
 class OffPolicyRunner(BaseRunner):
     """The runner is the high level orchestrator that deals with the different
-    components and data, it contains a gatherer, your agent and any replay buffer
-    you might have. The runner calls the gatherer's step function as part its own
-    step function, or as part of its built in warmup (for collecting a large amount
-    of initial data with your agent) and burnin (for randomly stepping through an
-    environment, not collecting data, such as for initialising normalisation values)
-    methods. The runner can either be used via its run method (which iteratively
-    calls the runner.step and the agent.update methods) or with each mothod individually
-    with its step method if you'd like more finegrained control.
+    components and data, it contains a gatherer, your agent and any replay
+    buffer you might have. The runner calls the gatherer's step function as
+    part its own step function, or as part of its built in warmup (for
+    collecting a large amount of initial data with your agent) and burnin (for
+    randomly stepping through an environment, not collecting data, such as for
+    initialising normalisation values) methods. The runner can either be used
+    via its run method (which iteratively calls the runner.step and the
+    agent.update methods) or with each mothod individually with its step method
+    if you'd like more finegrained control.
 
     TODO: attribute decriptions should be different to the argument descriptions when
     applicable, i.e. for the gathere, the attribute description should describe the
@@ -115,9 +116,8 @@ class OffPolicyRunner(BaseRunner):
         )
 
     def _warm_start(self):
-        """Step through environment with freshly initialised
-        agent, to collect transitions before training via
-        the agents update method.
+        """Step through environment with freshly initialised agent, to collect
+        transitions before training via the agents update method.
 
         Returns:
             Transition: stacked Transitions from environment
@@ -158,8 +158,8 @@ class OffPolicyRunner(BaseRunner):
             return self.buffer.sample(k)
 
     def reset(self) -> None:
-        """Perform any necessary resets, such as for the replay buffer
-        and gatherer.
+        """Perform any necessary resets, such as for the replay buffer and
+        gatherer.
 
         TODO: Move resetting of buffer to itself, currently we end up defaulting
         to a tree buffer even if not originally used.
@@ -171,7 +171,7 @@ class OffPolicyRunner(BaseRunner):
     def update(self, data: dict):
         """Perform any necessary updates to the replay buffer.
 
-        data (dict): A dictionary containing the indices in the 'idxs' key
-            and the other keys/values to be updated.
+        data (dict): A dictionary containing the indices in the 'idxs'
+        key     and the other keys/values to be updated.
         """
         self.buffer.update(data)

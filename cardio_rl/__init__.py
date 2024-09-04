@@ -1,7 +1,4 @@
-"""
-isort:skip_file
-Results in circular imports otherwise
-"""
+"""isort:skip_file Results in circular imports otherwise."""
 
 from cardio_rl import buffers, toy_env, tree, types
 from cardio_rl.agent import Agent

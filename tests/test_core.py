@@ -6,9 +6,7 @@ from cardio_rl.toy_env import ToyEnv
 
 
 class TestStack:
-    """
-    Add reparameterisation for multiple different shapes/data
-    """
+    """Add reparameterisation for multiple different shapes/data."""
 
     def test_data(self):
         d1 = {
@@ -47,9 +45,7 @@ class TestStack:
 
 
 class TestConcatenate:
-    """
-    Add reparameterisation for multiple different shapes/data
-    """
+    """Add reparameterisation for multiple different shapes/data."""
 
     def test_data(self):
         d1 = {

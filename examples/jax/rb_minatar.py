@@ -1,4 +1,4 @@
-"""Reimplementation of revisiting rainbow
+"""Reimplementation of revisiting rainbow.
 
 Paper: https://github.com/JohanSamir/rainbow_extend/blob/main/lifting_veil/Configs/rainbow_invaders.gin
 """
