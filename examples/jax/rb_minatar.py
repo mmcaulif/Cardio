@@ -7,7 +7,7 @@ import flax.linen as nn
 import gymnasium as gym
 import jax
 import jax.numpy as jnp
-from rainbow import NetworkOutputs, Rainbow
+from rainbow import NetworkOutputs, Rainbow  # type: ignore
 
 import cardio_rl as crl
 
@@ -18,12 +18,18 @@ class Q_critic(nn.Module):
 
     @nn.compact
     def __call__(self, state):
+        n_atoms = len(self.support)
+
         z = nn.relu(nn.Conv(16, (3, 3), strides=1)(state))
         z = jnp.reshape(z, -1)
         z = nn.relu(nn.Dense(128)(z))
 
-        q_logits = nn.Dense(self.act_dim * len(self.support))(z)
-        q_logits = jnp.reshape(q_logits, (self.act_dim, len(self.support)))
+        v = nn.Dense(n_atoms)(z)
+        a = nn.Dense(self.act_dim * n_atoms)(z)
+
+        v = jnp.expand_dims(v, -2)
+        a = jnp.reshape(a, (self.act_dim, n_atoms))
+        q_logits = v + a - a.mean(-2, keepdims=True)
 
         q_dist = jax.nn.softmax(q_logits)
         q_values = jnp.sum(q_dist * self.support, axis=-1)
@@ -32,8 +38,8 @@ class Q_critic(nn.Module):
 
 
 def main():
-    env = gym.make("MinAtar/Freeway-v1")
-    # env = gym.make("MinAtar/SpaceInvaders-v1")
+    # env = gym.make("MinAtar/Freeway-v1")
+    env = gym.make("MinAtar/SpaceInvaders-v1")
 
     agent = Rainbow(
         env=env,
