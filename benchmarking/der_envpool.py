@@ -4,11 +4,11 @@ import envpool
 import flax.linen as nn
 import jax.debug
 import jax.numpy as jnp
-from rainbow import Rainbow
 from tqdm import trange
 
 import cardio_rl as crl
 from cardio_rl.wrappers import EnvPoolWrapper
+from examples.intermediate.der import DER
 
 # https://github.com/google-deepmind/dqn_zoo/blob/master/dqn_zoo/rainbow/agent.py
 # https://github.com/google/dopamine/blob/master/dopamine/jax/agents/full_rainbow/full_rainbow_agent.py
@@ -35,19 +35,17 @@ class Q_critic(nn.Module):
     @nn.compact
     def __call__(self, state):
         n_atoms = len(self.support)
-        state /= (
-            255.0  # TODO: figure out where the scaling is done in dopamine and dqnzoo
-        )
+
         z = nn.relu(nn.Conv(32, (5, 5), strides=5)(state))
         z = nn.relu(nn.Conv(64, (5, 5), strides=5)(z))
-        z = jnp.reshape(z, (z.shape[0], -1))
+        z = jnp.reshape(z, (-1))
 
         z = nn.relu(nn.Dense(256)(z))
         v = nn.Dense(n_atoms)(z)
         a = nn.Dense(self.act_dim * n_atoms)(z)
 
         v = jnp.expand_dims(v, -2)
-        a = jnp.reshape(a, (a.shape[0], self.act_dim, n_atoms))
+        a = jnp.reshape(a, (self.act_dim, n_atoms))
         q_logits = v + a - a.mean(-2, keepdims=True)
 
         q_dist = jax.nn.softmax(q_logits)
@@ -72,18 +70,16 @@ def main():
     eval_env = envpool.make_gymnasium("Qbert-v5", num_envs=1)
     eval_env = EnvPoolWrapper(eval_env)
 
+    agent = DER(
+        env=env,
+        critic=Q_critic(
+            act_dim=env.action_space.n, support=jnp.linspace(-10.0, 10.0, 51)
+        ),
+    )
+
     runner = crl.OffPolicyRunner(
         env=env,
-        agent=Rainbow(
-            env=env,
-            critic=Q_critic(
-                act_dim=env.action_space.n, support=jnp.linspace(-10.0, 10.0, 51)
-            ),
-            targ_freq=2_000,
-            n_steps=10,
-            optim_kwargs={"learning_rate": 0.0001, "eps": 0.00015},
-            schedule_len=2_000,
-        ),
+        agent=agent,
         buffer=crl.buffers.PrioritisedBuffer(env=env, capacity=100_000, n_steps=10),
         batch_size=32,
         warmup_len=1_600,

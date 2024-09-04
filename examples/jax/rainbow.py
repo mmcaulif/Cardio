@@ -6,7 +6,6 @@ import distrax  # type: ignore
 import flax.linen as nn
 import gymnasium as gym
 import jax
-import jax.debug
 import jax.numpy as jnp
 import numpy as np
 import optax  # type: ignore
@@ -28,6 +27,7 @@ class Q_critic(nn.Module):
     @nn.compact
     def __call__(self, state):
         n_atoms = len(self.support)
+
         z = nn.relu(nn.Dense(128)(state))
         z = nn.relu(nn.Dense(128)(z))
         v = nn.Dense(n_atoms)(z)
@@ -181,10 +181,10 @@ def main():
         env=env,
         agent=Rainbow(
             env,
-            Q_critic(action_dim=2, support=jnp.linspace(0, 500, 51)),
-            schedule_len=15_000,
-            v_max=500,
-            v_min=0,
+            Q_critic(action_dim=2, support=jnp.linspace(-500, 250, 51)),
+            schedule_len=100_000,
+            v_max=250,
+            v_min=-500,
             optim_kwargs={"learning_rate": 1e-4},
         ),
         buffer=crl.buffers.PrioritisedBuffer(env, n_steps=3),
@@ -192,7 +192,7 @@ def main():
         batch_size=32,
         n_step=3,
     )
-    runner.run(rollouts=12_500, eval_freq=1_250)
+    runner.run(rollouts=250_000, eval_freq=20_000)
 
 
 if __name__ == "__main__":

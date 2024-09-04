@@ -14,8 +14,8 @@ class EnvPoolWrapper(gym.Wrapper):
         #     a = np.expand_dims(a, 0)
 
         s, r, d, t, info = super().step(a)
-        return s[0], r[0], d[0], t[0], info
+        return s[0] / 255.0, r[0], d[0], t[0], info
 
     def reset(self):
         s, info = self.env.reset()
-        return s[0], info
+        return s[0] / 255.0, info
