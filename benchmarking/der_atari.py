@@ -12,15 +12,7 @@ from examples.intermediate.der import DER
 # https://github.com/google-deepmind/dqn_zoo/blob/master/dqn_zoo/rainbow/agent.py
 # https://github.com/google/dopamine/blob/master/dopamine/jax/agents/full_rainbow/full_rainbow_agent.py
 """
-Every so often I get:
-/home/manus/github/Cardio/cardio_rl/buffers/prioritised_buffer.py:103: RuntimeWarning: invalid value encountered in divide
-  probs = self.sumtree.data[sample_indxs] / self.sumtree.total
-
-Is sumtree.total=0 ???
-
-^think the above is solved after fixing the per buffer
-
-Also get random crashes around ~40,000 environment steps with envpool
+Also get random crashes around ~40,000 environment steps with envpool, doesn't seem to happen for gymnasium Atari
 """
 
 
@@ -92,7 +84,7 @@ def main():
 
     steps = how_many_rollouts(100_000, runner.warmup_len, runner.rollout_len)
 
-    runner.run(rollouts=steps, eval_freq=15_000, eval_episodes=10)
+    runner.run(rollouts=steps, eval_freq=7_500, eval_episodes=50)
 
 
 if __name__ == "__main__":
