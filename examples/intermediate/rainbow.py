@@ -135,7 +135,7 @@ class Rainbow(crl.Agent):
                     params, s_p, _keys
                 ).q_values
 
-                discount = jnp.power(gamma, self.n_steps) * (1 - d)
+                discount = jnp.power(gamma, n_steps) * (1 - d)
 
                 # TODO: try find an example of this function being used and make sure you're using it right re: logits
                 error = _batch_categorical_double_q_learning(
@@ -144,7 +144,7 @@ class Rainbow(crl.Agent):
                 mse = jnp.mean(error * w)
                 return mse, error
 
-            r = _batch_n_step_returns(0.99, r)
+            r = _batch_n_step_returns(gamma, r)
             a = jnp.squeeze(a, -1)
             d = jnp.squeeze(d, -1)
             w = jnp.squeeze(w, -1)
