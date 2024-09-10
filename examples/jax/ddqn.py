@@ -1,6 +1,8 @@
+import copy
 import logging
 from typing import Optional
 
+import distrax
 import flax.linen as nn
 import gymnasium as gym
 import jax
@@ -21,7 +23,7 @@ class Q_critic(nn.Module):
         z = nn.relu(nn.Dense(64)(state))
         z = nn.relu(nn.Dense(64)(z))
         q = nn.Dense(self.action_dim)(z)
-        return q
+        return q.squeeze()
 
 
 class DDQN(crl.Agent):
@@ -47,7 +49,8 @@ class DDQN(crl.Agent):
 
         dummy = jnp.zeros(env.observation_space.shape)
         params = critic.init(init_key, dummy)
-        self.targ_params = critic.init(init_key, dummy)
+        self.targ_params = copy.deepcopy(params)
+        self.targ_freq = targ_freq
 
         if use_rmsprop:
             optimizer = optax.rmsprop(**optim_kwargs)
@@ -60,18 +63,18 @@ class DDQN(crl.Agent):
         self.min_eps = min_eps
         self.ann_coeff = self.min_eps ** (1 / schedule_len)
 
-        def _step(train_state, state):
-            q = train_state.apply_fn(train_state.params, state)
-            action = jnp.argmax(q, axis=-1)
+        def _step(train_state: TrainState, state: np.ndarray, epsilon, key):
+            q_values = train_state.apply_fn(train_state.params, state)
+            action = distrax.EpsilonGreedy(q_values, epsilon).sample(seed=key)
             return action
 
         self._step = jax.jit(_step)
 
         def _update(train_state: TrainState, targ_params, s, a, r, s_p, d):
-            def loss_fn(params, train_state: TrainState, s, a, r, s_p, d):
-                q = train_state.apply_fn(params, s)
-                q_p_value = train_state.apply_fn(targ_params, s_p)
-                q_p_selector = train_state.apply_fn(params, s_p)
+            def loss_fn(params, apply_fn, s, a, r, s_p, d):
+                q = jax.vmap(apply_fn, in_axes=(None, 0))(params, s)
+                q_p_value = jax.vmap(apply_fn, in_axes=(None, 0))(targ_params, s_p)
+                q_p_selector = jax.vmap(apply_fn, in_axes=(None, 0))(params, s_p)
                 discount = gamma * (1 - d)
                 error = jax.vmap(rlax.double_q_learning)(
                     q, a, r, discount, q_p_value, q_p_selector
@@ -82,54 +85,42 @@ class DDQN(crl.Agent):
             a = jnp.squeeze(a, -1)
             r = jnp.squeeze(r, -1)
             d = jnp.squeeze(d, -1)
-            grads = jax.grad(loss_fn)(train_state.params, train_state, s, a, r, s_p, d)
-            train_state = train_state.apply_gradients(grads=grads)
-
-            targ_params = optax.periodic_update(
-                train_state.params,
-                targ_params,
-                train_state.step,
-                targ_freq,
+            grads = jax.grad(loss_fn)(
+                train_state.params, train_state.apply_fn, s, a, r, s_p, d
             )
-            return train_state, targ_params
+            train_state = train_state.apply_gradients(grads=grads)
+            return train_state
 
         self._update = jax.jit(_update)
 
     def update(self, batches):
-        s, a, r, s_p, d = (
+        self.ts = self._update(
+            self.ts,
+            self.targ_params,
             batches["s"],
             batches["a"],
             batches["r"],
             batches["s_p"],
             batches["d"],
         )
-        self.ts, self.targ_params = self._update(
-            self.ts,
-            self.targ_params,
-            s,
-            a,
-            r,
-            s_p,
-            d,
-        )
+
+        if self.ts.step % self.targ_freq == 0:
+            self.targ_params = self.ts.params
+
         return {}
 
     def step(self, state):
-        # self.key, act_key = jax.random.split(self.key)
-        # if jax.random.uniform(act_key) > self.eps:
-        if np.random.rand() > self.eps:
-            action = self._step(self.ts, state)
-            action = np.asarray(action)
-        else:
-            action = self.env.action_space.sample()
-
+        self.key, act_key = jax.random.split(self.key)
+        action = self._step(self.ts, state, self.eps, act_key)
+        action = np.asarray(action)
         self.eps = max(self.min_eps, self.eps * self.ann_coeff)
-        return action, {}
+        return action.squeeze(), {}
 
     def eval_step(self, state: np.ndarray):
-        action = self._step(self.ts, state)
+        self.key, act_key = jax.random.split(self.key)
+        action = self._step(self.ts, state, 0.001, act_key)
         action = np.asarray(action)
-        return action
+        return action.squeeze()
 
 
 def main():
