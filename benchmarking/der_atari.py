@@ -83,7 +83,7 @@ def main():
 
     steps = how_many_rollouts(100_000, runner.warmup_len, runner.rollout_len)
 
-    runner.run(rollouts=steps, eval_freq=7_500, eval_episodes=1)
+    runner.run(rollouts=steps, eval_freq=7_500, eval_episodes=50)
 
 
 if __name__ == "__main__":
