@@ -7,7 +7,7 @@ import jax.numpy as jnp
 
 import cardio_rl as crl
 from cardio_rl.wrappers import AtariWrapper
-from examples.intermediate.der import DER
+from examples.intermediate.der import Der
 
 # https://github.com/google-deepmind/dqn_zoo/blob/master/dqn_zoo/rainbow/agent.py
 # https://github.com/google/dopamine/blob/master/dopamine/jax/agents/full_rainbow/full_rainbow_agent.py
@@ -26,16 +26,15 @@ class Q_critic(nn.Module):
     support: jnp.ndarray
 
     @nn.compact
-    def __call__(self, state):
+    def __call__(self, state, key, eval=False):
         n_atoms = len(self.support)
 
-        z = nn.relu(nn.Conv(32, (5, 5), strides=5)(state))
-        z = nn.relu(nn.Conv(64, (5, 5), strides=5)(z))
+        z = crl.nn.DerEncoder()(state)
         z = jnp.reshape(z, (-1))
 
-        z = nn.relu(nn.Dense(256)(z))
-        v = nn.Dense(n_atoms)(z)
-        a = nn.Dense(self.act_dim * n_atoms)(z)
+        z = nn.relu(crl.nn.NoisyDense(256)(z, key, eval))
+        v = crl.nn.NoisyDense(n_atoms)(z, key, eval)
+        a = crl.nn.NoisyDense(self.act_dim * n_atoms)(z, key, eval)
 
         v = jnp.expand_dims(v, -2)
         a = jnp.reshape(a, (self.act_dim, n_atoms))
@@ -62,7 +61,7 @@ def main():
     eval_env = gym.make("QbertNoFrameskip-v4")
     eval_env = AtariWrapper(eval_env, eval=True)
 
-    agent = DER(
+    agent = Der(
         env=env,
         critic=Q_critic(
             act_dim=env.action_space.n, support=jnp.linspace(-10.0, 10.0, 51)
@@ -84,7 +83,7 @@ def main():
 
     steps = how_many_rollouts(100_000, runner.warmup_len, runner.rollout_len)
 
-    runner.run(rollouts=steps, eval_freq=7_500, eval_episodes=50)
+    runner.run(rollouts=steps, eval_freq=7_500, eval_episodes=1)
 
 
 if __name__ == "__main__":

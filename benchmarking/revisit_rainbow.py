@@ -20,12 +20,12 @@ class Q_critic(nn.Module):
     def __call__(self, state):
         n_atoms = len(self.support)
 
-        z = nn.relu(nn.Conv(16, (3, 3), strides=1)(state))
+        z = crl.nn.MinAtarEncoder()(state)
         z = jnp.reshape(z, -1)
-        z = nn.relu(nn.Dense(128)(z))
+        z = nn.relu(crl.nn.NoisyDense(128)(z))
 
-        v = nn.Dense(n_atoms)(z)
-        a = nn.Dense(self.act_dim * n_atoms)(z)
+        v = crl.nn.NoisyDense(n_atoms)(z)
+        a = crl.nn.NoisyDense(self.act_dim * n_atoms)(z)
 
         v = jnp.expand_dims(v, -2)
         a = jnp.reshape(a, (self.act_dim, n_atoms))

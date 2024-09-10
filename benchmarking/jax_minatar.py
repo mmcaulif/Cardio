@@ -11,7 +11,7 @@ class Q_critic(nn.Module):
 
     @nn.compact
     def __call__(self, state):
-        z = nn.relu(nn.Conv(16, (3, 3), strides=1)(state))
+        z = crl.nn.MinAtarEncoder()(state)
         z = jnp.reshape(z, -1)
         z = nn.relu(nn.Dense(128)(z))
         q = nn.Dense(self.act_dim)(z)
@@ -19,7 +19,8 @@ class Q_critic(nn.Module):
 
 
 def main():
-    env = gym.make("MinAtar/Freeway-v1")
+    # env = gym.make("MinAtar/Freeway-v1")
+    env = gym.make("MinAtar/Seaquest-v1")
     # env = gym.make("MinAtar/SpaceInvaders-v1")
 
     agent = DQN(
@@ -50,9 +51,9 @@ def main():
     def how_many_rollouts(env_steps: int, warmup_len: int, rollout_len: int) -> int:
         return int((env_steps - warmup_len) / rollout_len)
 
-    steps = how_many_rollouts(600_000, runner.warmup_len, runner.rollout_len)
+    steps = how_many_rollouts(5_000_000, runner.warmup_len, runner.rollout_len)
 
-    runner.run(rollouts=steps, eval_freq=25_000, eval_episodes=20)
+    runner.run(rollouts=steps, eval_freq=100_000, eval_episodes=50)
 
 
 if __name__ == "__main__":

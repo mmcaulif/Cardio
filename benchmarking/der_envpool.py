@@ -8,7 +8,7 @@ from tqdm import trange
 
 import cardio_rl as crl
 from cardio_rl.wrappers import EnvPoolWrapper
-from examples.intermediate.der import DER
+from examples.intermediate.der import Der
 
 # https://github.com/google-deepmind/dqn_zoo/blob/master/dqn_zoo/rainbow/agent.py
 # https://github.com/google/dopamine/blob/master/dopamine/jax/agents/full_rainbow/full_rainbow_agent.py
@@ -36,8 +36,7 @@ class Q_critic(nn.Module):
     def __call__(self, state):
         n_atoms = len(self.support)
 
-        z = nn.relu(nn.Conv(32, (5, 5), strides=5)(state))
-        z = nn.relu(nn.Conv(64, (5, 5), strides=5)(z))
+        z = crl.nn.DerEncoder()(state)
         z = jnp.reshape(z, (-1))
 
         z = nn.relu(nn.Dense(256)(z))
@@ -70,7 +69,7 @@ def main():
     eval_env = envpool.make_gymnasium("Qbert-v5", num_envs=1)
     eval_env = EnvPoolWrapper(eval_env)
 
-    agent = DER(
+    agent = Der(
         env=env,
         critic=Q_critic(
             act_dim=env.action_space.n, support=jnp.linspace(-10.0, 10.0, 51)

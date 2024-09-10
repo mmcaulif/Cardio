@@ -10,7 +10,6 @@ Rainbow with tuned hyperparameters for sample efficiency
 Notes:
 
 To do:
-* Noisy nets
 * Benchmarking (Atari 100k)
 """
 
@@ -22,7 +21,7 @@ import jax
 import jax.numpy as jnp
 
 import cardio_rl as crl
-from examples.jax.rainbow import Rainbow
+from examples.intermediate.rainbow import Rainbow
 
 
 class NetworkOutputs(NamedTuple):
@@ -30,18 +29,18 @@ class NetworkOutputs(NamedTuple):
     q_logits: jnp.ndarray
 
 
-class Q_critic(nn.Module):
+class DerCritic(nn.Module):
     action_dim: int
     support: jnp.ndarray
 
     @nn.compact
-    def __call__(self, state):
+    def __call__(self, state, key, eval=False):
         n_atoms = len(self.support)
 
-        z = nn.relu(nn.Dense(128)(state))
-        z = nn.relu(nn.Dense(128)(z))
-        v = nn.Dense(n_atoms)(z)
-        a = nn.Dense(self.action_dim * n_atoms)(z)
+        z = nn.relu(crl.nn.NoisyDense(128)(state, key, eval))
+        z = nn.relu(crl.nn.NoisyDense(128)(z, key, eval))
+        v = crl.nn.NoisyDense(n_atoms)(z, key, eval)
+        a = crl.nn.NoisyDense(self.action_dim * n_atoms)(z, key, eval)
 
         v = jnp.expand_dims(v, -2)
         a = jnp.reshape(a, (self.action_dim, n_atoms))
@@ -54,7 +53,7 @@ class Q_critic(nn.Module):
         return NetworkOutputs(q_values=q_values, q_logits=q_logits)
 
 
-class DER(Rainbow):
+class Der(Rainbow):
     def __init__(
         self,
         env: gym.Env,
@@ -91,16 +90,16 @@ class DER(Rainbow):
 
 
 def main():
-    env = gym.make("LunarLander-v2")
+    env = gym.make(
+        "LunarLander-v2"
+    )  # Hyperparams are bad for this env as tuned for Atari 100k
 
-    agent = (
-        DER(
-            env,
-            Q_critic(action_dim=2, support=jnp.linspace(-500, 250, 51)),
-            schedule_len=100_000,
-            v_max=250,
-            v_min=-500,
-        ),
+    agent = Der(
+        env,
+        critic=DerCritic(action_dim=2, support=jnp.linspace(-500, 250, 51)),
+        schedule_len=10_000,
+        v_max=250,
+        v_min=-500,
     )
 
     runner = crl.OffPolicyRunner(
@@ -112,7 +111,7 @@ def main():
         n_step=10,
     )
 
-    runner.run(98_400)
+    runner.run(98_400, eval_freq=10_000)
 
 
 if __name__ == "__main__":
