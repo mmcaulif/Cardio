@@ -7,6 +7,7 @@ import jax
 import numpy as np
 from gymnasium import Env
 from gymnasium.experimental.vector import VectorEnv
+from gymnasium.wrappers import record_episode_statistics
 from tqdm import trange
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -101,6 +102,7 @@ class BaseRunner:
         self.gatherer = gatherer or Gatherer(n_step=n_step)
         self.n_step = n_step
         self.eval_env = eval_env or copy.deepcopy(env)
+        self.eval_env = record_episode_statistics.RecordEpisodeStatistics(self.eval_env)  # type: ignore
 
         self._initial_time = time.time()
 
@@ -205,40 +207,43 @@ class BaseRunner:
             float: Average of the total episodic return received over the
                 evaluation episodes.
         """
-        eval_t = time.time()
         agent = agent or self.agent
-        avg_returns = 0.0
+        avg_r = 0.0
+        avg_l = 0.0
+        sum_t = 0.0
         for _ in range(episodes):
             s, _ = self.eval_env.reset()
-            returns = 0.0
             while True:
                 # TODO: fix below mypy issue
                 a = agent.eval_step(s)  # type: ignore
-                s_p, r, term, trun, _ = self.eval_env.step(a)
+                s_p, _, term, trun, info = self.eval_env.step(a)
                 done = term or trun
-                returns += float(r)
                 s = s_p
                 if done:
-                    avg_returns += returns
+                    avg_r += info["episode"]["r"]
+                    avg_l += info["episode"]["l"]
+                    sum_t += info["episode"]["t"]
                     break
 
-        avg_returns = float(avg_returns / episodes)
+        avg_r = float(avg_r / episodes)
+        avg_l = float(avg_l / episodes)
+        sum_t = float(sum_t)
         with logging_redirect_tqdm():
             env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
             curr_time = round(time.time() - self._initial_time, 2)
-            eval_time = round(time.time() - eval_t, 2)
             metrics = {
                 "Timesteps": env_steps,
                 "Training steps": rollouts,
                 # "Episodes": self.episodes,    # TODO: find a way to implement this
-                "Avg eval returns": round(avg_returns, 2),
+                "Avg eval returns": round(avg_r, 2),
+                "Avg eval episode length": avg_l,
                 "Time passed": curr_time,
-                "Evaluation time": eval_time,
+                "Evaluation time": round(sum_t, 4),
                 "Steps per second": int(env_steps / curr_time),
             }
             logging.info(metrics)
 
-        return avg_returns
+        return avg_r
 
     def run(
         self, rollouts: int, eval_freq: int = 1_000, eval_episodes: int = 10
