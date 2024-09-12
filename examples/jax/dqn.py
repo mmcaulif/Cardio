@@ -1,5 +1,6 @@
 import copy
 import logging
+from functools import partial
 from typing import Optional
 
 import distrax  # type: ignore
@@ -13,6 +14,29 @@ import rlax  # type: ignore
 from flax.training.train_state import TrainState
 
 import cardio_rl as crl
+
+
+def _step(train_state: TrainState, state: np.ndarray, epsilon, key):
+    q_values = train_state.apply_fn(train_state.params, state)
+    action = distrax.EpsilonGreedy(q_values, epsilon).sample(seed=key)
+    return action
+
+
+def _update(train_state: TrainState, targ_params, s, a, r, s_p, d, gamma):
+    def loss_fn(params, apply_fn, s, a, r, s_p, d):
+        q = jax.vmap(apply_fn, in_axes=(None, 0))(params, s)
+        q_p = jax.vmap(apply_fn, in_axes=(None, 0))(targ_params, s_p)
+        discount = gamma * (1 - d)
+        error = jax.vmap(rlax.q_learning)(q, a, r, discount, q_p)
+        mse = jnp.mean(rlax.l2_loss(error))
+        return mse
+
+    a = jnp.squeeze(a, -1)
+    r = jnp.squeeze(r, -1)
+    d = jnp.squeeze(d, -1)
+    grads = jax.grad(loss_fn)(train_state.params, train_state.apply_fn, s, a, r, s_p, d)
+    train_state = train_state.apply_gradients(grads=grads)
+    return train_state
 
 
 class Q_critic(nn.Module):
@@ -63,32 +87,8 @@ class DQN(crl.Agent):
         self.min_eps = min_eps
         self.ann_coeff = self.min_eps ** (1 / schedule_len)
 
-        def _step(train_state: TrainState, state: np.ndarray, epsilon, key):
-            q_values = train_state.apply_fn(train_state.params, state)
-            action = distrax.EpsilonGreedy(q_values, epsilon).sample(seed=key)
-            return action
-
         self._step = jax.jit(_step)
-
-        def _update(train_state: TrainState, targ_params, s, a, r, s_p, d):
-            def loss_fn(params, apply_fn, s, a, r, s_p, d):
-                q = jax.vmap(apply_fn, in_axes=(None, 0))(params, s)
-                q_p = jax.vmap(apply_fn, in_axes=(None, 0))(targ_params, s_p)
-                discount = gamma * (1 - d)
-                error = jax.vmap(rlax.q_learning)(q, a, r, discount, q_p)
-                mse = jnp.mean(rlax.l2_loss(error))
-                return mse
-
-            a = jnp.squeeze(a, -1)
-            r = jnp.squeeze(r, -1)
-            d = jnp.squeeze(d, -1)
-            grads = jax.grad(loss_fn)(
-                train_state.params, train_state.apply_fn, s, a, r, s_p, d
-            )
-            train_state = train_state.apply_gradients(grads=grads)
-            return train_state
-
-        self._update = jax.jit(_update)
+        self._update = jax.jit(partial(_update, gamma=gamma))
 
     def update(self, batches):
         self.ts = self._update(

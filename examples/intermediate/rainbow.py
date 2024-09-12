@@ -1,5 +1,6 @@
 import copy
 import logging
+from functools import partial
 from typing import NamedTuple, Optional
 
 import distrax  # type: ignore
@@ -13,6 +14,73 @@ import rlax  # type: ignore
 from flax.training.train_state import TrainState
 
 import cardio_rl as crl
+
+
+def _step(train_state: TrainState, state: np.ndarray, epsilon, key, eval=False):
+    eps_key, noise_key = jax.random.split(key)
+    q_values = train_state.apply_fn(train_state.params, state, noise_key, eval).q_values
+    action = distrax.EpsilonGreedy(q_values, epsilon).sample(seed=eps_key)
+    return action
+
+
+def n_step_returns(gamma, r):
+    def _body(acc, xs):
+        returns = xs
+        acc = returns + gamma * acc
+        return acc, acc
+
+    returns, _ = jax.lax.scan(_body, 0.0, r, reverse=True)
+    return returns
+
+
+def _update(
+    train_state: TrainState,
+    targ_params,
+    s,
+    a,
+    r,
+    s_p,
+    d,
+    w,
+    key,
+    gamma,
+    n_steps,
+    support,
+):
+    def loss_fn(params, train_state: TrainState, s, a, r, s_p, d, w, key):
+        keys = jax.random.split(key, 3)
+
+        _keys = jax.random.split(keys[0], len(a))
+        q_logits = jax.vmap(train_state.apply_fn, (None, 0, 0))(
+            params, s, _keys
+        ).q_logits
+
+        _keys = jax.random.split(keys[1], len(a))
+        q_p_logits = jax.vmap(train_state.apply_fn, (None, 0, 0))(
+            targ_params, s_p, _keys
+        ).q_logits
+
+        _keys = jax.random.split(keys[2], len(a))
+        q_p = jax.vmap(train_state.apply_fn, (None, 0, 0))(params, s_p, _keys).q_values
+
+        discount = jnp.power(gamma, n_steps) * (1 - d)
+
+        error = jax.vmap(
+            rlax.categorical_double_q_learning, in_axes=(None, 0, 0, 0, 0, None, 0, 0)
+        )(support, q_logits, a, r, discount, support, q_p_logits, q_p)
+        mse = jnp.mean(error * w)
+        return mse, error
+
+    r = jax.vmap(n_step_returns, in_axes=(None, 0))(gamma, r)
+    a = jnp.squeeze(a, -1)
+    d = jnp.squeeze(d, -1)
+    w = jnp.squeeze(w, -1)
+
+    grads, error = jax.grad(loss_fn, has_aux=True)(
+        train_state.params, train_state, s, a, r, s_p, d, w, key
+    )
+    train_state = train_state.apply_gradients(grads=grads)
+    return train_state, error
 
 
 class NetworkOutputs(NamedTuple):
@@ -91,71 +159,10 @@ class Rainbow(crl.Agent):
         self.min_eps = min_eps
         self.ann_coeff = self.min_eps ** (1 / schedule_len)
 
-        def _step(train_state: TrainState, state: np.ndarray, epsilon, key, eval=False):
-            eps_key, noise_key = jax.random.split(key)
-            q_values = train_state.apply_fn(
-                train_state.params, state, noise_key, eval
-            ).q_values
-            action = distrax.EpsilonGreedy(q_values, epsilon).sample(seed=eps_key)
-            return action
-
         self._step = jax.jit(_step)
-
-        def n_step_returns(gamma, r):
-            def _body(acc, xs):
-                returns = xs
-                acc = returns + gamma * acc
-                return acc, acc
-
-            returns, _ = jax.lax.scan(_body, 0.0, r, reverse=True)
-            return returns
-
-        _batch_n_step_returns = jax.vmap(n_step_returns, in_axes=(None, 0))
-
-        _batch_categorical_double_q_learning = jax.vmap(
-            rlax.categorical_double_q_learning, in_axes=(None, 0, 0, 0, 0, None, 0, 0)
+        self._update = jax.jit(
+            partial(_update, gamma=gamma, n_steps=n_steps, support=support)
         )
-
-        def _update(train_state: TrainState, targ_params, s, a, r, s_p, d, w, key):
-            def loss_fn(params, train_state: TrainState, s, a, r, s_p, d, w, key):
-                keys = jax.random.split(key, 3)
-
-                _keys = jax.random.split(keys[0], len(a))
-                q_logits = jax.vmap(train_state.apply_fn, (None, 0, 0))(
-                    params, s, _keys
-                ).q_logits
-
-                _keys = jax.random.split(keys[1], len(a))
-                q_p_logits = jax.vmap(train_state.apply_fn, (None, 0, 0))(
-                    targ_params, s_p, _keys
-                ).q_logits
-
-                _keys = jax.random.split(keys[2], len(a))
-                q_p = jax.vmap(train_state.apply_fn, (None, 0, 0))(
-                    params, s_p, _keys
-                ).q_values
-
-                discount = jnp.power(gamma, n_steps) * (1 - d)
-
-                # TODO: try find an example of this function being used and make sure you're using it right re: logits
-                error = _batch_categorical_double_q_learning(
-                    support, q_logits, a, r, discount, support, q_p_logits, q_p
-                )
-                mse = jnp.mean(error * w)
-                return mse, error
-
-            r = _batch_n_step_returns(gamma, r)
-            a = jnp.squeeze(a, -1)
-            d = jnp.squeeze(d, -1)
-            w = jnp.squeeze(w, -1)
-
-            grads, error = jax.grad(loss_fn, has_aux=True)(
-                train_state.params, train_state, s, a, r, s_p, d, w, key
-            )
-            train_state = train_state.apply_gradients(grads=grads)
-            return train_state, error
-
-        self._update = jax.jit(_update)
 
     def update(self, batches):
         self.key, update_key = jax.random.split(self.key)
