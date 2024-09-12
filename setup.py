@@ -5,7 +5,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = 'cardio_rl',
+    name = 'cardio-rl',
     packages=find_packages(),
     install_requires=[
         "numpy>=1.21.0",
