@@ -32,7 +32,9 @@ class AtariWrapper(gym.Wrapper):
         s, r, d, t, info = super().step(a)
         return self._from_lazyframes(s), r, d, t, info
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        del seed
+        del options
         s, info = self.env.reset()
         return self._from_lazyframes(s), info
 
