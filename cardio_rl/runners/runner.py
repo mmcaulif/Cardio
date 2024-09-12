@@ -293,12 +293,6 @@ class BaseRunner:
             Transition: The stacked input list of Transitions.
         """
 
-        # print([step['s'].shape for step in batch])
-        # print([step['a'].shape for step in batch])
-        # print([step['r'].shape for step in batch])
-        # print([step['s_p'].shape for step in batch])
-        # print([step['d'].shape for step in batch])
-        # exit()
         transformed_batch = crl.tree.stack(batch)
 
         def _expand(arr):
