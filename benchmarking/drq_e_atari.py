@@ -4,15 +4,33 @@ import jax.numpy as jnp
 
 import cardio_rl as crl
 from cardio_rl.wrappers import AtariWrapper
-from examples.jax.drq_e import DrQ
+from examples.intermediate.drq_e import DrQ
+
+# class Q_critic(nn.Module):
+#     act_dim: int
+
+#     @nn.compact
+#     def __call__(self, state):
+#         z = crl.nn.NatureEncoder()(state)
+#         z = jnp.reshape(z, (-1))
+
+#         z = nn.relu(nn.Dense(512)(z))
+#         v = nn.Dense(1)(z)
+#         a = nn.Dense(self.act_dim)(z)
+
+#         v = jnp.expand_dims(v, -2)
+#         q = v + a - a.mean(-1, keepdims=True)
+#         return q.squeeze()
 
 
 class Q_critic(nn.Module):
+    """Der Network, not actually used by DrQ but faster."""
+
     act_dim: int
 
     @nn.compact
     def __call__(self, state):
-        z = crl.nn.DerEncoder()(state)  # Which is used for DrQ?
+        z = crl.nn.DerEncoder()(state)
         z = jnp.reshape(z, (-1))
 
         z = nn.relu(nn.Dense(256)(z))
@@ -26,14 +44,16 @@ class Q_critic(nn.Module):
 
 def main():
     """
+    Amidar:
+        random: 5.8, DER: 188.6, DrQ: 102.8
     Qbert:
-        random: 163.9, DER: 1152.9, DrQ:
+        random: 163.9, DER: 1152.9, DrQ: 854.4
     """
 
-    env = gym.make("QbertNoFrameskip-v4")
+    env = gym.make("AmidarNoFrameskip-v4")
     env = AtariWrapper(env)
 
-    eval_env = gym.make("QbertNoFrameskip-v4")
+    eval_env = gym.make("AmidarNoFrameskip-v4")
     eval_env = AtariWrapper(eval_env, eval=True)
 
     agent = DrQ(
