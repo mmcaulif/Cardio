@@ -18,6 +18,8 @@
 1. [ ] add a logo to top of readme
   * A robot version of the running man emoji maybe? Or something similar
 1. [ ] Final review and draft of Readme
+1. [ ] Move Jax agents, architectures and loss functions to separate library (sprinters)
+  * Make sure the implementations are consistent (i.e. update functions outside of class)
 
 Once done with the 0.1.0 version, send to different people for feedback
 
@@ -26,18 +28,12 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [x] Add num for buffer's store method to part of runner/gatherer, instead of manually calculated
   * [x] Verify that Runner can be used without supplying an agent in a manner as expected
     * an agent will need to be initially supplied for warmup but allow for it afterwards
-  * [ ] Make it so if an agent isnt passed initially, the warmup will use a random policy (necessary?)
+  * [ ] Make it so if an agent isnt passed initially, the warmup will use a random policy (Need to check this works as intended)
 
-* [ ] Improve extensibility
-  * [x] Agents should be able to use and save extras (such as log probs)
-    * add indices sampled to batch data outputted (?)
-  * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
-    * this ties into the above with using pytree's internally within the gatherer
-  * [ ] Implement dopamine Rainbow as an intermediate example
-    * [x] PER
-    * [x] n-step returns
-    * [ ] C51
-    * outline benchmark plan
+* [ ] Debug/diagnose memory issue:
+  * When using HTOP the SWP memory slowly reaches 100%, implying a memory leak or an issue, altough should explore further
+  * Does slowness coincide with 100% SWP usage? Confirm the correlation...
+  * Is it just Jax implementations?
 
 * [ ] Make library presentable
   * [ ] Doc strings for Runner, Gatherer and other components to make it easier to understand!!!
@@ -45,14 +41,6 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [ ] Readme and docs, look at stoix for inspo
     * [x] Pseudocode for gatherer internals
   * [ ] Extensive testing!!!
-
-* [ ] MinAtar and Atari examples
-  * [x] MinAtar: Seems to work seamlessly so far, need to write a network for it and train DQN
-    * MinAtar DQN appears to match performance from paper in initial benchmarks of Freeway!
-  * [ ] Atari:
-  * [ ] Envpool:
-
-* [ ] Expose hyperparameters for all examples, have the benchmark directory import from examples
 
 * [ ] Improve logging
   * [x] Current time spent
@@ -71,10 +59,6 @@ __Focus on getting some form of Cardio as a finished deliverable__
 ## Post alpha release
 * [ ] Pip package with github actions for releases
 
-* [ ] Jax agent stubs
-  * [ ] Will need to get access to a linux machine with a GPU to properly evaluate performance/speed
-  * [ ] Consider different popular algorithms and how they could be implemented easily
-
 * [ ] Docker file
 
 * [ ] Other replay buffers:
@@ -89,6 +73,7 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [ ] Outline benchmarking roadmap
   * [ ] Make seperate repo
+
 * [ ] Outline speed, profiling and optimisation roadmap
 
 * [ ] Make seperate repo for research/experimenting template
@@ -96,6 +81,28 @@ __Focus on getting some form of Cardio as a finished deliverable__
 * [ ] Add a system design diagram to readme
 
 # Done
+
+
+* [ ] MinAtar and Atari examples
+  * [x] MinAtar: Seems to work seamlessly so far, need to write a network for it and train DQN
+    * MinAtar DQN appears to match performance from paper in initial benchmarks of Freeway!
+  * [x] Atari: inital DER runs are good
+  * [x] Envpool: inital DER runs are good
+
+* [x] Expose hyperparameters for all examples, have the benchmark directory import from examples
+
+* [x] Improve extensibility
+  * [x] Agents should be able to use and save extras (such as log probs)
+    * add indices sampled to batch data outputted (?)
+  * [x] Implement a pytree based replay buffer with saving of multiple transitions in parallel
+    * this ties into the above with using pytree's internally within the gatherer
+  * [x] Implement Rainbow as an intermediate example
+    * [x] PER
+    * [x] n-step returns
+    * [x] C51
+    * [x] Noisy networks
+    * outline benchmark plan
+
 * [x] Simple examples
 * [x] Linting and typing
 * [x] Precommit hooks
@@ -115,3 +122,5 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [x] While trying to implement A2C and PPO, you broke the runner/gatherer, it is mostly fixed
       but double check everything! Further proof that testing is needed...
+
+* [x] Jax agent stubs
