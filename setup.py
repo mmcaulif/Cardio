@@ -16,7 +16,7 @@ def read_requirements(name):
 
 
 setup(
-    name="cardio_rl",
+    name="cardio-rl",
     packages=find_packages(),
     install_requires=read_requirements("requirements.txt"),
     extras_require={
@@ -32,8 +32,8 @@ setup(
     license="MIT",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
-    version="0.0.4",
-    python_requires=">=3.7",
+    version="0.1.0",
+    python_requires=">=3.10",
     # PyPI package information.
     classifiers=[
         "Development Status :: 3 - Alpha",
