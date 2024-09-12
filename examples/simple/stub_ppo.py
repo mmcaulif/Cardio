@@ -86,7 +86,7 @@ class PPO(crl.Agent):
                 mb_idxs = idxs[n * mb_size : (n + 1) * mb_size]
 
                 new_v = self.critic(s[mb_idxs]).squeeze(-1)
-                critic_loss = th.mean((new_v - returns[mb_idxs]) ** 2)
+                critic_loss = th.mean((returns[mb_idxs] - new_v) ** 2)
 
                 probs = self.actor(s[mb_idxs])
                 dist = th.distributions.Categorical(probs)
