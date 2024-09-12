@@ -19,7 +19,7 @@ setup(
     license = 'MIT',
     long_description=read('README.md'),
     long_description_content_type="text/markdown",
-    version = '0.0.4',
+    version = '0.0.5',
     python_requires=">=3.7",
     
     # PyPI package information.
