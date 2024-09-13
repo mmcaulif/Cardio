@@ -13,6 +13,8 @@ hyperpameters and M/K random augmentations applied to S/S_p respectively.
 Notes:
 Target networks are seemingly removed as target update period = 1.
 
+TODO: need to double check if we calculate a seperate loss function of the unaugmented S/S_p too
+
 To do:
 * Image augmentation
 * Benchmarking (Atari 100k)
@@ -110,7 +112,7 @@ class DrQ(crl.Agent):
         schedule_len: int = 5000,
         seed: Optional[int] = None,
     ):
-        seed = seed or np.random.randint(0, 2e16)
+        seed = seed or np.random.randint(0, int(2e16))
         logging.info(f"Seed: {seed}")
         self.key = jax.random.PRNGKey(seed)
         self.key, init_key = jax.random.split(self.key)
@@ -151,19 +153,24 @@ class DrQ(crl.Agent):
 
         def _update(train_state: TrainState, s, a, r, s_p, d, key):
             def loss_fn(params, apply_fn, s, a, r, s_p, d, key):
-                keys = jax.random.split(key)
-
-                _keys = jax.random.split(keys[0], len(s))
-                aug_s = jax.vmap(drq_image_augmentation)(s, _keys)
-                q = jax.vmap(apply_fn, in_axes=(None, 0))(params, aug_s)
-
-                _keys = jax.random.split(keys[1], len(s))
-                aug_s_p = jax.vmap(drq_image_augmentation)(s_p, _keys)
-                q_p = jax.vmap(apply_fn, in_axes=(None, 0))(params, aug_s_p)
                 discount = jnp.power(gamma, n_steps) * (1 - d)
 
+                q = jax.vmap(apply_fn, in_axes=(None, 0))(params, s)
+                q_p = jax.vmap(apply_fn, in_axes=(None, 0))(params, s_p)
+
                 error = jax.vmap(rlax.q_learning)(q, a, r, discount, q_p)
-                mse = jnp.mean(jnp.square(error))
+
+                keys = jax.random.split(key)
+                _keys = jax.random.split(keys[0], len(s))
+                aug_s = jax.vmap(drq_image_augmentation)(s, _keys)
+
+                aug_q = jax.vmap(apply_fn, in_axes=(None, 0))(params, aug_s)
+                _keys = jax.random.split(keys[1], len(s))
+                aug_s_p = jax.vmap(drq_image_augmentation)(s_p, _keys)
+                aug_q_p = jax.vmap(apply_fn, in_axes=(None, 0))(params, aug_s_p)
+
+                aug_error = jax.vmap(rlax.q_learning)(aug_q, a, r, discount, aug_q_p)
+                mse = jnp.mean(jnp.square(aug_error)) + jnp.mean(jnp.square(error))
                 return mse
 
             r = _batch_n_step_returns(gamma, r)

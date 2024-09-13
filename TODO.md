@@ -11,12 +11,9 @@
   * [x] examples, include code snippets
   * [ ] development
   * [x] write a better description
-  * [ ] look at other repo's for inspo
   * [x] add some emoji's for fun
 1. [ ] add custom templates for issues and PR's
   * look at other repo's for inspo and give credit
-1. [ ] add a logo to top of readme
-  * A robot version of the running man emoji maybe? Or something similar
 1. [ ] Final review and draft of Readme
 1. [ ] Move Jax agents, architectures and loss functions to separate library (sprinters)
   * Make sure the implementations are consistent (i.e. update functions outside of class)
@@ -30,34 +27,28 @@ Once done with the 0.1.0 version, send to different people for feedback
     * an agent will need to be initially supplied for warmup but allow for it afterwards
   * [ ] Make it so if an agent isnt passed initially, the warmup will use a random policy (Need to check this works as intended)
 
-* [ ] Debug/diagnose memory issue:
-  * When using HTOP the SWP memory slowly reaches 100%, implying a memory leak or an issue, altough should explore further
-  * Does slowness coincide with 100% SWP usage? Confirm the correlation...
-  * Is it just Jax implementations?
-
 * [ ] Make library presentable
   * [ ] Doc strings for Runner, Gatherer and other components to make it easier to understand!!!
     * Use google style docstrings
   * [ ] Readme and docs, look at stoix for inspo
     * [x] Pseudocode for gatherer internals
-  * [ ] Extensive testing!!!
 
 * [ ] Improve logging
   * [x] Current time spent
   * [x] Env steps per second
   * [x] Move logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
-  * [ ] Make logger/metrics system extensible (use dictionaries to pass around)
-    * [ ] Make agent's eval steps return extras dict that can be used during evaluation
   * [ ] Rich logging, make it pretty and formatted well!!!
   * [x] Explore if logging could be done outside the gatherer (as its very nested)
   * [x] Figure out a way to make logging extensible and customisable
-  * [ ] Gatherer maybe return episodes completed?
-  * [ ] Integrated loggers: WandB, Neptune, Tensorboard etc.
 
 __Focus on getting some form of Cardio as a finished deliverable__
 
 ## Post alpha release
-* [ ] Pip package with github actions for releases
+* [ ] Extensive testing!!!
+
+* [ ] Integrated loggers: WandB, Neptune, Tensorboard etc.
+
+* [ ] Start using Astral UV
 
 * [ ] Docker file
 
@@ -82,6 +73,7 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 # Done
 
+* [x] Pip package with github actions for releases
 
 * [ ] MinAtar and Atari examples
   * [x] MinAtar: Seems to work seamlessly so far, need to write a network for it and train DQN
