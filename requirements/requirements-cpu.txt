@@ -1,5 +1,1 @@
 jax[cpu]
-distrax
-flax
-rlax
-optax
