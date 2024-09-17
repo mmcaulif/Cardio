@@ -21,8 +21,10 @@ class AtariWrapper(gym.Wrapper):
 
         Args:
             env (gym.Env): The instantiated gymnasium environment.
-            action_repeat_probability (float, optional): Probaility of a sticky action. Defaults to 0.0.
-            eval (bool, optional): If set to true, rewards are not clipped and episodes do not end on life loss. Defaults to False.
+            action_repeat_probability (float, optional): Probaility of a sticky
+                action. Defaults to 0.0.
+            eval (bool, optional): If set to true, rewards are not clipped and
+                episodes do not end on life loss. Defaults to False.
         """
         if not eval:
             env = atari_wrappers.AtariWrapper(
