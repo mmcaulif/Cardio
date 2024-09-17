@@ -1,22 +1,29 @@
-import numpy as np
-from gymnasium import Env
-from gymnasium.experimental.vector import VectorEnv
+from typing import Any
 
-from cardio_rl.types import Transition
+import numpy as np
+
+from cardio_rl.types import Environment, Transition
 
 
 class Agent:
-    """_summary_"""
+    """Base class for Cardio agents. Provides base methods that can be used as
+    a dummy agent or inherited and overriden when implementing your own agent.
 
-    def __init__(self, env: Env | VectorEnv):
+    Attributes:
+        env (Environment): The gym environment used to collect transitions and
+            train the agent.
+    """
+
+    def __init__(self, env: Environment):
         """_summary_
 
         Args:
-            env (Env): _description_
+            env (Environment): The gym environment used to collect transitions and
+                train the agent.
         """
         self.env = env
 
-    def view(self, transition: Transition, extra: dict):
+    def view(self, transition: Transition, extra: dict) -> dict:
         """_summary_
 
         Args:
@@ -24,40 +31,46 @@ class Agent:
             extra (dict): _description_
 
         Returns:
-            _type_: _description_
+            dict: _description_
         """
+        del transition
         return extra
 
-    def step(self, state: np.ndarray):
+    def step(self, state: np.ndarray) -> tuple[Any, dict]:
         """_summary_
 
         Args:
             state (np.ndarray): _description_
 
         Returns:
-            _type_: _description_
+            tuple[Any, dict]: _description_
         """
+        del state
         return self.env.action_space.sample(), {}
 
-    def eval_step(self, state: np.ndarray):
+    def eval_step(self, state: np.ndarray) -> Any:
         """_summary_
 
         Args:
             state (np.ndarray): _description_
 
         Returns:
-            _type_: _description_
+            Any: _description_
         """
         a, _ = self.step(state)
         return a
 
-    def update(self, data: list[Transition]):
+    def update(self, data: list[Transition]) -> dict:
         """_summary_
 
         Args:
             data (list[Transition]): _description_
+
+        Returns:
+            dict: _description_
         """
-        pass
+        del data
+        return {}
 
     def terminal(self):
         """_summary_"""
