@@ -7,7 +7,10 @@ from cardio_rl.types import Transition
 
 
 class BaseBuffer:
-    """Simple replay buffer that stores transitions as individual attributes.
+    """Simple replay buffer that stores transitions as numpy arrays in
+    individual attributes.
+
+    Internal keys: s, a, r, s_p, or d.
 
     Attributes:
         pos: Moving value of the current position to store transitions.
@@ -30,7 +33,8 @@ class BaseBuffer:
         capacity: int = 1_000_000,
         n_steps: int = 1,
     ):
-        """_summary_
+        """Initialises the replay buffer, automatically building the table
+        using provided parameters and an environment.
 
         Args:
             env (Env): Gymnasium environment used to construct the buffer shapes.
@@ -76,8 +80,7 @@ class BaseBuffer:
     def store(self, data: Transition, num: int) -> np.ndarray:
         """Store the given transitions in the replay buffer. The buffer is
         circular and determines the indices to be used before placing the MDP
-        elements in the internal table. Also accounts for storing any extra
-        specifications.
+        elements in the internal table.
 
         Args:
             data (Transition): A dictionary containing 1 or more
@@ -86,8 +89,8 @@ class BaseBuffer:
                 data.
 
         Returns:
-            The entire numpy array of the indices used to store
-            the provided data.
+            np.ndarray: The entire numpy array of the indices used to store
+                the provided data.
         """
 
         idxs = np.arange(self.pos, self.pos + num) % self.capacity
@@ -116,16 +119,19 @@ class BaseBuffer:
         sample_indxs: Optional[np.ndarray] = None,
     ) -> Transition:
         """Sample batch_size number of indices between 0 and the current length
-        of the replay buffer. Take each corresponding transition and compile
-        into a new dictionary.
+        of the replay buffer, or use provided indices. Take each corresponding
+        transition and compile into a new dictionary.
 
         Args:
             batch_size (int): The number of samples to take from the internal table.
 
+        Raises:
+            ValueError: Trying to pass both a batch_size and sample_indxs, can only use one.
+
         Returns:
-            A dictionary containing the MDP elements of transitions
-            sampled from the buffer as well as the indices used (accessed
-            using the "idxs" key).
+            Transition: A dictionary containing the MDP elements of transitions
+                sampled from the buffer as well as the indices used (accessed
+                using the "idxs" key).
         """
 
         if batch_size and sample_indxs:
@@ -147,8 +153,12 @@ class BaseBuffer:
         return batch
 
     def update(self, data: dict):
-        """Update specific keys and indices in the internal table with new or
-        updated data, e.g. latest priorities.
+        """Dummy function in BaseBuffer but implemented in children classes.
+        Used to Update specific keys and indices in the internal table with new
+        or updated data, e.g. latest priorities.
+
+        Raise:
+            UserWarning: Passing data to this dummy update function.
 
         Args:
             data (dict): A dictionary containing an "idxs" key with

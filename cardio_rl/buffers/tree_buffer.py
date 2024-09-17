@@ -10,11 +10,10 @@ from cardio_rl.types import Environment, Transition
 
 
 class TreeBuffer(BaseBuffer):
-    """Extensible replay buffer that stores transitions as a dictionary.
+    """Extensible replay buffer that stores transitions as a dictionary and
+    allows for extra elements to be stored and sampled per transition.
 
-    Longer class information...
-
-    s, a, r, s_p, d, or one of the extra specs provided.
+    Internal keys: s, a, r, s_p, d, or one of the extra specs provided.
 
     Attributes:
         pos: Moving record of the current position to store transitions.
@@ -30,7 +29,8 @@ class TreeBuffer(BaseBuffer):
         extra_specs: dict = {},
         n_steps: int = 1,
     ):
-        """_summary_
+        """Initialises the replay buffer, automatically building the table
+        using provided parameters, an environment and optional extras.
 
         Args:
             env (Env): Gymnasium environment used to construct the buffer shapes.
@@ -76,16 +76,17 @@ class TreeBuffer(BaseBuffer):
 
             self.table.update(extras)
 
-    def __call__(self, key: str) -> np.array:
-        """Access specific MDP elements in the internal table.
+    def __call__(self, key: str) -> np.ndarray:
+        """Access specific MDP table in the internal table using the
+        corresponding key.
 
         Args:
             key (str): The key of the element to be accessed.
 
         Returns:
-            The entire numpy array of the requested element from the
-            internal table. Will contain zeros in indices not yet
-            used for storage.
+            np.ndarray: The entire numpy array of the requested element from the
+                internal table. Will contain zeros in indices not yet
+                used for storage.
         """
         return self.table[key]
 
@@ -102,8 +103,8 @@ class TreeBuffer(BaseBuffer):
                 data.
 
         Returns:
-            The entire numpy array of the indices used to store
-            the provided data.
+            np.ndarray: The entire numpy array of the indices used to store
+                the provided data.
         """
 
         def _place(arr, x, idx):
@@ -130,17 +131,26 @@ class TreeBuffer(BaseBuffer):
         sample_indxs: Optional[np.ndarray] = None,
     ) -> Transition:
         """Sample batch_size number of indices between 0 and the current length
-        of the replay buffer. Take each corresponding transition and compile
-        into a new dictionary.
+        of the replay buffer, or use provided indices. Take each corresponding
+        transition and compile into a new dictionary.
 
         Args:
             batch_size (int): The number of samples to take from the internal table.
 
+        Raises:
+            ValueError: Trying to pass both a batch_size and sample_indxs, can only use one.
+
         Returns:
-            A dictionary containing the MDP elements of transitions
-            sampled from the buffer as well as the indices used (accessed
-            using the "idxs" key).
+            Transition: A dictionary containing the MDP elements of transitions
+                sampled from the buffer as well as the indices used (accessed
+                using the "idxs" key).
         """
+
+        if batch_size and sample_indxs:
+            raise ValueError(
+                "Passing both a batch size and indices to sample method, please only provide one"
+            )
+
         # TODO: raise an error/warning when batch_size and sample_indxs are both passed.
         if batch_size and sample_indxs is None:
             sample_indxs = np.random.randint(low=0, high=self.len, size=batch_size)
@@ -161,46 +171,3 @@ class TreeBuffer(BaseBuffer):
         for key, val in data.items():
             if key in self.table:
                 self.table[key][idxs] = val
-
-
-# def main():
-#     env = gym.make("CartPole-v1")
-#     buffer = TreeBuffer(env, capacity=10)
-
-#     print(buffer("p"))
-#     buffer.update(
-#         {
-#             "idxs": np.arange(8),
-#             "p": np.expand_dims(np.sin(np.arange(8)), -1),
-#         }
-#     )
-#     print(buffer("p"))
-#     exit()
-
-#     s, _ = env.reset()
-
-#     for i in range(3_000):
-#         a = env.action_space.sample()
-#         s_p, r, d, t, _ = env.step(a)
-#         d = d or t
-
-#         transition = {
-#             "s": s,
-#             "a": a,
-#             "r": r,
-#             "s_p": s_p,
-#             "d": d,
-#         }
-
-#         buffer.store(transition)
-
-#         if d:
-#             s_p, _ = env.reset()
-
-#         s = s_p
-
-#     print(buffer.sample(4))
-
-
-# if __name__ == "__main__":
-#     main()
