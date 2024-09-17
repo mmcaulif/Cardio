@@ -19,6 +19,21 @@ class Logger:
         log_dir=None,
         exp_name="exp",
     ) -> None:
+        """_summary_
+
+        Args:
+            n_envs (int, optional): _description_. Defaults to 1.
+            log_interval (int, optional): _description_. Defaults to 5000.
+            episode_window (int, optional): _description_. Defaults to 50.
+            tensorboard (bool, optional): _description_. Defaults to False.
+            log_dir (_type_, optional): _description_. Defaults to None.
+            exp_name (str, optional): _description_. Defaults to "exp".
+
+        Raises:
+            NotImplementedError: Current Logger class is deprecated. New
+                version is not yet ready.
+        """
+        raise NotImplementedError
         self.n_envs = n_envs
         self.log_interval = log_interval
         self.tensorboard = tensorboard
