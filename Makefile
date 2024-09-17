@@ -2,6 +2,7 @@
 precommit_setup:
 	pre-commit --version
 	pre-commit install
+	pre-commit install -t commit-msg
 
 .PHONY: precommit_run
 precommit_run:
