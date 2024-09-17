@@ -4,6 +4,17 @@ import numpy as np
 
 class EnvPoolWrapper(gym.Wrapper):
     def __init__(self, env: gym.Env):
+        """Wrapper that allows Envpool atari environments to be used as a drop
+        in replacement for gymnasium Atari environments by ensuring action
+        dtype is int32 and squeezing the MDP elements.
+
+        Args:
+            env (gym.Env): _description_
+
+        Raises:
+            NotImplementedError: _description_
+        """
+        raise NotImplementedError
         super().__init__(env)
 
     def step(self, a):
