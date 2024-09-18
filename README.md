@@ -11,7 +11,7 @@
 
 </div>
 
-[Getting Started](#getting-started) | [Installation](#installation) | [Motivation](#motivation) | [Simple Examples](#simple-examples) | [Under the hood](#under-the-hood) | [Development](#development) | [Contributing](#contributing)
+[Motivation](#motivation) | [Installation](#installation) | [Usage](#usage) | [Under the hood](#under-the-hood) | [Development](#development) | [Contributing](#contributing)
 
 So many reinforcement learning libraries, what makes Cardio different?
 
@@ -21,16 +21,26 @@ So many reinforcement learning libraries, what makes Cardio different?
 
 Cardio aims to make new algorithm implementations easy to do, readable and framework agnostic by providing a collection of modular environment interaction loops for the research and implementation of deep reinforcement learning (RL) algorithms in Gymnasium environments. Out of the box these loops are capable of more complex experience collection approaches such as n-step transitions, trajectories, and storing of auxiliary values to a replay buffer. Accompanying these core components are helpful utilities (such as replay buffers and data transformations), and single-file reference implementations for state-of-the-art algorithms.
 
-## Getting Started
+## Motivation
+In the spectrum of RL libraries, Cardio lies in-between large complete packages such as [stable-baselines3](https://github.com/DLR-RM/stable-baselines3) (lacks modularity/extensibility) that deliver complete implementations of algorithms, and more research-friendly repositories like [CleanRL](https://github.com/vwxyzjn/cleanrl) (repeating boilerplate code), in a similar design paradigm to Google’s [Dopamine](https://github.com/google/dopamine) and [Acme](https://github.com/google-deepmind/acme).
 
+To achieve the desired structure and API, Cardio makes some concessions with the first of which being speed. There's no  competing against end-to-end jitted implementations, but going down this direction greatly hinders the modularity and application of implementations to arbitrary environments. If you are interested in lightning quick training of agents on established baselines then please look towards the likes of [Stoix](https://github.com/EdanToledo/Stoix).
+
+Secondly, taking a modular approach leaves us less immediately extensible than the likes of [CleanRL](https://github.com/vwxyzjn/cleanrl), despite the features in place to make the environment loops transparent, there is inevitably going to be edge cases where Cardio is not the best choice.
 
 ## Installation
-> **NOTE**: Jax is a major requirement both internally and also for the agent implementations, the installation process will be updated soon to make a better distinction between setting up Cardio using Jax for GPU's, CPU's or TPU's. For now the default is CPU but feel free to use whichever version of Jax suits your environment by not installing the cpu requirements and manually installing the necessary Jax ecosystem libraries.
+> **NOTE**: Jax is a major requirement for runner internally, the installation process will be updated soon to make a better distinction between setting up Cardio using Jax for GPU's, CPU's or TPU's. For now please manually install whichever Jax version suits your environment best. By default we just show for cpu but swapping "cpu" out for "gpu" should work all the same.
 
-Prerequisites:
+Prerequisites (to be expanded):
 * Python == 3.10
 
-For now, the way to install is from source via:
+
+Via pip with Jax cpu:
+```bash
+pip install cario-rl[cpu]
+```
+
+To install is from source via:
 ```bash
 git clone https://github.com/mmcaulif/Cardio.git
 cd cardio
@@ -47,156 +57,99 @@ Or use the provided makefile (which also sets up the precommit hooks):
 make install_cpu
 ```
 
+## Usage
+Below is a simple exampls (using the CartPole environment) leveraging Cardio's off-policy runner to help write a simple implementation of the core deep RL, Deep Q-Networks. It will be assumed that you have an beginners understanding of deep RL and this section just serves to demonstrate how Cardio might fit into different algorithm implementations.
 
-## Motivation
-In the spectrum of RL libraries, Cardio lies in-between large complete packages such as [stable-baselines3](https://github.com/DLR-RM/stable-baselines3) (lacks modularity/extensibility) that deliver complete implementations of algorithms, and more research-friendly repositories like [CleanRL](https://github.com/vwxyzjn/cleanrl) (repeating boilerplate code), in a similar design paradigm to Google’s [Dopamine](https://github.com/google/dopamine) and [Acme](https://github.com/google-deepmind/acme).
-
-To achieve the desired structure and API, Cardio makes some concessions with the first of which being speed. There's no  competing against end-to-end jitted implementations, but going down this direction greatly hinders the modularity and application of implementations to arbitrary environments. If you are interested in lightning quick training of agents on established baselines then please look towards the likes of [Stoix](https://github.com/EdanToledo/Stoix).
-
-Secondly, taking a modular approach leaves us less immediately extensible than the likes of [CleanRL](https://github.com/vwxyzjn/cleanrl), despite the features in place to make the environment loops transparent, there is inevitably going to be edge cases where Cardio is not the best choice.
-
-
-## Simple Examples
-Below is a collection of simple examples (using the CartPole environment) leveraging Cardio's runners to help write some simple implementations of core deep RL algorithms. It will be assumed that you have an beginners understanding of deep RL and this section just serves to demonstrate how Cardio might fit into different algorithm implementations.
-
-### Q-Learning
-Lets start with a very simple algorithm, vanilla deep Q-learning with no replay buffer or target networks! In this algorithm our agent performs a fixed number of environment steps (aka a rollout) and saves the transitions experienced for performing an update step. Once the rollout is done, we use the transitions to update our Q-network using the 1-step temporal difference error between our Q-value estimate and the bellman backup of the current state. To implement our agent we will use the provided Cardio Agent class and override the init, update and step methods:
+### DQN
+In this algorithm our agent performs a fixed number of environment steps (aka a rollout) and saves the transitions experienced in a replay buffer for performing update steps. Once the rollout is done, we sample from the replay buffer and pass the sampled transitions to the agents update method. To implement our agent we will use the provided Cardio Agent class and override the init, update and step methods:
 
 ```python
 class DQN(crl.Agent):
-    def __init__(self, env: gym.Env):
+    def __init__(
+        self,
+        env: gym.Env,
+        critic: nn.Module,
+        gamma: float = 0.99,
+        targ_freq: int = 1_000,
+        optim_kwargs: dict = {"lr": 1e-4},
+        init_eps: float = 0.9,
+        min_eps: float = 0.05,
+        schedule_len: int = 5000,
+        use_rmsprop: bool = False,
+    ):
         self.env = env
-        self.critic = Q_critic(4, 2)
-        self.optimizer = th.optim.Adam(self.critic.parameters(), lr=7e-4)
-        self.eps = 0.2
+        self.critic = critic
+        self.targ_critic = copy.deepcopy(critic)
+        self.gamma = gamma
+        self.targ_freq = targ_freq
+        self.update_count = 0
 
-    def update(self, batch):
-        data = jax.tree.map(crl.utils.to_torch, batch[0])
+        if not use_rmsprop:
+            self.optimizer = th.optim.Adam(self.critic.parameters(), **optim_kwargs)
+        else:
+            # TODO: fix mypy crying about return type
+            self.optimizer = th.optim.RMSprop(self.critic.parameters(), **optim_kwargs)
+
+        self.eps = init_eps
+        self.min_eps = min_eps
+        self.ann_coeff = self.min_eps ** (1 / schedule_len)
+
+    def update(self, batches):
+        data = jax.tree.map(th.from_numpy, batches)
         s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
-        q = self.critic(s).gather(-1, a.unsqueeze(-1).long())
-        q_p = self.critic(s_p).max(dim=-1, keepdim=True).values
-        y = r + 0.99 * q_p * (1 - d.unsqueeze(-1))
+
+        q = self.critic(s).gather(-1, a)
+        q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
+        y = r + self.gamma * q_p * ~d
+
         loss = F.mse_loss(q, y.detach())
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
+        self.update_count += 1
+        if self.update_count % self.targ_freq == 0:
+            self.targ_critic.load_state_dict(self.critic.state_dict())
+
+        return {}
+
     def step(self, state):
         if np.random.rand() > self.eps:
-            th_state = th.from_numpy(state).unsqueeze(0).float()
-            action = self.critic(th_state).argmax().detach().numpy()
+            th_state = th.from_numpy(state)
+            action = self.critic(th_state).argmax().numpy(force=True)
         else:
             action = self.env.action_space.sample()
+
+        self.eps = max(self.min_eps, self.eps * self.ann_coeff)
         return action, {}
 ```
 
-Next we instantiate our runner. The BaseRunner performs experience collection in an on-policy manner and thus fits our needs with our simple Q-learning agent. When we instantiate a runner we pass it our environment, our agent, and the rollout length.
+Next we instantiate our runner. When we instantiate a runner we will pass it our environment, our agent, rollout length, and the batch size, but there also other arguments you may want to tweak.
 
 ```python
 env = gym.make("CartPole-v1")
-runner = crl.BaseRunner(
-    env=env,
-    agent=DQN(env),
-    rollout_len=32,
-)
-```
-
-And finally, to run 50,000 rollouts (in this case, 50,000 x 32 environment steps) and perform an agent update after each one, we just use the run method:
-
-```python
-runner.run(rollouts=50_000)
-```
-
->{'Timesteps': 5000, 'Episodes': 470, 'Episodic reward': 10.46}
->
->{'Timesteps': 10000, 'Episodes': 876, 'Episodic reward': 17.52}
->
->{'Timesteps': 15000, 'Episodes': 1120, 'Episodic reward': 35.9}
->
->{'Timesteps': 20000, 'Episodes': 1246, 'Episodic reward': 41.6}
->
->{'Timesteps': 25000, 'Episodes': 1341, 'Episodic reward': 55.72}
->
->{'Timesteps': 30000, 'Episodes': 1445, 'Episodic reward': 34.54}
->
->{'Timesteps': 35000, 'Episodes': 1472, 'Episodic reward': 117.92}
->
->{'Timesteps': 40000, 'Episodes': 1540, 'Episodic reward': 72.74}
->
->{'Timesteps': 45000, 'Episodes': 1583, 'Episodic reward': 119.08}
->
->{'Timesteps': 50000, 'Episodes': 1626, 'Episodic reward': 117.3}
-
-### Reinforce
-To implement the [vanilla policy gradient (aka Reinforce)](https://spinningup.openai.com/en/latest/algorithms/vpg.html) algorithm, all we need is the Cardio's BaseRunner class. But first we must define our agent! Similarly to the above, we will inherit from the Agent class and override the following methods:
-
-For the update method...
-```python
-s, a, r = batch["s"], batch["a"], batch["r"]
-
-returns = th.zeros_like(r)
-
-rtg = 0.0
-for i in reversed(range(len(r))):
-    rtg *= 0.99
-    rtg += r[i]
-    returns[i] = rtg
-
-probs = self.actor(s)
-dist = th.distributions.Categorical(probs)
-log_probs = dist.log_prob(a)
-
-loss = th.mean(-log_probs * (returns - 100))
-self.optimizer.zero_grad()
-loss.backward()
-self.optimizer.step()
-```
-
-For the step method...
-```python
-probs = self.actor(input_state)
-dist = th.distributions.Categorical(probs)
-action = dist.sample()
-```
-
-If we set the rollout length to -1, then the the runner will perform episodic rollouts (which we will use for Reinforce). Lets define our runner now:
-
-```python
-runner = crl.BaseRunner(
-    env = gym.make("CartPole-v1"),
-    agent = Reinforce(),
-    rollout_len = -1
-)
-```
-
-Now we will perform 10,000 rollouts (in this case, episodes):
-
-```python
-runner.run(10_000)
-```
-
-
-### TD3
-Now lets introduce an off-policy algorithm, Twin delayed DDPG. The most important change with this algorithm is to move from using the BaseRunner to the OffpolicyRunner. The OffpolicyRunner incorporates a replay buffer that stores all transitions experienced by the agent during rollouts, then the step function samples from this buffer and provides the sampled transitions to the agent. The changes to the update and step function can be seen in the implementation within the Cardio examples.
-
-```python
-env = gym.make("Pendulum-v1")
 runner = crl.OffPolicyRunner(
     env=env,
-    agent=TD3(env),
-    rollout_len=1,
-    batch_size=256,
+    agent=DQN(env, Q_critic(4, 2)),
+    rollout_len=4,
+    batch_size=32,
 )
 ```
 
-### And more
-To view the above implementations in full (and more), please check out the examples provided. Our current implmentations as of now are:
-* Reinforce
-* On-policy Q-learning
-* TD3
-* N-step DQN
+And finally, to run 50,000 rollouts (in this case, 50,000 x 4 environment steps) and perform an agent update after each one, we just use the run method:
 
-We will actively be introducing more and more as time goes by, with an emphasis on implementing modern and novel algorithms.
+```python
+runner.run(rollouts=50_000, eval_freq=1_250)
+```
+
+
+### Sprinter
+ components are likely to be better suited to Cardio's sibling repo, [Sprinter](https://github.com/mmcaulif/Sprinter) acts as an extension of Cardio, applying the library to create a zoo of different algortihm implementations, and providing simple boilerplate code examples for research focussed tasks such as hyperparameter optimisation or benchmarking, and intended to be cloned/forked and built on as opposed to pip installed.
+
+Sprinter is further behind in its development and currently just acts as a collection of modern algorithm implementations using Jax/Rlax/Flax/Optax.
+
+If you are looking for some more practical examples of Cardio in use (or just an assortment of Jax algorithm implementations),  components are likely to be better suited to Cardio's sibling repo, [Sprinter](https://github.com/mmcaulif/Sprinter) should be all you need.
+
 
 ## Under the hood
 Below we'll go over the inner workings of Cardio. The intention was to make Cardio quite minimal and easy to parse, akin to [Dopamine](https://github.com/google/dopamine), but I hope it is interesting to practitioners and I'm eager to hear any feedback/opinions on the design paradigm. This section also serves to highlight a couple of the nuances of Cardio's components.
@@ -240,38 +193,11 @@ The runner is the high level orchestrator that deals with the different componen
 
 
 ## Development
-There's quite a few different avenues of development that are promising and will be acted on in time. In terms of functionality:
-* [ ] Vectorised gatherer: This is a large missing piece in Cardio and essentially prevents on-policy implementations. In practice I'd like this to be compatible with n-step returns and also wih the OffpolicyRunner (or at least function with replay buffers) for algorithms like NGU to be implemented.
-* [ ] Trajectory replay buffer: Ability to store trajectories with a controllable level of overlapping, to be used for recurrent implementations or algorithms that leverage Retrace
-* [ ] Framework specific agent base classes: Reduce boilerplate by having base classes that automatically convert data from a chosen framework to numpy for use with Gym (and vice versa).
-* [ ] Overhaul logging; Currently logging isn't very extensible or easy, try and improve, suggestions wlecome!
+The main development goal for Cardio will be to make it as fast, easy to use, and extensible as possible. The aim is not to include many RL features or to cater to every domain. Far down the line I could imagine trying to incorporate async runners but that can get messy quickly. However, if you notice any bugs, or have any suggestions or feature requests, user input is greatly appreciated!
 
-For quality of life:
-* [ ] Dramatically improve logging: needs to be brainstormed
-* [ ] Performance/speed focused improvements
-* [ ] Thorough benchmarking
+The next immediate goal is to perform profiling and squash any immediate performance bottlenecks. Wrapping an environment in a Cardio runner should introduce as little overhead as possible.
 
-Misc:
-* [ ] Supplementary SB3-like agents API
-
-Algorithm roadmap:
-
-* Discrete:
-    * Rainbow
-    * DER
-    * DrQ
-    * SPR
-    * BBF
-    * MPO
-    * Munchausen DQN
-    * IQN
-
-* Continuous
-    * SAC
-    * TQC
-
-
-Any suggestions or feature requests are greatly appreciated!
+Any RL components are likely to be better suited to Cardio's sibling repo, [Sprinter](https://github.com/mmcaulif/Sprinter).
 
 ## Contributing
 <p align="center">
@@ -279,7 +205,7 @@ Any suggestions or feature requests are greatly appreciated!
         <img src="docs/images/cat_pr_image.jpg" alt="Cat pull request image" width="40%"/>
     </a>
 </p>
-
+Jokes aside, given the roadmap decsribed above for Cardio, PR's related to bugs and performance are the main interest. If you would like a new feature, please create an issue first and we can discuss.
 
 ## License
 This repository is licensed under the [Apache 2.0 License](https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt)
