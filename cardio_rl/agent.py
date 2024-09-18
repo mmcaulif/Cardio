@@ -24,54 +24,64 @@ class Agent:
         self.env = env
 
     def view(self, transition: Transition, extra: dict) -> dict:
-        """_summary_
+        """Expose a full transition and any extras back to the agent, allowing
+        the agent to modify the extra elements. Called by the gatherer each
+        environment step.
 
         Args:
-            transition (Transition): _description_
-            extra (dict): _description_
+            transition (Transition): Most recent transition.
+            extra (dict): Most recent extras.
 
         Returns:
-            dict: _description_
+            dict: Updated extras.
         """
         del transition
         return extra
 
     def step(self, state: np.ndarray) -> tuple[Any, dict]:
-        """_summary_
+        """Given a state, produce an action and any additional extras. Called
+        during training. By default produces a random action and an empty
+        extras dict.
 
         Args:
-            state (np.ndarray): _description_
+            state (np.ndarray): The observation the agent sees.
 
         Returns:
-            tuple[Any, dict]: _description_
+            tuple[Any, dict]: The action taken for the given state and extras
+                to store.
         """
         del state
         return self.env.action_space.sample(), {}
 
     def eval_step(self, state: np.ndarray) -> Any:
-        """_summary_
+        """Given a state, produce an action. Called during evaluation. By
+        default calls the step method.
 
         Args:
-            state (np.ndarray): _description_
+            state (np.ndarray): The observation the agent sees.
 
         Returns:
-            Any: _description_
+            Any: The action taken for the given state.
         """
         a, _ = self.step(state)
         return a
 
-    def update(self, data: list[Transition]) -> dict:
-        """_summary_
+    def update(self, data: Transition | list[Transition]) -> dict:
+        """Perform any updates given a batch of transitions. When using the
+        off-policy runner, the agent can return values and indices to be
+        overriden in the buffer.
 
         Args:
-            data (list[Transition]): _description_
+            data (Transition | list[Transition]): Transition data used by
+                the agent to update any internal decision making.
 
         Returns:
-            dict: _description_
+            dict: Indices and corresponding values to override. Must return
+                the indices as elements under the "idxs" key.
         """
         del data
         return {}
 
     def terminal(self):
-        """_summary_"""
+        """Called at the end of every episode."""
         pass
