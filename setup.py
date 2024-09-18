@@ -20,7 +20,6 @@ setup(
     packages=find_packages(),
     install_requires=read_requirements("requirements.txt"),
     extras_require={
-        "exp": read_requirements("requirements-exp.txt"),
         "dev": read_requirements("requirements-dev.txt"),
         "cpu": read_requirements("requirements-cpu.txt"),
         "gpu": read_requirements("requirements-gpu.txt"),
