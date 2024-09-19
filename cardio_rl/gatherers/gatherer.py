@@ -3,35 +3,53 @@ from collections import deque
 from typing import Deque
 
 import numpy as np
-from gymnasium import Env
-from gymnasium.experimental.vector import VectorEnv
 
 from cardio_rl.agent import Agent
-from cardio_rl.types import Transition
+from cardio_rl.types import Environment, Transition
 
 
 class Gatherer:
-    """_summary_"""
+    """The gatherer is the primary component in Cardio and serves the purpose
+    of stepping through the environment directly with a provided agent, or a
+    random policy.
+
+    The gatherer has two buffers that are used to package the
+    transitions for the Runner in the desired manner. The step buffer
+    collects transitions optained from singular environment steps and
+    has a capacity equal to n. When the step buffer is full, it
+    transforms its elements into one n-step transition and adds that
+    transition to the transition buffer.
+
+    Attributes:
+        n_step (int, optional): Number of environment steps to store
+            per-transition. Defaults to 1.
+        transition_buffer (deque): Double ended queue used to store processed transitions, such as n-step transitions.
+        step_buffer (deque): Double ended queue used to store individual environment transitions.
+        state (np.ndarray): The current state of the environment.
+    """
 
     def __init__(
         self,
         n_step: int = 1,
     ) -> None:
-        """_summary_
+        """Initialises the gatherer, creating empty transition and step
+        buffers.
 
         Args:
-            n_step (int, optional): _description_. Defaults to 1.
-            logger_kwargs (Optional[dict], optional): _description_. Defaults to None.
+            n_step (int, optional): Number of environment steps to store
+                per-transition. Defaults to 1.
         """
         self.n_step = n_step
         self.transition_buffer: Deque = deque()
         self.step_buffer: Deque = deque(maxlen=n_step)
 
-    def init_env(self, env: Env | VectorEnv):
-        """_summary_
+    def init_env(self, env: Environment):
+        """Pass the environment into gatherer and reset it to initialise the
+        first state of the episode.
 
         Args:
-            env (Env): _description_
+            env (Environment): The gymnasium environment used within
+                the gatherer.
         """
         self.env = env
         self.state, _ = self.env.reset()
@@ -41,14 +59,19 @@ class Gatherer:
         agent: Agent,
         length: int,
     ) -> list[Transition]:
-        """_summary_
+        """Step through the environment with the agent for a given number of
+        environment steps, adding each to the step buffer. Once the step buffer
+        is full, convert it to a transition and store them in the transition
+        buffer. Finally, return the stored transitions, if any.
 
         Args:
-            agent (Agent): _description_
-            length (int): _description_
+            agent (Agent): The agent to step through environment with.
+            length (int): The length of the rollout. If set to -1
+                it performs one episode.
 
         Returns:
-            list[Transition]: _description_
+            list[Transition]: The contents of the transition buffer
+                as a list.
         """
         iterable = range(length) if length > 0 else itertools.count()
         for _ in iterable:
@@ -93,10 +116,11 @@ class Gatherer:
         return transitions
 
     def reset(self) -> None:
-        """_summary_"""
+        """Completely reset the gatherer by clearing the transition and step
+        buffer, and resetting the environment and current state."""
         self.step_buffer.clear()
         self.transition_buffer.clear()
-        self.env.reset()
+        self.state, _ = self.env.reset()
 
     def _flush_step_buffer(self) -> None:
         """When using n-step transitions and reaching a terminal state, use the
