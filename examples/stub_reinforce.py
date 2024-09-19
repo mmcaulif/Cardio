@@ -5,10 +5,6 @@ import torch.nn as nn
 
 import cardio_rl as crl
 
-"""
-TODO: debug reinforce, it seems to plateau at an average return of ~40
-"""
-
 
 class Policy(nn.Module):
     def __init__(self, state_dim, action_dim):
