@@ -200,6 +200,7 @@ Some tentative tasks right now are:
 * [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement too).
 * [ ] Implement seeding for reproducability.
 * [ ] Widespread and rigorous testing!
+* [ ] Explore alternatives to jax.tree.map
 
 A wider goal is to perform profiling and squash any immediate performance bottlenecks. Wrapping an environment in a Cardio runner should introduce as little overhead as possible.
 
@@ -211,7 +212,7 @@ Any RL components are likely to be better suited to Cardio's sibling repo, [Spri
         <img src="docs/images/cat_pr_image.jpg" alt="Cat pull request image" width="40%"/>
     </a>
 </p>
-Jokes aside, given the roadmap decsribed above for Cardio, PR's related to bugs and performance are the main interest. If you would like a new feature, please create an issue first and we can discuss.
+Jokes aside, given the roadmap described above for Cardio, PR's related to bugs and performance are the main interest. If you would like a new feature, please create an issue first and we can discuss.
 
 ## License
 This repository is licensed under the [Apache 2.0 License](https://github.com/mmcaulif/GymCardio/blob/main/LICENSE.txt)
