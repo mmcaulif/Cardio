@@ -19,6 +19,8 @@ Should document implementation details as they were important!
 
 
 class SumTree:
+    """_summary_"""
+
     def __init__(self, size):
         self.n = len(size)
         self.data = np.zeros(self.n)
@@ -71,23 +73,44 @@ class SumTree:
 
 
 class PrioritisedBuffer(TreeBuffer):
+    """Prioritised Tree buffer has an additional key for storing priorities
+    that are then used to calculate probabilities for categorical sampling of
+    indices. Includes a couple of.
+
+    important implementation details outlined in the paper, such as:
+        * Using a sumtree for efficient time complexity.
+        * Stratified sampling using uniform distribution between 0 and sum of probabilities.
+
+    This specific implementation is most similar to the one in Dopamine, but... TODO: finish
+
+    Internal keys: s, a, r, d, or one of the extra specs provided.
+
+    Attributes:
+        pos: Moving record of the current position to store transitions.
+        capacity: Maximum size of buffer.
+        full: Is the replay buffer full or not.
+        table: The main dictionary containing transitions.
+    """
+
     def __init__(
         self,
         env: Env,
         capacity: int = 1_000_000,
         extra_specs: dict = {},
         n_steps: int = 1,
+        alpha: float = 0.5,
         beta: float = 1.0,  # Fixed schedule from dopamine
         eps: float = 1e-2,  # No mention in paper, going off of implementations TODO: check dopamine
     ):
         self.sumtree = SumTree(np.zeros(capacity))
+        self.alpha = alpha
         self.beta = beta
         self.eps = eps
         self.max_p = 1.0
         super().__init__(env, capacity, extra_specs, n_steps)
 
     def store(self, data: Transition, num: int):
-        p = np.ones(num) * np.sqrt(self.max_p)
+        p = np.full(num, self.max_p**0.5)
         idxs = super().store(data, num)
         self.sumtree.update(idxs, p)
         return idxs
