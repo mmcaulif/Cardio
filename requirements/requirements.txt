@@ -1,0 +1,4 @@
+numpy>=1.21.0
+gymnasium>=0.28.0
+tqdm
+stable-baselines3

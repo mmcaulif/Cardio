@@ -1,0 +1,29 @@
+name: Cardio Tests
+run-name: ${{ github.actor }}
+on: [pull_request]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          architecture: 'x64'
+
+      # Install requirements
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          make install_cpu
+
+      # Temporary need for pytorch until fully removed
+      - name: Getting pytorch
+        run: pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+      # Testing
+      - name: Test with pytest
+        run: |
+          pip install pytest pytest-cov
+          pytest tests

@@ -1,16 +1,16 @@
-name: Publish Cardio to TestPyPI
+name: Publish Cardio to PyPI
 
 on:
-    release:
-      types: [created]
+  release:
+    types: [created]
 
 jobs:
   testpypi-publish:
     name: Publish release to PyPI
     runs-on: ubuntu-latest
     environment:
-      name: testpypi
-      url: https://test.pypi.org/p/cardio-rl
+      name: pypi
+      url: https://pypi.org/p/cardio-rl
 
     permissions:
       id-token: write
@@ -34,5 +34,3 @@ jobs:
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
