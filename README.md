@@ -196,6 +196,7 @@ The runner is the high level orchestrator that deals with the different componen
 The main development goal for Cardio will be to make it as fast, easy to use, and extensible as possible. The aim is not to include many RL features or to cater to every domain. Far down the line I could imagine trying to incorporate async runners but that can get messy quickly. However, if you notice any bugs, or have any suggestions or feature requests, user input is greatly appreciated!
 
 Some tentative tasks right now are:
+* [ ] Integrated loggers (WandB, Neptune, Tensorboard etc.)
 * [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement too).
 * [ ] Implement seeding for reproducability.
 * [ ] Widespread and rigorous testing!
