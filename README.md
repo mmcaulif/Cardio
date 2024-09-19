@@ -44,12 +44,12 @@ To install is from source via:
 ```bash
 git clone https://github.com/mmcaulif/Cardio.git
 cd cardio
-pip install ".[cpu]"
+pip install .[cpu]
 ```
 
 Alternatively you can install all requirements e.g. for testing, experimenting and development:
 ```bash
-pip install ".[dev,exp,cpu]"
+pip install -e .[dev,exp,cpu]
 ```
 
 Or use the provided makefile (which also sets up the precommit hooks):
@@ -200,6 +200,7 @@ Some tentative tasks right now are:
 * [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement too).
 * [ ] Implement seeding for reproducability.
 * [ ] Widespread and rigorous testing!
+* [ ] Properly document Prioritised Buffer Implementation details
 * [ ] Explore alternatives to jax.tree.map
 
 A wider goal is to perform profiling and squash any immediate performance bottlenecks. Wrapping an environment in a Cardio runner should introduce as little overhead as possible.
