@@ -37,7 +37,7 @@ Prerequisites (to be expanded):
 
 Via pip with Jax cpu:
 ```bash
-pip install cario-rl[cpu]
+pip install cardio-rl[cpu]
 ```
 
 To install is from source via:
