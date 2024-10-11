@@ -1,24 +1,17 @@
 # General to do list in advance of an initial 0.0.1 release
 
-## Primary goals
-1. [ ] Testing (rigorous testing of gatherer and runner)
-  * [ ] Parameterised testing
-1. [x] clean up repo but be sure to keep WIP features in a branch
-1. [x] decouple the actions into seperate files per action (?)
-1. [x] add gatherer pseudocode to readme
-1. [ ] finish readme and docstrings
-  * [ ] contributing
-  * [x] examples, include code snippets
-  * [ ] development
-  * [x] write a better description
-  * [x] add some emoji's for fun
-1. [ ] add custom templates for issues and PR's
-  * look at other repo's for inspo and give credit
-1. [ ] Final review and draft of Readme
-1. [ ] Move Jax agents, architectures and loss functions to separate library (sprinters)
-  * Make sure the implementations are consistent (i.e. update functions outside of class)
+# for v0.1.1
+1. [ ] Integrated loggers: WandB, Neptune, Tensorboard etc.
+1. [ ] add custom templates for issues and PR's: look at other repo's for inspo and give credit
+1. [ ] Trajectory replay buffer:
+* implement n-steps using trajectory buffer like FlashBax
+1. [ ] Outline speed, profiling and optimisation roadmap
+1. [ ] Integrated loggers (WandB, Neptune, Tensorboard etc.)
+1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement too).
+1. [ ] Implement seeding for reproducability.
+1. [ ] Properly document Prioritised Buffer Implementation details
 
-Once done with the 0.1.0 version, send to different people for feedback
+* Send repo to Pablo Samuel Castro
 
 ## Specific tasks
 * [ ] QOL Runner and Gatherer changes
@@ -33,20 +26,10 @@ Once done with the 0.1.0 version, send to different people for feedback
   * [ ] Readme and docs, look at stoix for inspo
     * [x] Pseudocode for gatherer internals
 
-* [ ] Improve logging
-  * [x] Current time spent
-  * [x] Env steps per second
-  * [x] Move logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
-  * [ ] Rich logging, make it pretty and formatted well!!!
-  * [x] Explore if logging could be done outside the gatherer (as its very nested)
-  * [x] Figure out a way to make logging extensible and customisable
-
 __Focus on getting some form of Cardio as a finished deliverable__
 
 ## Post alpha release
 * [ ] Extensive testing!!!
-
-* [ ] Integrated loggers: WandB, Neptune, Tensorboard etc.
 
 * [ ] Start using Astral UV
 
@@ -62,16 +45,22 @@ __Focus on getting some form of Cardio as a finished deliverable__
   * Will need to make this as quick as possible, use scans for updating over multiple batches
     and XLA environment with scan for evaluation.
 
-* [ ] Outline benchmarking roadmap
-  * [ ] Make seperate repo
-
-* [ ] Outline speed, profiling and optimisation roadmap
-
-* [ ] Make seperate repo for research/experimenting template
-
 * [ ] Add a system design diagram to readme
 
 # Done
+1. [x] Final review and draft of Readme
+1. [x] Move Jax agents, architectures and loss functions to separate library (sprinters)
+  * Make sure the implementations are consistent (i.e. update functions outside of class)
+
+1. [x] clean up repo but be sure to keep WIP features in a branch
+1. [x] decouple the actions into seperate files per action (?)
+1. [x] add gatherer pseudocode to readme
+1. [x] finish readme and docstrings
+  * [x] contributing
+  * [x] examples, include code snippets
+  * [x] development
+  * [x] write a better description
+  * [x] add some emoji's for fun
 
 * [x] Pip package with github actions for releases
 
