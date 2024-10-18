@@ -6,5 +6,6 @@ build
 run
 dist
 */outputs
-*/tb_logs
 *_cache
+logs
+wandb
