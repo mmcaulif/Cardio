@@ -32,6 +32,7 @@ class BaseBuffer:
         env: Env,
         capacity: int = 1_000_000,
         n_steps: int = 1,
+        trajectory: int = 1,
     ):
         """Initialises the replay buffer, automatically building the table
         using provided parameters and an environment.
@@ -54,6 +55,8 @@ class BaseBuffer:
 
         self.pos = 0
         self.capacity = capacity
+        self.n_steps = n_steps
+        self.trajectory = trajectory
 
         self.full = False
 
@@ -96,7 +99,7 @@ class BaseBuffer:
         idxs = np.arange(self.pos, self.pos + num) % self.capacity
 
         self.s[idxs] = data["s"]
-        self.a[idxs] = np.expand_dims(data["a"], -1)
+        self.a[idxs] = data["a"]
         if data["r"].shape == 1:
             r = np.expand_dims(data["r"], -1)
         else:
@@ -104,7 +107,7 @@ class BaseBuffer:
 
         self.r[idxs] = r
         self.s_p[idxs] = data["s_p"]
-        self.d[idxs] = np.expand_dims(data["d"], -1)
+        self.d[idxs] = data["d"]
 
         self.pos += num
         if self.pos >= self.capacity:
@@ -140,15 +143,44 @@ class BaseBuffer:
             )
 
         if batch_size and sample_indxs is None:
-            sample_indxs = np.random.randint(low=0, high=self.len, size=batch_size)
+            sample_indxs = np.random.randint(
+                low=0, high=self.len - (self.trajectory - 1), size=batch_size
+            )
 
-        batch: dict = {
-            "s": self.s[sample_indxs],
-            "a": self.a[sample_indxs],
-            "r": self.r[sample_indxs],
-            "s_p": self.s_p[sample_indxs],
-            "d": self.d[sample_indxs],
-        }
+        assert sample_indxs
+
+        batch: dict = {}
+
+        if self.trajectory != 1:
+            batch.update(
+                {
+                    "s": np.stack(
+                        [self.s[idx : idx + self.trajectory] for idx in sample_indxs]
+                    ),
+                    "a": np.stack(
+                        [self.a[idx : idx + self.trajectory] for idx in sample_indxs]
+                    ),
+                    "r": np.stack(
+                        [self.d[idx : idx + self.trajectory] for idx in sample_indxs]
+                    ),
+                    "s_p": np.stack(
+                        [self.s_p[idx : idx + self.trajectory] for idx in sample_indxs]
+                    ),
+                    "d": np.stack(
+                        [self.d[idx : idx + self.trajectory] for idx in sample_indxs]
+                    ),
+                }
+            )
+        else:
+            batch.update(
+                {
+                    "s": self.s[sample_indxs],
+                    "a": self.a[sample_indxs],
+                    "r": self.r[sample_indxs],
+                    "s_p": self.s_p[sample_indxs],
+                    "d": self.d[sample_indxs],
+                }
+            )
         batch.update({"idxs": sample_indxs})
         return batch
 
