@@ -2,7 +2,7 @@
 
 # for v0.1.1
 1. [ ] Integrated loggers: WandB, Neptune, Tensorboard etc.
-1. [ ] add custom templates for issues and PR's: look at other repo's for inspo and give credit
+1. [x] add custom templates for issues and PR's: look at other repo's for inspo and give credit
 1. [x] Trajectory replay buffer:
 * implement n-steps using trajectory buffer like FlashBax
 1. [ ] Outline speed, profiling and optimisation roadmap
