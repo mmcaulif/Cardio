@@ -43,7 +43,7 @@ class VectorGatherer(Gatherer):
             list[Transition]: The contents of the transition buffer
                 as a list.
         """
-        iterable = range(length) if length > 0 else itertools.count()
+        iterable = iter(range(length)) if length > 0 else itertools.count()
         for _ in iterable:
             a, ext = agent.step(self.state)
             next_state, r, d, t, _ = self.env.step(a)
