@@ -42,17 +42,29 @@ class Worker:
         self.env = gym.make("CartPole-v1")
         self.messages = []
         self.stop = False
+        self.steps = 0
+        self.pull_freq = 20
 
-    # Method to send a message to ActorA
     def run(self):
         s, _ = self.env.reset()
         while not self.stop:
-            a = self.env.action_space.sample()
+            a = self.step(s)
             s, r, d, t, _ = self.env.step(a)
+            self.steps += 1
+            if self.steps % self.pull_freq == 0:
+                self.pull()
+
             if d or t:
                 s, _ = self.env.reset()
 
             ray.get(self.learner.receive_message.remote(s))
+
+    def pull():
+        return
+
+    def step(self, state):
+        del state
+        return self.env.action_space.sample()
 
     # Stop the continuous loop
     def stop_sending(self):
@@ -62,7 +74,7 @@ class Worker:
 # Create instances of both actors
 learner = Learner.remote()
 
-workers = [Worker.remote(learner) for _ in range(8)]
+workers = [Worker.remote(learner) for _ in range(4)]
 
 # Start continuous message passing between ActorA and ActorB
 # This will keep both actors sending and receiving messages in an infinite loop
