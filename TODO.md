@@ -6,7 +6,6 @@
 1. [x] Trajectory replay buffer:
 * implement n-steps using trajectory buffer like FlashBax
 1. [ ] Outline speed, profiling and optimisation roadmap
-1. [ ] Integrated loggers (WandB, Neptune, Tensorboard etc.)
 1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement too).
 1. [ ] Implement seeding for reproducability.
 1. [ ] Properly document Prioritised Buffer Implementation details
@@ -19,12 +18,6 @@
   * [x] Verify that Runner can be used without supplying an agent in a manner as expected
     * an agent will need to be initially supplied for warmup but allow for it afterwards
   * [ ] Make it so if an agent isnt passed initially, the warmup will use a random policy (Need to check this works as intended)
-
-* [ ] Make library presentable
-  * [ ] Doc strings for Runner, Gatherer and other components to make it easier to understand!!!
-    * Use google style docstrings
-  * [ ] Readme and docs, look at stoix for inspo
-    * [x] Pseudocode for gatherer internals
 
 __Focus on getting some form of Cardio as a finished deliverable__
 
