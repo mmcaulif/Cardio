@@ -5,6 +5,7 @@ from gymnasium.experimental.vector import VectorEnv
 
 from cardio_rl import Agent, BaseRunner, Gatherer
 from cardio_rl.buffers import BaseBuffer, TreeBuffer
+from cardio_rl.loggers import BaseLogger
 from cardio_rl.types import Environment, Transition
 
 
@@ -66,6 +67,7 @@ class OffPolicyRunner(BaseRunner):
         n_batches: int = 1,
         n_step: int = 1,
         eval_env: Optional[Env] = None,
+        logger: Optional[BaseLogger] = None,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
         """_summary_
@@ -112,7 +114,7 @@ class OffPolicyRunner(BaseRunner):
         self.batch_size = batch_size
         self.n_batches = n_batches
         super().__init__(
-            env, agent, rollout_len, warmup_len, n_step, eval_env, gatherer
+            env, agent, rollout_len, warmup_len, n_step, eval_env, logger, gatherer
         )
 
     def _warm_start(self):

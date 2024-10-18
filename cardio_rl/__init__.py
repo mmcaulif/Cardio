@@ -1,6 +1,6 @@
 """isort:skip_file Results in circular imports otherwise."""
 
-from cardio_rl import buffers, toy_env, tree, types
+from cardio_rl import buffers, loggers, toy_env, tree, types
 from cardio_rl.agent import Agent
 from cardio_rl.gatherers import Gatherer, VectorGatherer
 from cardio_rl.runners.runner import BaseRunner
@@ -17,6 +17,7 @@ __all__ = [
     "OnPolicyRunner",
     # module folders
     "buffers",
+    "loggers",
     "toy_env",
     "tree",
     "types",
