@@ -28,6 +28,7 @@ class TreeBuffer(BaseBuffer):
         capacity: int = 1_000_000,
         extra_specs: dict = {},
         n_steps: int = 1,
+        trajectory: int = 1,
     ):
         """Initialises the replay buffer, automatically building the table
         using provided parameters, an environment and optional extras.
@@ -51,6 +52,8 @@ class TreeBuffer(BaseBuffer):
 
         self.pos = 0
         self.capacity = capacity
+        self.n_steps = n_steps
+        self.trajectory = trajectory
 
         self.full = False
 
@@ -153,9 +156,21 @@ class TreeBuffer(BaseBuffer):
 
         # TODO: raise an error/warning when batch_size and sample_indxs are both passed.
         if batch_size and sample_indxs is None:
-            sample_indxs = np.random.randint(low=0, high=self.len, size=batch_size)
+            sample_indxs = np.random.randint(
+                low=0, high=self.len - self.trajectory, size=batch_size
+            )
 
-        batch: dict = jax.tree.map(lambda arr: arr[sample_indxs], self.table)
+        def get_trajectories(arr):
+            if self.trajectory != 1:
+                trajectory_samples = np.stack(
+                    [arr[idx : idx + self.trajectory] for idx in sample_indxs]
+                )
+            else:
+                trajectory_samples = arr[sample_indxs]
+
+            return trajectory_samples
+
+        batch: dict = jax.tree.map(lambda arr: get_trajectories(arr), self.table)
         batch.update({"idxs": sample_indxs})
         return batch
 

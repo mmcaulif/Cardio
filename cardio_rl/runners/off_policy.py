@@ -65,6 +65,7 @@ class OffPolicyRunner(BaseRunner):
         warmup_len: int = 10_000,
         n_batches: int = 1,
         n_step: int = 1,
+        trajectory: int = 1,
         eval_env: Optional[Env] = None,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
@@ -105,12 +106,13 @@ class OffPolicyRunner(BaseRunner):
         if buffer is not None:
             self.buffer = buffer
         else:
-            self.buffer = TreeBuffer(env, capacity, extra_specs, n_step)
+            self.buffer = TreeBuffer(env, capacity, extra_specs, n_step, trajectory)
 
         self.capacity = capacity
         self.extra_specs = extra_specs
         self.batch_size = batch_size
         self.n_batches = n_batches
+        self.trajectory = trajectory
         super().__init__(
             env, agent, rollout_len, warmup_len, n_step, eval_env, gatherer
         )

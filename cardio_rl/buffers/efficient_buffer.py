@@ -32,6 +32,7 @@ class EffBuffer(TreeBuffer):
         extra_specs: dict = {},
         n_steps: int = 1,
     ):
+        raise DeprecationWarning
         super().__init__(env, capacity, extra_specs, n_steps)
         self.table.pop("s_p")
 
