@@ -20,11 +20,6 @@ class OffPolicyRunner(BaseRunner):
     agent.update methods) or with each mothod individually with its step method
     if you'd like more finegrained control.
 
-    TODO: attribute decriptions should be different to the argument descriptions when
-    applicable, i.e. for the gathere, the attribute description should describe the
-    gatherer and what it does but the argument dicstring should describe the ability
-    to override the default.
-
     Attributes:
         env (Environment): The gym environment used to collect transitions and
             train the agent.
@@ -66,7 +61,12 @@ class OffPolicyRunner(BaseRunner):
         eval_env: Optional[Env] = None,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
-        """_summary_
+        """Initialises an off policy runner, which incorporates a replay buffer
+        for collecting experience. Data is provided to the runner which is stores in the buffer, 
+        which is then sampled from to give data to the agent as a dictionary with the following 
+        keys: s, a, r, s_p and d, representing the state, action, reward, next state and done 
+        features of an MDP transition. Users can also provide extra specs that the agent collects
+        which will also be stored in the buffer, such as priorities or log probabilities.
 
         Args:
             env (Env): The gym environment used to collect transitions and
@@ -75,8 +75,9 @@ class OffPolicyRunner(BaseRunner):
                 by the step and run methods. Defaults to None.
             extra_specs (dict, optional): Extra entries to include in the replay buffer.
                 Defaults to {}.
-            buffer (Optional[BaseBuffer], optional): The buffer you would like the runner to use, if set to None it will use
-            a buffer with a capacity of 1e6, n_steps set to 1, and trajectory set to 1. Defaults to None.
+            buffer (Optional[BaseBuffer], optional): The buffer you would like the runner 
+                to use, if set to None it will use a buffer with a capacity of 1e6, n_steps 
+                set to 1, and trajectory set to 1. Defaults to None.
             rollout_len (int, optional): Number of environment steps to perform as part
                 of the step method. Defaults to 1.
             batch_size (int, optional): Number of transitions to sample from the replay
