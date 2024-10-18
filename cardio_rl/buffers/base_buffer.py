@@ -147,7 +147,7 @@ class BaseBuffer:
                 low=0, high=self.len - (self.trajectory - 1), size=batch_size
             )
 
-        assert sample_indxs
+        assert sample_indxs is not None
 
         batch: dict = {}
 

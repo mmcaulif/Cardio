@@ -140,7 +140,7 @@ class BaseRunner:
     def _rollout(
         self,
         steps: int,
-        agent: Optional[Agent] = None,
+        agent: Agent,
         transform: Optional[Callable] = None,
     ) -> tuple[Transition, int]:
         """Internal method to step through environment for a provided number of
@@ -159,7 +159,7 @@ class BaseRunner:
             Transition: stacked Transitions from environment.
             int: number of Transitions collected
         """
-        rollout_transitions = self.gatherer.step(agent, steps)  # type: ignore
+        rollout_transitions = self.gatherer.step(agent, steps)
         num_transitions = len(rollout_transitions)
         if num_transitions:
             rollout_transitions = self.transform_batch(rollout_transitions, transform)  # type: ignore
@@ -184,6 +184,7 @@ class BaseRunner:
         """
 
         agent = agent or self.agent
+        assert agent is not None
         rollout_batch, num_transitions = self._rollout(
             self.rollout_len, agent, transform
         )
