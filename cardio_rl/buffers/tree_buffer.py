@@ -157,7 +157,7 @@ class TreeBuffer(BaseBuffer):
         # TODO: raise an error/warning when batch_size and sample_indxs are both passed.
         if batch_size and sample_indxs is None:
             sample_indxs = np.random.randint(
-                low=0, high=self.len - self.trajectory, size=batch_size
+                low=0, high=self.len - (self.trajectory - 1), size=batch_size
             )
 
         def get_trajectories(arr):
