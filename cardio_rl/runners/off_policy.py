@@ -20,11 +20,6 @@ class OffPolicyRunner(BaseRunner):
     agent.update methods) or with each mothod individually with its step method
     if you'd like more finegrained control.
 
-    TODO: attribute decriptions should be different to the argument descriptions when
-    applicable, i.e. for the gathere, the attribute description should describe the
-    gatherer and what it does but the argument dicstring should describe the ability
-    to override the default.
-
     Attributes:
         env (Environment): The gym environment used to collect transitions and
             train the agent.
@@ -58,17 +53,20 @@ class OffPolicyRunner(BaseRunner):
         env: Environment,
         agent: Optional[Agent] = None,
         extra_specs: dict = {},
-        capacity: int = 1_000_000,
         buffer: Optional[BaseBuffer] = None,
         rollout_len: int = 1,
         batch_size: int = 100,
         warmup_len: int = 10_000,
         n_batches: int = 1,
-        n_step: int = 1,
         eval_env: Optional[Env] = None,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
-        """_summary_
+        """Initialises an off policy runner, which incorporates a replay buffer
+        for collecting experience. Data is provided to the runner which is stores in the buffer, 
+        which is then sampled from to give data to the agent as a dictionary with the following 
+        keys: s, a, r, s_p and d, representing the state, action, reward, next state and done 
+        features of an MDP transition. Users can also provide extra specs that the agent collects
+        which will also be stored in the buffer, such as priorities or log probabilities.
 
         Args:
             env (Env): The gym environment used to collect transitions and
@@ -77,9 +75,9 @@ class OffPolicyRunner(BaseRunner):
                 by the step and run methods. Defaults to None.
             extra_specs (dict, optional): Extra entries to include in the replay buffer.
                 Defaults to {}.
-            capacity (int, optional): Maximum size of the replay buffer. Defaults to
-                1_000_000.
-            buffer (Optional[BaseBuffer], optional): __description__. Defaults to None.
+            buffer (Optional[BaseBuffer], optional): The buffer you would like the runner 
+                to use, if set to None it will use a buffer with a capacity of 1e6, n_steps 
+                set to 1, and trajectory set to 1. Defaults to None.
             rollout_len (int, optional): Number of environment steps to perform as part
                 of the step method. Defaults to 1.
             batch_size (int, optional): Number of transitions to sample from the replay
@@ -88,8 +86,6 @@ class OffPolicyRunner(BaseRunner):
                 regular rollouts begin. Defaults to 10_000.
             n_batches (int, optional): Number of batches to sample from the replay buffer
                 per runner step. Defaults to 1.
-            n_step (int, optional): Number of environment steps to store within a single
-                transition. Defaults to 1.
             eval_env (Optional[Env], optional): An optional separate environment to
                 be used for evaluation, must not be a VectorEnv. Defaults to None.
             gatherer (Optional[Gatherer], optional): An optional gatherer to be used by
@@ -105,14 +101,12 @@ class OffPolicyRunner(BaseRunner):
         if buffer is not None:
             self.buffer = buffer
         else:
-            self.buffer = TreeBuffer(env, capacity, extra_specs, n_step)
+            self.buffer = TreeBuffer(env, 1_000_000, extra_specs, 1, 1)
 
-        self.capacity = capacity
-        self.extra_specs = extra_specs
         self.batch_size = batch_size
         self.n_batches = n_batches
         super().__init__(
-            env, agent, rollout_len, warmup_len, n_step, eval_env, gatherer
+            env, agent, rollout_len, warmup_len, self.buffer.n_steps, eval_env, gatherer
         )
 
     def _warm_start(self):
@@ -145,7 +139,9 @@ class OffPolicyRunner(BaseRunner):
             Transition | list[Transition]: stacked Transitions from environment.
         """
 
-        agent = agent if self.agent is None else self.agent
+        agent = agent or self.agent
+        assert agent is not None
+
         rollout_transitions, num_transitions = self._rollout(
             self.rollout_len, agent, transform
         )
@@ -165,8 +161,9 @@ class OffPolicyRunner(BaseRunner):
         to a tree buffer even if not originally used.
         """
         super().reset()
-        del self.buffer
-        self.buffer = TreeBuffer(self.env, self.capacity, self.extra_specs)
+        raise NotImplementedError
+        # del self.buffer
+        # self.buffer = TreeBuffer(self.env, 1_000_000, self.extra_specs)
 
     def update(self, data: dict):
         """Perform any necessary updates to the replay buffer.
