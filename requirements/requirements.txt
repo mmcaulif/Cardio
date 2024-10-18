@@ -3,3 +3,4 @@ gymnasium>=0.28.0
 tqdm
 stable-baselines3
 tensorboard
+wandb
