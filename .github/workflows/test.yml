@@ -1,8 +1,9 @@
 name: Cardio Tests
 run-name: ${{ github.actor }}
 on: [pull_request]
+
 jobs:
-  Explore-GitHub-Actions:
+  testing:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,14 +18,9 @@ jobs:
       - name: Update PATH
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # - name: Update Poetry configuration
-      #   run: poetry config virtualenvs.create false
-
       - name: Install dependencies
-        run: |
-          poetry install
+        run: poetry install
 
-      # Testing
       - name: Test with pytest
         run: |
           poetry run pip install pytest-cov
