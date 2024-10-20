@@ -1,4 +1,4 @@
-default_stages: [ "commit", "commit-msg", "push" ]
+default_stages: [ "pre-commit", "commit-msg", "pre-push" ]
 default_language_version:
   python: python
 
@@ -19,7 +19,7 @@ repos:
           - "--settings-file pyproject.toml"
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.12.0
+    rev: v1.12.1
     hooks:
       - id: mypy
         name: "Static type checker"
@@ -42,9 +42,10 @@ repos:
         additional_dependencies:
           - "@commitlint/config-angular"
 
-  - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.5
-    hooks:
-      - id: docformatter
-        # additional_dependencies: [tomli]
-        # args: [--in-place --config] #  ./pyproject.toml]
+  # Docformatter is broken with pre-commit 4.0
+  # - repo: https://github.com/PyCQA/docformatter
+  #   rev: v1.7.5
+  #   hooks:
+  #     - id: docformatter
+  #       additional_dependencies: [tomli]
+  #       args: [--in-place --config] #  ./pyproject.toml]
