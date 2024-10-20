@@ -42,7 +42,7 @@ repos:
         additional_dependencies:
           - "@commitlint/config-angular"
 
-  # Docformatter is broken with pre-commit 4.0
+  # Docformatter is broken with pre-commit 4.0: https://github.com/PyCQA/docformatter/issues/293
   # - repo: https://github.com/PyCQA/docformatter
   #   rev: v1.7.5
   #   hooks:
