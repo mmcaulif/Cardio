@@ -3,10 +3,7 @@
 
 <div align="center">
 
-[![Tests](https://github.com/mmcaulif/Cardio/actions?workflow=Cardio-Tests)](https://github.com/mmcaulif/Cardio/actions?workflow=Cardio-Tests)
-
-[![Tests](https://github.com/mmcaulif/Cardio/actions/workflows/test.yml?query=workflow%3ACardio-Tests)](https://github.com/mmcaulif/Cardio/actions/workflows/test.yml?query=workflow%3ACardio-Tests)
-
+[![Tests](https://github.com/mmcaulif/Cardio/actions?workflow=Cardio-Tests)](https://github.com/mmcaulif/Cardio//workflows/Cardio-Tests/badge.svg)
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://github.com/mmcaulif/Cardio/blob/main/LICENSE.txt)
