@@ -13,6 +13,7 @@ jobs:
 
         - name: pre-commit-lite
           uses: pre-commit/action@v3.0.1
+          if: always()
 
         # - name: pre-commit
         #   uses: pre-commit-ci/lite-action@v1.1.0
