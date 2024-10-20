@@ -1,19 +1,8 @@
-.PHONY: precommit_setup
-precommit_setup:
-	pre-commit --version
-	pre-commit install
-	pre-commit install -t commit-msg
-
-.PHONY: precommit_run
+.PHONY: precommit
 precommit_run:
 	pre-commit run --all-files
 
-.PHONY: install_cpu
-install_cpu:
-	pip install -e ".[dev,cpu]"
-	make precommit_setup
-
-.PHONY: install_gpu
-install_gpu:
-	pip install -e ".[dev,gpu]"
+.ONESHELL: setup
+setup:
+	poetry install --with dev
 	make precommit_setup
