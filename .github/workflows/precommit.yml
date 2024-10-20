@@ -12,9 +12,9 @@ jobs:
             python-version: '3.10'
 
         - name: pre-commit-lite
-          uses: pre-commit/action@v3.0.1
+          uses: pre-commit-ci/lite-action@v1.1.0
           if: always()
 
         # - name: pre-commit
-        #   uses: pre-commit-ci/lite-action@v1.1.0
+        #   uses: pre-commit/action@v3.0.1
         # TODO: The above causes an error in CI, need to fix at some point 
