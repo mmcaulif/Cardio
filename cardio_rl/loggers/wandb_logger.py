@@ -7,9 +7,14 @@ from cardio_rl.loggers import BaseLogger
 
 class WandbLogger(BaseLogger):
     def __init__(
-        self, project_name, log_dir="logs", exp_name="exp", cfg: Optional[dict] = None
+        self,
+        project_name: Optional[str] = None,
+        cfg: Optional[dict] = None,
+        log_dir: str = "logs",
+        exp_name: str = "exp",
+        to_file: bool = True,
     ) -> None:
-        super().__init__(log_dir, exp_name)
+        super().__init__(cfg, log_dir, exp_name, to_file)
         wandb.init(
             project=project_name,
             config=cfg,

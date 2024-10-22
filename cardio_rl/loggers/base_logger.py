@@ -1,28 +1,41 @@
 import logging
+import os
 import time
+from typing import Optional
 
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 
 class BaseLogger:
-    # TODO: add optional writing to a log file
     def __init__(
         self,
-        log_dir="logs",
-        exp_name="exp",
+        cfg: Optional[dict] = None,
+        log_dir: str = "logs",
+        exp_name: str = "exp",
+        to_file: bool = True,
     ) -> None:
-        self._exp_name = f"{exp_name}_{time.time()}"
+        self._exp_name = f"{exp_name}_{int(time.time())}"
 
-        # if not os.path.exists(log_dir):
-        #     os.makedirs(log_dir)
+        if cfg is not None:
+            self.terminal(f"Config provided: {cfg}\n")
 
-        logging.basicConfig(
-            # filename=os.path.join(log_dir, f"{self._exp_name}", "output.log"),
-            filemode="w",
-            format="%(asctime)s: %(message)s",
-            datefmt=" %I:%M:%S %p",
-            level=logging.INFO,
-        )
+        if not os.path.exists(os.path.join(log_dir, self._exp_name)):
+            os.makedirs(os.path.join(log_dir, self._exp_name))
+
+        if to_file:
+            logging.basicConfig(
+                filename=os.path.join(log_dir, self._exp_name, "terminal.log"),
+                filemode="w",
+                format="%(asctime)s: %(message)s",
+                datefmt=" %I:%M:%S %p",
+                level=logging.INFO,
+            )
+        else:
+            logging.basicConfig(
+                format="%(asctime)s: %(message)s",
+                datefmt=" %I:%M:%S %p",
+                level=logging.INFO,
+            )
 
         self._logger = logging.getLogger()
 
