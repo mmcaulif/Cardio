@@ -108,7 +108,14 @@ class OffPolicyRunner(BaseRunner):
         self.batch_size = batch_size
         self.n_batches = n_batches
         super().__init__(
-            env, agent, rollout_len, warmup_len, self.buffer.n_steps, eval_env, logger, logger, gatherer
+            env,
+            agent,
+            rollout_len,
+            warmup_len,
+            self.buffer.n_steps,
+            eval_env,
+            logger,
+            gatherer,
         )
 
     def _warm_start(self):
