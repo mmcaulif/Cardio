@@ -34,12 +34,12 @@ class TestTreeBuffer:
         runner = crl.OffPolicyRunner(
             env=env,
             agent=crl.Agent(env),
-            extra_specs={'example': [1]},
+            extra_specs={"example": [1]},
             rollout_len=4,
             batch_size=32,
-            warmup_len=0
+            warmup_len=0,
         )
-        assert runner.buffer.table['example'].shape == (runner.buffer.capacity, 1)
+        assert runner.buffer.table["example"].shape == (runner.buffer.capacity, 1)
 
     def test_sample(self):
         env = ToyEnv()

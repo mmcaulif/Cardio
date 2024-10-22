@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "cardio-rl"
+version = "0.1.1"
+description = "Cardio RL. In development..."
+authors = ["Manus McAuliffe <mmcaulif@tcd.ie>"]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/mmcaulif/Cardio"
+classifiers = [
+        "Development Status :: 3 - Alpha",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10, <3.12"
+numpy = "^1.21.0"
+gymnasium = "^0.28.0"
+tqdm = "^4.66.5"
+wandb = "^0.18.5"
+tensorboard = "^2.18.0"
+jax = ">=0.4.25, <0.4.30"
+jaxlib = ">=0.4.25, <0.4.30"
+torch = ">=1.12.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.7.0"
+mypy = "^1.12.0"
+pre-commit = "^4.0.1"
+isort = "^5.13.2"
+pytest = "^8.3.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
