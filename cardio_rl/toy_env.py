@@ -28,7 +28,9 @@ class ToyEnv(gym.Env):
 
         return np.array(state), 0.1 * self.count, False, False, {}
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        del seed
+        del options
         self.count = 0
         return np.ones(5) * self.count, {}
 

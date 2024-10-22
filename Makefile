@@ -17,3 +17,7 @@ install_cpu:
 install_gpu:
 	pip install -e ".[dev,gpu]"
 	make precommit_setup
+
+.PHONY: profile
+profile:
+	python -m cProfile -s cumtime run_dummy.py > results.txt

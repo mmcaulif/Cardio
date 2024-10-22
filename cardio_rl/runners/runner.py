@@ -231,14 +231,14 @@ class BaseRunner:
         sum_t = float(sum_t)
         with logging_redirect_tqdm():
             env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
-            curr_time = round(time.time() - self._initial_time, 2)
+            curr_time = time.time() - self._initial_time
             metrics = {
                 "Timesteps": env_steps,
                 "Training steps": rollouts,
                 # "Episodes": self.episodes,    # TODO: find a way to implement this
                 "Avg eval returns": round(avg_r, 2),
                 "Avg eval episode length": avg_l,
-                "Time passed": curr_time,
+                "Time passed": round(curr_time, 2),
                 "Evaluation time": round(sum_t, 4),
                 "Steps per second": int(env_steps / curr_time),
             }
