@@ -1,9 +1,8 @@
 import logging
-from typing import Optional
 
 from gymnasium import Env
 
-from cardio_rl import Agent, BaseRunner, Gatherer, VectorGatherer
+from cardio_rl import Agent, Gatherer, Runner, VectorGatherer
 from cardio_rl.types import Environment
 
 logging.basicConfig(
@@ -13,7 +12,7 @@ logging.basicConfig(
 )
 
 
-class OnPolicyRunner(BaseRunner):
+class OnPolicyRunner(Runner):
     """The runner is the high level orchestrator that deals with the different
     components and data, it contains a gatherer, your agent and any replay
     buffer you might have. The runner calls the gatherer's step function as
@@ -49,10 +48,10 @@ class OnPolicyRunner(BaseRunner):
     def __init__(
         self,
         env: Environment,
-        agent: Optional[Agent] = None,
+        agent: Agent | None = None,
         rollout_len: int = 1,
-        eval_env: Optional[Env] = None,
-        gatherer: Optional[Gatherer] = None,
+        eval_env: Env | None = None,
+        gatherer: Gatherer | None = None,
     ) -> None:
         """Initialises the runner ...TODO...
 

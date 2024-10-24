@@ -1,14 +1,14 @@
-from typing import Callable, Optional
+import warnings
 
 from gymnasium import Env
 from gymnasium.experimental.vector import VectorEnv
 
-from cardio_rl import Agent, BaseRunner, Gatherer
+from cardio_rl import Agent, Runner
 from cardio_rl.buffers import BaseBuffer, TreeBuffer
-from cardio_rl.types import Environment, Transition
+from cardio_rl.types import Environment
 
 
-class OffPolicyRunner(BaseRunner):
+class OffPolicyRunner(Runner):
     """The runner is the high level orchestrator that deals with the different
     components and data, it contains a gatherer, your agent and any replay
     buffer you might have. The runner calls the gatherer's step function as
@@ -51,15 +51,13 @@ class OffPolicyRunner(BaseRunner):
     def __init__(
         self,
         env: Environment,
-        agent: Optional[Agent] = None,
-        extra_specs: dict = {},
-        buffer: Optional[BaseBuffer] = None,
+        agent: Agent | None = None,
+        buffer_kwargs: dict = {},
         rollout_len: int = 1,
-        batch_size: int = 100,
         warmup_len: int = 10_000,
-        n_batches: int = 1,
-        eval_env: Optional[Env] = None,
-        gatherer: Optional[Gatherer] = None,
+        eval_env: Env | None = None,
+        extra_specs: dict = {},
+        buffer: BaseBuffer | None = None,
     ) -> None:
         """Initialises an off policy runner, which incorporates a replay buffer
         for collecting experience. Data is provided to the runner which is stores in the buffer,
@@ -94,81 +92,87 @@ class OffPolicyRunner(BaseRunner):
         Raises:
             TypeError: Trying to use a VectorEnv with off-policy runner.
         """
-
+        warnings.warn(
+            "OffPolicyRunner is deprecated, please use cardio_rl.Runner.off_policy instead"
+        )
         if isinstance(env, VectorEnv):
             raise TypeError("VectorEnv's not yet compatible with off-policy runner")
 
         if buffer is not None:
-            self.buffer = buffer
+            warnings.warn(
+                "Providing a buffer, ignoring the extra_specs and buffer_kwargs arguments"
+            )
+            buffer = buffer
         else:
-            self.buffer = TreeBuffer(env, 1_000_000, extra_specs, 1, 1)
+            buffer = TreeBuffer(env, extra_specs=extra_specs, **buffer_kwargs)
 
-        self.batch_size = batch_size
-        self.n_batches = n_batches
         super().__init__(
-            env, agent, rollout_len, warmup_len, self.buffer.n_steps, eval_env, gatherer
+            env=env,
+            agent=agent,
+            rollout_len=rollout_len,
+            warmup_len=warmup_len,
+            n_step=buffer.n_steps,
+            eval_env=eval_env,
+            buffer=buffer,
         )
 
-    def _warm_start(self):
-        """Step through environment with freshly initialised agent, to collect
-        transitions before training via the agents update method.
+    # def _warm_start(self):
+    #     """Step through environment with freshly initialised agent, to collect
+    #     transitions before training via the agents update method.
 
-        Returns:
-            Transition: stacked Transitions from environment
-            int: number of Transitions collected
-        """
-        rollout_transitions, num_transitions = super()._warm_start()
-        if num_transitions:
-            self.buffer.store(rollout_transitions, num_transitions)
+    #     Returns:
+    #         Transition: stacked Transitions from environment
+    #         int: number of Transitions collected
+    #     """
+    #     rollout_transitions, num_transitions = super()._warm_start()
+    #     if num_transitions:
+    #         self.buffer.store(rollout_transitions, num_transitions)
 
-    def step(
-        self, transform: Optional[Callable] = None, agent: Optional[Agent] = None
-    ) -> Transition | list[Transition]:
-        """Main method to step through environment with agent, to collect
-        transitions and pass them to your agent's update function.
+    # def step(
+    #     self, transform: Optional[Callable] = None, agent: Optional[Agent] = None
+    # ) -> Transition | list[Transition]:
+    #     """Main method to step through environment with agent, to collect
+    #     transitions and pass them to your agent's update function.
 
-        Args:
-            transform (Optional[Callable]. optional): An optional function
-                to use on the stacked Transitions received during the
-                rollout. Defaults to None.
-            agent (Optional[Agent], optional): Can optionally pass a
-                specific agent to step through environment with. Defaults
-                to None and uses internal agent.
+    #     Args:
+    #         transform (Optional[Callable]. optional): An optional function
+    #             to use on the stacked Transitions received during the
+    #             rollout. Defaults to None.
+    #         agent (Optional[Agent], optional): Can optionally pass a
+    #             specific agent to step through environment with. Defaults
+    #             to None and uses internal agent.
 
-        Returns:
-            Transition | list[Transition]: stacked Transitions from environment.
-        """
+    #     Returns:
+    #         Transition | list[Transition]: stacked Transitions from environment.
+    #     """
 
-        agent = agent or self.agent
-        assert agent is not None
+    #     agent = agent or self.agent
+    #     assert agent is not None
 
-        rollout_transitions, num_transitions = self._rollout(
-            self.rollout_len, agent, transform
-        )
-        if num_transitions:
-            self.buffer.store(rollout_transitions, num_transitions)
-        k = min(self.batch_size, len(self.buffer))
-        if self.n_batches > 1:
-            return [self.buffer.sample(k) for _ in range(self.n_batches)]
-        else:
-            return self.buffer.sample(k)
+    #     rollout_transitions, num_transitions = self._rollout(
+    #         self.rollout_len, agent, transform
+    #     )
+    #     if num_transitions:
+    #         self.buffer.store(rollout_transitions, num_transitions)
 
-    def reset(self) -> None:
-        """Perform any necessary resets, such as for the replay buffer and
-        gatherer.
+    #     return self.buffer.sample()
 
-        TODO: Move resetting of buffer to itself, currently we end up defaulting
-        to a tree buffer even if not originally used.
-        """
-        super().reset()
-        raise NotImplementedError
-        # del self.buffer
-        # self.buffer = TreeBuffer(self.env, 1_000_000, self.extra_specs)
+    # def reset(self) -> None:
+    #     """Perform any necessary resets, such as for the replay buffer and
+    #     gatherer.
 
-    def update(self, data: dict):
-        """Perform any necessary updates to the replay buffer.
+    #     TODO: Move resetting of buffer to itself, currently we end up defaulting
+    #     to a tree buffer even if not originally used.
+    #     """
+    #     super().reset()
+    #     raise NotImplementedError
+    #     del self.buffer
+    #     self.buffer = TreeBuffer(self.env, 1_000_000, self.extra_specs)
 
-        data (dict): A dictionary containing the indices in the 'idxs'
-        key     and the other keys/values to be updated.
-        """
-        self.buffer.update(data)
+    # def update(self, data: dict):
+    #     """Perform any necessary updates to the replay buffer.
+
+    #     data (dict): A dictionary containing the indices in the 'idxs'
+    #     key     and the other keys/values to be updated.
+    #     """
+    #     self.buffer.update(data)
