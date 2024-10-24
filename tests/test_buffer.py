@@ -16,11 +16,11 @@ class TestTreeBuffer:
 
     def test_buffer_with_runner(self):
         env = crl.toy_env.ToyEnv()
-        runner = crl.OffPolicyRunner(
+        runner = crl.Runner.off_policy(
             env=env,
             agent=crl.Agent(env),
+            buffer_kwargs={"batch_size": 32},
             rollout_len=4,
-            batch_size=32,
         )
         sample = runner.step()
         assert sample["s"].shape == (32, 5)
@@ -31,22 +31,22 @@ class TestTreeBuffer:
 
     def test_extra_specs(self):
         env = crl.toy_env.ToyEnv()
-        runner = crl.OffPolicyRunner(
+        runner = crl.Runner.off_policy(
             env=env,
             agent=crl.Agent(env),
-            extra_specs={"example": [1]},
+            buffer_kwargs={"batch_size": 32},
             rollout_len=4,
-            batch_size=32,
             warmup_len=0,
+            extra_specs={"example": [1]},
         )
         assert runner.buffer.table["example"].shape == (runner.buffer.capacity, 1)
 
     def test_sample(self):
-        env = ToyEnv()
-        buffer = TreeBuffer(env)
-        s, _ = env.reset()
-
         steps = 1
+
+        env = ToyEnv()
+        buffer = TreeBuffer(env, batch_size=steps)
+        s, _ = env.reset()
 
         for _ in range(steps):
             a = env.action_space.sample()
@@ -64,7 +64,7 @@ class TestTreeBuffer:
             if d or t:
                 s, _ = env.reset()
 
-        sample = buffer.sample(steps)
+        sample = buffer.sample()
         assert sample["s"].shape == (steps, 5)
         assert sample["a"].shape == (steps, 1)
         assert sample["r"].shape == (steps, 1)
@@ -72,11 +72,13 @@ class TestTreeBuffer:
         assert sample["d"].shape == (steps, 1)
 
     def test_trajectories(self):
-        env = ToyEnv()
-        buffer = TreeBuffer(env, trajectory=3)
-        s, _ = env.reset()
-
+        batch_size = 4
+        trajectory = 3
         steps = 20
+
+        env = ToyEnv()
+        buffer = TreeBuffer(env, batch_size=batch_size, trajectory=trajectory)
+        s, _ = env.reset()
 
         for _ in range(steps):
             a = env.action_space.sample()
@@ -94,7 +96,7 @@ class TestTreeBuffer:
             if d or t:
                 s, _ = env.reset()
 
-        sample = buffer.sample(4)
+        sample = buffer.sample()
         assert sample["s"].shape == (4, 3, 5)
         assert sample["a"].shape == (4, 3, 1)
         assert sample["r"].shape == (4, 3, 1)
