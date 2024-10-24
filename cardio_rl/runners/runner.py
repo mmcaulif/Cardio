@@ -1,5 +1,4 @@
 import copy
-import logging
 import time
 from typing import Callable, Optional
 
@@ -9,17 +8,11 @@ from gymnasium import Env
 from gymnasium.experimental.vector import VectorEnv
 from gymnasium.wrappers import record_episode_statistics
 from tqdm import trange
-from tqdm.contrib.logging import logging_redirect_tqdm
 
 import cardio_rl as crl
 from cardio_rl import Agent, Gatherer
+from cardio_rl.loggers import BaseLogger
 from cardio_rl.types import Environment, Transition
-
-logging.basicConfig(
-    format="%(asctime)s: %(message)s",
-    datefmt=" %I:%M:%S %p",
-    level=logging.INFO,
-)
 
 
 class BaseRunner:
@@ -61,6 +54,7 @@ class BaseRunner:
         warmup_len: int = 0,
         n_step: int = 1,
         eval_env: Optional[Env] = None,
+        logger: Optional[BaseLogger] = None,
         gatherer: Optional[Gatherer] = None,
     ) -> None:
         """Initialises a generic runner, parent class of OnPolicyRunner and
@@ -106,6 +100,8 @@ class BaseRunner:
 
         self._initial_time = time.time()
 
+        self.logger = logger or crl.loggers.BaseLogger()
+
         # Initialise components
         self.gatherer.init_env(self.env)
         self.burn_in_len = 0
@@ -134,7 +130,7 @@ class BaseRunner:
         """
         agent = self.agent or crl.Agent(self.env)  # Needs to be ordered like this!
         rollout_transitions, num_transitions = self._rollout(self.warmup_len, agent)
-        logging.info("### Warm up finished ###")
+        self.logger.terminal("### Warm up finished ###")
         return rollout_transitions, num_transitions
 
     def _rollout(
@@ -229,20 +225,22 @@ class BaseRunner:
         avg_r = float(avg_r / episodes)
         avg_l = float(avg_l / episodes)
         sum_t = float(sum_t)
-        with logging_redirect_tqdm():
-            env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
-            curr_time = round(time.time() - self._initial_time, 2)
-            metrics = {
-                "Timesteps": env_steps,
-                "Training steps": rollouts,
-                # "Episodes": self.episodes,    # TODO: find a way to implement this
-                "Avg eval returns": round(avg_r, 2),
-                "Avg eval episode length": avg_l,
-                "Time passed": curr_time,
-                "Evaluation time": round(sum_t, 4),
-                "Steps per second": int(env_steps / curr_time),
-            }
-            logging.info(metrics)
+        # with logging_redirect_tqdm():
+
+        env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
+        curr_time = round(time.time() - self._initial_time, 2)
+        metrics = {
+            "Timesteps": env_steps,
+            "Training steps": rollouts,
+            # "Episodes": self.episodes,    # TODO: find a way to implement this
+            "Avg eval returns": round(avg_r, 2),
+            "Avg eval episode length": avg_l,
+            "Time passed": curr_time,
+            "Evaluation time": round(sum_t, 4),
+            "Steps per second": int(env_steps / curr_time),
+        }
+        # logging.info(metrics)
+        self.logger.log(metrics)
 
         return avg_r
 
@@ -264,7 +262,7 @@ class BaseRunner:
         Returns:
             float: Average episodic returns from the final evaluation step.
         """
-        logging.info("Performing initial evaluation")
+        self.logger.terminal("Performing initial evaluation")
         _ = self.eval(
             0, eval_episodes, self.agent
         )  # TODO: have this before the warmup?
@@ -277,7 +275,7 @@ class BaseRunner:
             if t % eval_freq == 0 and t > 0:
                 self.eval(t, eval_episodes, self.agent)
 
-        logging.info("Performing final evaluation")
+        self.logger.terminal("Performing final evaluation")
         avg_returns = self.eval(t, eval_episodes, self.agent)
         return avg_returns
 
