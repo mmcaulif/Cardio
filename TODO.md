@@ -5,12 +5,32 @@
 1. [x] add custom templates for issues and PR's: look at other repo's for inspo and give credit
 1. [x] Trajectory replay buffer:
 * implement n-steps using trajectory buffer like FlashBax
-1. [ ] Outline speed, profiling and optimisation roadmap
-1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement too).
-1. [ ] Implement seeding for reproducability.
 1. [ ] Properly document Prioritised Buffer Implementation details
+1. [ ] Moved on policy and off policy runners to class methods
+1. [ ] Use jax agents for examples (removing torch as a requirement)
+1. [ ] Update readme in accordance
+
+Runner class methods todo list:
+1. [ ] Add dummy/queue buffer
+  * [x] make buffer an argument in BaseRunner
+  * [x] add off_policy update function to base runner
+1. [x] Add n_batches and batch size argument to Buffers, rework off_policy buffer
+1. [x] Rename BaseRunner to Runner
+
+# for v0.1.2
+1. [ ] Implement seeding for reproducability.
+1. [ ] Gatherer should return episodes and steps completed
+1. [ ] Outline speed, profiling and optimisation roadmap/comparisons
+1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement).
+1. [ ] Mixed replay buffer
+1. [ ] Agents can return metrics to be logged? e.g. Loss
 
 * Send repo to Pablo Samuel Castro
+  * Follow up!
+
+# Post v0.1.2
+* [ ] Benchmarking of Sprinter
+* [ ] Documentation + white paper
 
 ## Specific tasks
 * [ ] QOL Runner and Gatherer changes
@@ -29,7 +49,7 @@ __Focus on getting some form of Cardio as a finished deliverable__
 * [ ] Docker file
 
 * [ ] Other replay buffers:
-  * [ ] trajectory
+  * [x] trajectory
   * [x] prioritised
   * [ ] mixed
   * [x] simple/base
@@ -57,7 +77,7 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [x] Pip package with github actions for releases
 
-* [ ] MinAtar and Atari examples
+* [x] MinAtar and Atari examples
   * [x] MinAtar: Seems to work seamlessly so far, need to write a network for it and train DQN
     * MinAtar DQN appears to match performance from paper in initial benchmarks of Freeway!
   * [x] Atari: inital DER runs are good
