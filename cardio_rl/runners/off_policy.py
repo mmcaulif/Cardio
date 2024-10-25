@@ -3,7 +3,7 @@ import warnings
 from gymnasium import Env
 from gymnasium.experimental.vector import VectorEnv
 
-from cardio_rl import Agent, Runner
+from cardio_rl import Agent, Gatherer, Runner
 from cardio_rl.buffers import BaseBuffer, TreeBuffer
 from cardio_rl.types import Environment
 
@@ -52,12 +52,14 @@ class OffPolicyRunner(Runner):
         self,
         env: Environment,
         agent: Agent | None = None,
-        buffer_kwargs: dict = {},
-        rollout_len: int = 1,
-        warmup_len: int = 10_000,
-        eval_env: Env | None = None,
         extra_specs: dict = {},
         buffer: BaseBuffer | None = None,
+        rollout_len: int = 1,
+        batch_size: int = 100,
+        warmup_len: int = 10_000,
+        n_batches: int = 1,
+        eval_env: Env | None = None,
+        gatherer: Gatherer | None = None,
     ) -> None:
         """Initialises an off policy runner, which incorporates a replay buffer
         for collecting experience. Data is provided to the runner which is stores in the buffer,
@@ -95,6 +97,7 @@ class OffPolicyRunner(Runner):
         warnings.warn(
             "OffPolicyRunner is deprecated, please use cardio_rl.Runner.off_policy instead"
         )
+        del gatherer
         if isinstance(env, VectorEnv):
             raise TypeError("VectorEnv's not yet compatible with off-policy runner")
 
@@ -104,7 +107,9 @@ class OffPolicyRunner(Runner):
             )
             buffer = buffer
         else:
-            buffer = TreeBuffer(env, extra_specs=extra_specs, **buffer_kwargs)
+            buffer = TreeBuffer(
+                env, extra_specs=extra_specs, batch_size=batch_size, n_batches=n_batches
+            )
 
         super().__init__(
             env=env,
