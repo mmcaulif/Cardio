@@ -1,4 +1,4 @@
-from typing import Optional
+import warnings
 
 import numpy as np
 from gymnasium import Env, spaces
@@ -31,8 +31,10 @@ class BaseBuffer:
         self,
         env: Env,
         capacity: int = 1_000_000,
+        batch_size: int = 100,
         n_steps: int = 1,
         trajectory: int = 1,
+        n_batches: int = 1,
     ):
         """Initialises the replay buffer, automatically building the table
         using provided parameters and an environment.
@@ -55,8 +57,10 @@ class BaseBuffer:
 
         self.pos = 0
         self.capacity = capacity
+        self.batch_size = batch_size
         self.n_steps = n_steps
         self.trajectory = trajectory
+        self.n_batches = n_batches
 
         self.full = False
 
@@ -78,7 +82,7 @@ class BaseBuffer:
         Returns:
             An integer describing the current length of stored data.
         """
-        return self.len
+        return self.capacity if self.full else self.pos
 
     def store(self, data: Transition, num: int) -> np.ndarray:
         """Store the given transitions in the replay buffer. The buffer is
@@ -116,10 +120,10 @@ class BaseBuffer:
 
         return idxs
 
-    def sample(
+    def _sample(
         self,
-        batch_size: Optional[int] = None,
-        sample_indxs: Optional[np.ndarray] = None,
+        batch_size: int | None = None,
+        sample_indxs: np.ndarray | None = None,
     ) -> Transition:
         """Sample batch_size number of indices between 0 and the current length
         of the replay buffer, or use provided indices. Take each corresponding
@@ -144,7 +148,7 @@ class BaseBuffer:
 
         if batch_size and sample_indxs is None:
             sample_indxs = np.random.randint(
-                low=0, high=self.len - (self.trajectory - 1), size=batch_size
+                low=0, high=len(self) - (self.trajectory - 1), size=batch_size
             )
 
         assert sample_indxs is not None
@@ -184,6 +188,20 @@ class BaseBuffer:
         batch.update({"idxs": sample_indxs})
         return batch
 
+    def sample(self, sample_indxs: np.ndarray | None = None):
+        if sample_indxs is None:
+            k = min(self.batch_size, len(self))
+            if self.n_batches > 1:
+                return [self._sample(batch_size=k) for _ in range(self.n_batches)]
+            else:
+                return self._sample(batch_size=k)
+        else:
+            if self.n_batches > 1:
+                warnings.warn(
+                    "Passing sample indices when n_batches > 1, this will be ignored"
+                )
+            self._sample(sample_indxs=sample_indxs)
+
     def update(self, data: dict):
         """Dummy function in BaseBuffer but implemented in children classes.
         Used to Update specific keys and indices in the internal table with new
@@ -197,15 +215,4 @@ class BaseBuffer:
                 indices to update and keys with the updated values.
         """
         del data
-        raise UserWarning(
-            "Passing update data to the base buffer, use tree buffer instead"
-        )
-
-    @property
-    def len(self):
-        """The current amount of transitions stored in the internal table.
-
-        Returns:
-            An integer describing the current length of stored data.
-        """
-        return self.capacity if self.full else self.pos
+        warnings.warn("Passing update data to the base buffer, use tree buffer instead")

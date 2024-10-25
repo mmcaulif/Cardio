@@ -1,5 +1,4 @@
 import functools
-from typing import Optional
 
 import jax
 import numpy as np
@@ -27,8 +26,10 @@ class TreeBuffer(BaseBuffer):
         env: Environment,
         capacity: int = 1_000_000,
         extra_specs: dict = {},
+        batch_size: int = 100,
         n_steps: int = 1,
         trajectory: int = 1,
+        n_batches: int = 1,
     ):
         """Initialises the replay buffer, automatically building the table
         using provided parameters, an environment and optional extras.
@@ -52,8 +53,10 @@ class TreeBuffer(BaseBuffer):
 
         self.pos = 0
         self.capacity = capacity
+        self.batch_size = batch_size
         self.n_steps = n_steps
         self.trajectory = trajectory
+        self.n_batches = n_batches
 
         self.full = False
 
@@ -128,10 +131,10 @@ class TreeBuffer(BaseBuffer):
 
         return idxs
 
-    def sample(
+    def _sample(
         self,
-        batch_size: Optional[int] = None,
-        sample_indxs: Optional[np.ndarray] = None,
+        batch_size: int | None = None,
+        sample_indxs: np.ndarray | None = None,
     ) -> Transition:
         """Sample batch_size number of indices between 0 and the current length
         of the replay buffer, or use provided indices. Take each corresponding
@@ -154,10 +157,9 @@ class TreeBuffer(BaseBuffer):
                 "Passing both a batch size and indices to sample method, please only provide one"
             )
 
-        # TODO: raise an error/warning when batch_size and sample_indxs are both passed.
-        if batch_size and sample_indxs is None:
+        if batch_size:
             sample_indxs = np.random.randint(
-                low=0, high=self.len - (self.trajectory - 1), size=batch_size
+                low=0, high=len(self) - (self.trajectory - 1), size=batch_size
             )
 
         def get_trajectories(arr):

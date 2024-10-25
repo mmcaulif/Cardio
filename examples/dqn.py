@@ -94,11 +94,16 @@ class DQN(crl.Agent):
 
 def main():
     env = gym.make("CartPole-v1")
-    runner = crl.OffPolicyRunner(
+    # runner = crl.OffPolicyRunner(
+    #     env=env,
+    #     agent=DQN(env, Q_critic(4, 2)),
+    #     rollout_len=4,
+    #     batch_size=32,
+    # )
+    runner = crl.Runner.off_policy(
         env=env,
         agent=DQN(env, Q_critic(4, 2)),
         rollout_len=4,
-        batch_size=32,
     )
     runner.run(rollouts=50_000, eval_freq=1_250)
 

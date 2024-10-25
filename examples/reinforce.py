@@ -59,9 +59,7 @@ class Reinforce(crl.Agent):
 
 
 def main():
-    runner = crl.BaseRunner(
-        env=gym.make("CartPole-v1"), agent=Reinforce(), rollout_len=-1
-    )
+    runner = crl.Runner(env=gym.make("CartPole-v1"), agent=Reinforce(), rollout_len=-1)
     runner.run(10_000, eval_episodes=100)
 
 

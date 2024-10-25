@@ -126,11 +126,11 @@ class TD3(crl.Agent):
 
 def main():
     env = gym.make("Pendulum-v1")
-    runner = crl.OffPolicyRunner(
+    runner = crl.Runner.off_policy(
         env=env,
         agent=TD3(env),
+        buffer_kwargs={"batch_size": 256},
         rollout_len=1,
-        batch_size=256,
     )
     runner.run(rollouts=190_000)
 
