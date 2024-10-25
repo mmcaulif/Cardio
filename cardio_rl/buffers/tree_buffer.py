@@ -26,7 +26,7 @@ class TreeBuffer(BaseBuffer):
         env: Environment,
         capacity: int = 1_000_000,
         extra_specs: dict = {},
-        batch_size: int = 100,
+        batch_size: int = 32,
         n_steps: int = 1,
         trajectory: int = 1,
         n_batches: int = 1,
