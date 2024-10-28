@@ -2,14 +2,9 @@ import logging
 
 from gymnasium import Env
 
-from cardio_rl import Agent, Gatherer, Runner, VectorGatherer
+from cardio_rl import Agent, BaseRunner, Gatherer, VectorGatherer
+from cardio_rl.loggers import BaseLogger
 from cardio_rl.types import Environment
-
-logging.basicConfig(
-    format="%(asctime)s: %(message)s",
-    datefmt=" %I:%M:%S %p",
-    level=logging.INFO,
-)
 
 
 class OnPolicyRunner(Runner):
@@ -52,6 +47,9 @@ class OnPolicyRunner(Runner):
         rollout_len: int = 1,
         eval_env: Env | None = None,
         gatherer: Gatherer | None = None,
+        eval_env: Optional[Env] = None,
+        logger: Optional[BaseLogger] = None,
+        gatherer: Optional[Gatherer] = None,
     ) -> None:
         """Initialises the runner ...TODO...
 
@@ -75,5 +73,6 @@ class OnPolicyRunner(Runner):
             warmup_len=0,
             n_step=1,
             eval_env=eval_env,
+            logger=logger,
             gatherer=_gatherer,
         )

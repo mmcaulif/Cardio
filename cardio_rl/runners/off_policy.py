@@ -5,7 +5,8 @@ from gymnasium.experimental.vector import VectorEnv
 
 from cardio_rl import Agent, Gatherer, Runner
 from cardio_rl.buffers import BaseBuffer, TreeBuffer
-from cardio_rl.types import Environment
+from cardio_rl.loggers import BaseLogger
+from cardio_rl.types import Environment, Transition
 
 
 class OffPolicyRunner(Runner):
@@ -58,8 +59,9 @@ class OffPolicyRunner(Runner):
         batch_size: int = 100,
         warmup_len: int = 10_000,
         n_batches: int = 1,
-        eval_env: Env | None = None,
-        gatherer: Gatherer | None = None,
+        eval_env: Optional[Env] = None,
+        logger: Optional[BaseLogger] = None,
+        gatherer: Optional[Gatherer] = None,
     ) -> None:
         """Initialises an off policy runner, which incorporates a replay buffer
         for collecting experience. Data is provided to the runner which is stores in the buffer,
@@ -119,8 +121,8 @@ class OffPolicyRunner(Runner):
             n_step=buffer.n_steps,
             eval_env=eval_env,
             buffer=buffer,
+            logger=logger,
         )
-
     # def _warm_start(self):
     #     """Step through environment with freshly initialised agent, to collect
     #     transitions before training via the agents update method.
