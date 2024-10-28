@@ -56,11 +56,9 @@ class Runner:
         warmup_len: int = 0,
         n_step: int = 1,
         eval_env: Env | None = None,
-        gatherer: Gatherer | None = None,
-        eval_env: Optional[Env] = None,
         buffer: BaseBuffer | None = None,
-        logger: Optional[BaseLogger] = None,
-        gatherer: Optional[Gatherer] = None,
+        logger: BaseLogger | None = None,
+        gatherer: Gatherer | None = None,
     ) -> None:
         """Initialises a generic runner, parent class of OnPolicyRunner and
         OffPolicyRunner, which should be used instead of this. This base class is
@@ -136,7 +134,7 @@ class Runner:
         """
         agent = self.agent or crl.Agent(self.env)  # Needs to be ordered like this!
         rollout_transitions, num_transitions = self._rollout(self.warmup_len, agent)
-        logging.info("### Warm up finished ###")
+        self.logger.terminal("### Warm up finished ###")
         if self.buffer is not None:
             self.buffer.store(rollout_transitions, num_transitions)
         return rollout_transitions, num_transitions
@@ -346,6 +344,7 @@ class Runner:
         agent: Agent | None = None,
         rollout_len: int = 1,
         eval_env: Env | None = None,
+        logger: BaseLogger | None = None,
     ):
         return cls(
             env=env,
@@ -354,6 +353,7 @@ class Runner:
             warmup_len=0,
             n_step=1,
             eval_env=eval_env,
+            logger=logger,
             gatherer=crl.VectorGatherer(),
         )
 
@@ -368,6 +368,7 @@ class Runner:
         eval_env: Env | None = None,
         extra_specs: dict = {},
         buffer: BaseBuffer | None = None,
+        logger: BaseLogger | None = None,
     ):
         if isinstance(env, VectorEnv):
             raise TypeError("VectorEnv's not yet compatible with off-policy runner")
@@ -390,4 +391,5 @@ class Runner:
             n_step=buffer.n_steps,
             eval_env=eval_env,
             buffer=buffer,
+            logger=logger,
         )

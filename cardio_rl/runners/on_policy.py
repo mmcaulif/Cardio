@@ -1,8 +1,8 @@
-import logging
+import warnings
 
 from gymnasium import Env
 
-from cardio_rl import Agent, BaseRunner, Gatherer, VectorGatherer
+from cardio_rl import Agent, Gatherer, Runner, VectorGatherer
 from cardio_rl.loggers import BaseLogger
 from cardio_rl.types import Environment
 
@@ -46,10 +46,8 @@ class OnPolicyRunner(Runner):
         agent: Agent | None = None,
         rollout_len: int = 1,
         eval_env: Env | None = None,
+        logger: BaseLogger | None = None,
         gatherer: Gatherer | None = None,
-        eval_env: Optional[Env] = None,
-        logger: Optional[BaseLogger] = None,
-        gatherer: Optional[Gatherer] = None,
     ) -> None:
         """Initialises the runner ...TODO...
 
@@ -65,6 +63,9 @@ class OnPolicyRunner(Runner):
             gatherer (Optional[Gatherer], optional): An optional gatherer to be used by
                 the runner. Defaults to None.
         """
+        warnings.warn(
+            "OnPolicyRunner is deprecated, please use cardio_rl.Runner.on_policy instead"
+        )
         _gatherer = gatherer or VectorGatherer()
         super().__init__(
             env=env,
