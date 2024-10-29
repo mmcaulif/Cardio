@@ -7,7 +7,7 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 
 
 class BaseLogger:
-    """Base logger that prints to terminal and writes to a file
+    """Base logger that prints to terminal and writes to a file.
 
     Attributes:
         file_name (str): The name of the file written to. Combines
@@ -23,7 +23,7 @@ class BaseLogger:
         exp_name: str = "exp",
         to_file: bool = True,
     ) -> None:
-        """Base logger that prints to terminal and writes to a file
+        """Base logger that prints to terminal and writes to a file.
 
         Args:
             cfg (Optional[dict], optional): An dictionary that is

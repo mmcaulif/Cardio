@@ -4,8 +4,8 @@ from cardio_rl.loggers import BaseLogger
 
 
 class WandbLogger(BaseLogger):
-    """Weights and Biases logger that prints to terminal and writes
-    to a file and W and B.
+    """Weights and Biases logger that prints to terminal and writes to a file
+    and W and B.
 
     Attributes:
         file_name (str): The name of the file written to. Combines
@@ -21,8 +21,8 @@ class WandbLogger(BaseLogger):
         exp_name: str = "exp",
         to_file: bool = True,
     ) -> None:
-        """Weights and Biases logger that prints to terminal and writes
-        to a file and W and B.
+        """Weights and Biases logger that prints to terminal and writes to a
+        file and W and B.
 
         Args:
             cfg (Optional[dict], optional): An dictionary that is

@@ -6,8 +6,8 @@ from cardio_rl.loggers import BaseLogger
 
 
 class TensorboardLogger(BaseLogger):
-    """Tensorboard logger that prints to terminal and writes to a
-    file and tensorboard.
+    """Tensorboard logger that prints to terminal and writes to a file and
+    tensorboard.
 
     Attributes:
         file_name (str): The name of the file written to. Combines
@@ -25,8 +25,8 @@ class TensorboardLogger(BaseLogger):
         exp_name: str = "exp",
         to_file: bool = True,
     ) -> None:
-        """Tensorboard logger that prints to terminal and writes to a
-        file and tensorboard.
+        """Tensorboard logger that prints to terminal and writes to a file and
+        tensorboard.
 
         Args:
             cfg (Optional[dict], optional): An dictionary that is
@@ -43,8 +43,8 @@ class TensorboardLogger(BaseLogger):
         self.writer = SummaryWriter(tb_log_dir)
 
     def log(self, metrics: dict) -> None:
-        """Send dictionary of metrics to Tensorboard based on the
-        keys and values.
+        """Send dictionary of metrics to Tensorboard based on the keys and
+        values.
 
         Args:
             metrics (dict): Dictionary with metrics to be logged.
