@@ -1,19 +1,26 @@
 # General to do list in advance of an initial 0.0.1 release
 
 # for v0.1.1
-1. [ ] Integrated loggers: WandB, Neptune, Tensorboard etc.
+1. [x] Integrated loggers: WandB, Neptune, Tensorboard etc.
 1. [x] add custom templates for issues and PR's: look at other repo's for inspo and give credit
 1. [x] Trajectory replay buffer:
 * implement n-steps using trajectory buffer like FlashBax
-1. [ ] Properly document Prioritised Buffer Implementation details
-1. [ ] Moved on policy and off policy runners to class methods
+1. [ ] Moved on-policy and-off policy runners to class methods
 1. [ ] Use jax agents for examples (removing torch as a requirement)
+  * [ ] Fix jax seed issue when seed = 0
+  * [ ] Consistent implementations
 1. [ ] Update readme in accordance
+1. [ ] SB3 runner functionality:
+  * [ ] Make a eval_agent function similar to Sb3, allow it to return list and std dev
+  * [ ] Option to turn on or off logging verbosity and progress bar
+  * [ ] Runner logging bug fixes (number of env steps with vecenv* and number of training steps performed)
+1. [ ] Use pyproject.toml for precommit configuration
+
+*might be fixed
 
 Runner class methods todo list:
-1. [ ] Add dummy/queue buffer
-  * [x] make buffer an argument in BaseRunner
-  * [x] add off_policy update function to base runner
+1. [x] make buffer an argument in BaseRunner
+1. [x] add off_policy update function to base runner
 1. [x] Add n_batches and batch size argument to Buffers, rework off_policy buffer
 1. [x] Rename BaseRunner to Runner
 
@@ -21,9 +28,12 @@ Runner class methods todo list:
 1. [ ] Implement seeding for reproducability.
 1. [ ] Gatherer should return episodes and steps completed
 1. [ ] Outline speed, profiling and optimisation roadmap/comparisons
+  * [ ] Add function timers like in RidL
+  * [ ] Compare with SB3/SBX
 1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement).
 1. [ ] Mixed replay buffer
 1. [ ] Agents can return metrics to be logged? e.g. Loss
+1. [ ] Properly document Prioritised Buffer Implementation details
 
 * Send repo to Pablo Samuel Castro
   * Follow up!
