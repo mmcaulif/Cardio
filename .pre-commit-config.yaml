@@ -47,5 +47,12 @@ repos:
     rev: master
     hooks:
       - id: docformatter
-  #       additional_dependencies: [tomli]
-  #       args: [--in-place --config] #  ./pyproject.toml]
+        additional_dependencies: [tomli]
+        args: [--in-place, --config, ./pyproject.toml]
+
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        additional_dependencies: [toml]
+        args: [--config, ./pyproject.toml, cardio_rl]
