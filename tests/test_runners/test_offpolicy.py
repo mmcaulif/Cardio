@@ -27,3 +27,13 @@ class TestOffpolicy:
         assert runner.buffer.n_steps == n_steps
         assert runner.buffer.trajectory == trajectory
         assert runner.buffer.n_batches == n_batches
+
+    @pytest.mark.parametrize("warmup", [(0), (1_000), (2048), (100_000)])
+    def test_warmup(self, warmup):
+        env = crl.toy_env.ToyEnv()
+        runner = crl.Runner.off_policy(
+            env=env,
+            agent=crl.Agent(env),
+            warmup_len=warmup,
+        )
+        assert len(runner.buffer) == warmup
