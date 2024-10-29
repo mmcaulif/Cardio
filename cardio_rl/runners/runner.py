@@ -6,7 +6,7 @@ from typing import Callable
 import jax
 import numpy as np
 from gymnasium import Env
-from gymnasium.experimental.vector import VectorEnv
+from gymnasium.vector import VectorEnv
 from gymnasium.wrappers import record_episode_statistics
 from tqdm import trange
 
@@ -346,6 +346,9 @@ class Runner:
         eval_env: Env | None = None,
         logger: BaseLogger | None = None,
     ):
+        gatherer = (
+            crl.VectorGatherer() if isinstance(env, VectorEnv) else crl.Gatherer()
+        )
         return cls(
             env=env,
             agent=agent,
@@ -354,7 +357,7 @@ class Runner:
             n_step=1,
             eval_env=eval_env,
             logger=logger,
-            gatherer=crl.VectorGatherer(),
+            gatherer=gatherer,
         )
 
     @classmethod
