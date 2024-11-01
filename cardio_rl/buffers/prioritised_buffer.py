@@ -75,19 +75,18 @@ class PrioritisedBuffer(TreeBuffer):
     that are then used to calculate probabilities for categorical sampling of
     indices. Includes a couple of.
 
-    important implementation details outlined in the paper, such as:
-        * Using a sumtree for efficient time complexity.
-        * Stratified sampling using uniform distribution between 0 and sum of probabilities.
+    important implementation details outlined in the paper, such as:     * Using a
+    sumtree for efficient time complexity.     * Stratified sampling using uniform
+    distribution between 0 and sum of probabilities.
 
-    This specific implementation is most similar to the one in Dopamine, but... TODO: finish
+    This specific implementation is most similar to the one in Dopamine, but... TODO:
+    finish
 
     Internal keys: s, a, r, d, or one of the extra specs provided.
 
-    Attributes:
-        pos: Moving record of the current position to store transitions.
-        capacity: Maximum size of buffer.
-        full: Is the replay buffer full or not.
-        table: The main dictionary containing transitions.
+    Attributes:     pos: Moving record of the current position to store transitions.
+    capacity: Maximum size of buffer.     full: Is the replay buffer full or not. table:
+    The main dictionary containing transitions.
     """
 
     def __init__(

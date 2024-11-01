@@ -1,3 +1,7 @@
+"""High level orchestrator of an Environment and Cardio components."""
+
+from __future__ import annotations
+
 import copy
 import time
 import warnings
@@ -16,37 +20,11 @@ from cardio_rl.buffers.base_buffer import BaseBuffer
 from cardio_rl.loggers import BaseLogger
 from cardio_rl.types import Environment, Transition
 
+# TODO: see if warmup and burnin need to be unique methods, also assess if data the transform argument is necessary at all
+
 
 class Runner:
-    """The runner is the high level orchestrator that deals with the different
-    components and data, it contains a gatherer, your agent and any replay
-    buffer you might have. The runner calls the gatherer's step function as
-    part its own step function, or as part of its built in warmup (for
-    collecting a large amount of initial data with your agent) and burnin (for
-    randomly stepping through an environment, not collecting data, such as for
-    initialising normalisation values) methods. The runner can either be used
-    via its run method (which iteratively calls the runner.step and the
-    agent.update methods) or with each mothod individually with its step method
-    if you'd like more finegrained control.
-
-    Attributes:
-        env (Environment): The gym environment used to collect transitions and
-            train the agent.
-        n_envs (int): The number of environments, only > 1 if env is a VectorEnv.
-        agent (Agent | None, optional): The agent stored within the runner, used
-            by the step and run methods. Defaults to None.
-        rollout_len (int, optional): Number of environment steps to perform as part
-            of the step method. Defaults to 1.
-        warmup_len (int, optional): Number of steps to perform with the agent before
-            regular rollouts begin. Defaults to 0.
-        n_step (int, optional): Number of environment steps to store within a single
-            transition. Defaults to 1.
-        eval_env (Env | None, optional): An optional separate environment to
-            be used for evaluation, must not be a VectorEnv. Defaults to None.
-        gatherer (Gatherer | None, optional): An optional gatherer to be used by
-            the runner. Defaults to None.
-        _initial_time (float): The time in seconds when the runner was initialised.
-    """
+    """Cardio's primary component, the Runner."""
 
     def __init__(
         self,
@@ -60,29 +38,52 @@ class Runner:
         logger: BaseLogger | None = None,
         gatherer: Gatherer | None = None,
     ) -> None:
-        """Initialises a generic runner, parent class of OnPolicyRunner and
-        OffPolicyRunner, which should be used instead of this. This base class is
-        extensible and contains all the necessary attributes for both collecting
-        transitions with the gatherer and formatting them correctly for later use by
-        the agent. Data is provided to the runner and from the runner to the agent as
-        a dictionary with the following keys: s, a, r, s_p and d, representing the state,
-        action, reward, next state and done features of an MDP transition.
+        """Initialise the primary Runner.
+
+        Initialise the Runner. Contains the agent, gatherer, optional
+        buffer and a logger, which are the necessary components for
+        both collecting transitions with the gatherer and formatting
+        them correctly for later use by the agent. Data is provided to
+        the runner and from the runner to the agent as a dictionary
+        with the following keys: s, a, r, s_p and d, as well as any
+        extra specifications from the agent. The runner calls the
+        gatherer's step function as part its own step function, or as
+        part of its built in warmup (for collecting a large amount of
+        initial data with your agent) and burnin* (for randomly stepping
+        through an environment, not collecting data, such as for
+        initialising normalisation values) methods. The runner can
+        either be used via its run method (which iteratively calls the
+        runner.step and the agent.update methods) or with each mothod
+        individually with its step method if you'd like more
+        finegrained control.
+
+        *not implemented yet...
 
         Args:
-            env (Environment): The gym environment used to collect transitions and
-                train the agent.
-            agent (Agent | None, optional): The agent stored within the runner, used
-                by the step and run methods. Defaults to None.
-            rollout_len (int, optional): Number of environment steps to perform as part
-                of the step method. Defaults to 1.
-            warmup_len (int, optional): Number of steps to perform with the agent before
-                regular rollouts begin. Defaults to 0.
-            n_step (int, optional): Number of environment steps to store within a single
-                transition. Defaults to 1.
-            eval_env (gym.Env | None, optional): An optional separate environment to
-                be used for evaluation, must not be a VectorEnv. Defaults to None.
-            gatherer (Gatherer | None, optional): An optional gatherer to be used by
-                the runner. Defaults to None.
+            env (Environment): The gym environment used to collect
+                transitions and train the agent.
+            agent (Agent | None, optional): The agent stored within the
+                runner, used by the step and run methods. If set to
+                None, a random Agent is used. Defaults to None.
+            rollout_len (int, optional): Number of environment steps to
+                perform as part of the step method. Defaults to 1.
+            warmup_len (int, optional): Number of steps to perform with
+                the agent before regular rollouts begin. Defaults to 0.
+            n_step (int, optional): Number of environment steps to
+                store within a single transition. Defaults to 1.
+            eval_env (gym.Env | None, optional): An optional separate
+                environment to be used for evaluation, must not be a
+                VectorEnv. Defaults to None.
+            buffer (BaseBuffer | None, optional): Can pass a buffer
+                which stores data and is randomly sampled when calling
+                runner.step. Defaults to None.
+            logger (BaseLogger | None, optional): The logger used
+                during evaluations, is set to None uses the BaseLogger
+                which prints to terminal and writes to a file in a
+                logs directory. Defaults to None.
+            gatherer (Gatherer | None, optional): An optional gatherer
+                to be used by the runner. If set to None the default
+                Gatherer will be used. Defaults to None.
 
         Raises:
             TypeError: Trying to use a VectorEnv with n_step > 1.
@@ -117,20 +118,23 @@ class Runner:
             self._warm_start()
 
     def _burn_in(self) -> None:
-        """Step through environment with random agent, e.g. to initialise
-        observation normalisation.
+        """Step through environment with random agent.
 
-        Gatherer is reset afterwards.
+        Performs a fixed number of environment steps such as to
+        initialise observation normalisation. Gatherer is reset
+        afterwards.
         """
         self._rollout(self.burn_in_len, Agent(self.env))
 
     def _warm_start(self) -> tuple[Transition, int]:
-        """Step through environment with freshly initialised agent, to collect
+        """Step through environment with an agent.
+
+        Performs a fixed number of environment steps such as to collect
         transitions before training via the agents update method.
 
         Returns:
-            Transition: stacked Transitions from environment
-            int: number of Transitions collected
+            Transition: stacked Transitions from environment.
+            int: number of Transitions collected,
         """
         agent = self.agent or crl.Agent(self.env)  # Needs to be ordered like this!
         rollout_transitions, num_transitions = self._rollout(self.warmup_len, agent)
@@ -145,14 +149,20 @@ class Runner:
         agent: Agent,
         transform: Callable | None = None,
     ) -> tuple[Transition, int]:
-        """Internal method to step through environment for a provided number of
-        steps. Return the collected transitions and how many were collected.
+        """Perform rollout via the gatherer.step method.
+
+        Internal method to step through environment for a provided
+        number of steps. Return the collected transitions and how many
+        were collected. Wraps the gatherer.step method and performs
+        some light processing on the returned Transitions via the
+        self.transform_batch method.
 
         Args:
             steps (int): Number of steps to take in environment.
-            agent (Agent | None, optional): Can optionally pass a
-                specific agent to step through environment with. Defaults
-                to None and uses internal agent.
+            agent (Agent | None, optional):  Can optionally pass a
+                specific agent to step through environment with, if set
+                to None the internal agent will be used. Defaults to
+                None.
             transform (Callable | None. optional): An optional function
                 to use on the stacked Transitions received during the
                 rollout. Defaults to None.
@@ -170,21 +180,27 @@ class Runner:
     def step(
         self, transform: Callable | None = None, agent: Agent | None = None
     ) -> Transition | list[Transition]:
-        """Main method to step through environment with agent, to collect
+        """Perform a rollout and return or store the Transitions.
+
+        Main method to step through environment with agent, to collect
         transitions and pass them to your agent's update function.
+        Calls the self._rollout method and either directly returns the
+        Transitions or places them in a buffer which is then sampled
+        from.
 
         Args:
             transform (Callable | None. optional): An optional function
                 to use on the stacked Transitions received during the
                 rollout. Defaults to None.
             agent (Agent | None, optional): Can optionally pass a
-                specific agent to step through environment with. Defaults
-                to None and uses internal agent.
+                specific agent to step through environment with, if set
+                to None the internal agent will be used. Defaults to
+                None.
 
         Returns:
-            Transition | list[Transition]: stacked Transitions from environment.
+            Transition | list[Transition]: stacked Transitions from
+                environment.
         """
-
         agent = agent or self.agent
         assert agent is not None
         rollout_transitions, num_transitions = self._rollout(
@@ -199,19 +215,24 @@ class Runner:
         return rollout_transitions
 
     def eval(self, rollouts: int, episodes: int, agent: Agent | None = None) -> float:
-        """Step through the eval_env for a given number of episodes using the
-        agents eval_step method, recording the episodic return and calculating
+        """Evaluate an agent's performance.
+
+        Step through the eval_env for a given number of episodes using
+        agent.eval_step, recording the episodic return and calculating
         the average over all episodes.
 
         Args:
-            episodes (int): The number of episodes to perform with the agent.
+            rollouts (int): The number of rollouts performed so far by
+                the runner.
+            episodes (int): The number of episodes to perform with the
+                agent.
             agent (Agent | None, optional): Can optionally pass a
-                specific agent to step through environment with. Defaults
-                to None and uses internal agent.
+                specific agent to evaluate, if set to None the internal
+                agent will be used. Defaults to None.
 
         Returns:
-            float: Average of the total episodic return received over the
-                evaluation episodes.
+            float: Average of the total episodic return received over
+                the evaluation episodes.
         """
         agent = agent or self.agent
         avg_r = 0.0
@@ -234,21 +255,19 @@ class Runner:
         avg_r = float(avg_r / episodes)
         avg_l = float(avg_l / episodes)
         sum_t = float(sum_t)
-        # with logging_redirect_tqdm():
 
         env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
         curr_time = round(time.time() - self._initial_time, 2)
         metrics = {
             "Timesteps": env_steps,
             "Training steps": rollouts,
-            # "Episodes": self.episodes,    # TODO: find a way to implement this
+            # "Episodes": self.episodes,    # TODO: implement this
             "Avg eval returns": round(avg_r, 2),
             "Avg eval episode length": avg_l,
             "Time passed": curr_time,
             "Evaluation time": round(sum_t, 4),
             "Steps per second": int(env_steps / curr_time),
         }
-        # logging.info(metrics)
         self.logger.log(metrics)
 
         return avg_r
@@ -256,20 +275,26 @@ class Runner:
     def run(
         self, rollouts: int, eval_freq: int = 1_000, eval_episodes: int = 10
     ) -> float:
-        """Iteratively run runner.step() for self.rollout_len and pass the
+        """Primary method to train an agent.
+
+        Iteratively run runner.step() for self.rollout_len and pass the
         batched data through to the agents update step. Stops and calls
-        self.eval every eval_freq with eval_episodes. After all rollouts are
-        taken, a final evaluation step is called and the average episodic
-        returns from the final evaluation step are returned by this method.
+        self.eval every eval_freq with eval_episodes. After all
+        rollouts are taken, a final evaluation step is called and the
+        average episodic returns from the final evaluation step are
+        returned by this method.
 
         Args:
-            rollouts (int): The number of rollouts of length self.rollout_len to
-                perform.
-            eval_freq (int): How many rollouts to take in between evaluations.
-            eval_episodes (int): How many episodes to perform during evaluation.
+            rollouts (int): The number of rollouts of length
+                self.rollout_len to perform.
+            eval_freq (int): How many rollouts to take in between
+                evaluations.
+            eval_episodes (int): How many episodes to perform during
+                evaluation.
 
         Returns:
-            float: Average episodic returns from the final evaluation step.
+            float: Average episodic returns from the final evaluation
+                step.
         """
         self.logger.terminal("Performing initial evaluation")
         _ = self.eval(
@@ -291,18 +316,25 @@ class Runner:
     def transform_batch(
         self, batch: list[Transition], transform: Callable | None = None
     ) -> Transition:
-        """Stack a list of Transitions via cardio_rl.tree.stack followed by an
-        optional transformation.
+        """Stack and reshape a list of Transitions.
+
+        Stack a list of Transitions via cardio_rl.tree.stack followed
+        by an optional transformation.
 
         Args:
-            batch (list[Transition]): A list of the Transitions to be stacked.
+            batch (list[Transition]): A list of the Transitions to be
+                stacked.
+            transform (Callable): An optional transform that can be
+                applied to the Transitions post-stacking. Defaults
+                to None.
 
         Returns:
             Transition: The stacked input list of Transitions.
         """
-
         transformed_batch = crl.tree.stack(batch)
 
+        # TODO: unsure if this should be used as it behaves inconsistently
+        # between different configurations.
         def _expand(arr):
             if len(arr.shape) == 1:
                 arr = np.expand_dims(arr, -1)
@@ -316,7 +348,9 @@ class Runner:
         return transformed_batch
 
     def update_agent(self, new_agent: Agent):
-        """Update the internl agent being used in the Runner.
+        """Replace the internl agent.
+
+        Update the internal agent being used in the Runner.
 
         Args:
             new_agent (Agent): An agent to replace the current internal
@@ -329,10 +363,17 @@ class Runner:
         self.gatherer.reset()
 
     def update(self, data: dict) -> None:
-        """Perform any necessary updates, does nothing in the BaseRunner.
+        """Update the data stored in the buffer, if one exists.
 
-        data (dict): A dictionary containing the indices and keys/values
-        to be updated.
+        update specific keys and indices in the internal table with new
+        or updated data, e.g. latest priorities. Only called if the
+        agent's update step returns a non-empty dictionary. Must
+        provide indices via a "idxs" key. If the runner has no buffer
+        no buffer, this method does nothing.
+
+        Args:
+            data (dict): A dictionary containing an "idxs" key with
+                indices to update and keys with the updated values.
         """
         if self.buffer is not None:
             self.buffer.update(data)
@@ -345,7 +386,30 @@ class Runner:
         rollout_len: int = 1,
         eval_env: Env | None = None,
         logger: BaseLogger | None = None,
-    ):
+    ) -> Runner:
+        """Construct a Runner for on-policy learning.
+
+        _extended_summary_ <- TODO
+
+        Args:
+            env (Environment): The gym environment used to collect
+                transitions and train the agent.
+            agent (Agent | None, optional): The agent stored within the
+                runner, used by the step and run methods. If set to
+                None, a random Agent is used. Defaults to None.
+            rollout_len (int, optional): Number of environment steps to
+                perform as part of the step method. Defaults to 1.
+            eval_env (Env | None, optional): An optional separate
+                environment to be used for evaluation, must not be a
+                VectorEnv. Defaults to None.
+            logger (BaseLogger | None, optional): The logger used
+                during evaluations, is set to None uses the BaseLogger
+                which prints to terminal and writes to a file in a
+                logs directory. Defaults to None.
+
+        Returns:
+            Runner: A Runner designed for on-policy algorithms.
+        """
         gatherer = (
             crl.VectorGatherer() if isinstance(env, VectorEnv) else crl.Gatherer()
         )
@@ -369,10 +433,52 @@ class Runner:
         rollout_len: int = 1,
         warmup_len: int = 10_000,
         eval_env: Env | None = None,
-        extra_specs: dict = {},
+        extra_specs: dict | None = None,
         buffer: BaseBuffer | None = None,
         logger: BaseLogger | None = None,
-    ):
+    ) -> Runner:
+        """Construct a Runner for off-policy learning.
+
+        _extended_summary_ <- TODO
+        Mention now the buffer uses the buffers n_step attribute.
+
+        Args:
+            env (Environment): The gym environment used to collect
+                transitions and train the agent.
+            agent (Agent | None, optional): The agent stored within the
+                runner, used by the step and run methods. If set to
+                None, a random Agent is used. Defaults to None.
+            buffer_kwargs (dict, optional): A dictionary with any
+                keyword arguments for the TreeBuffer that is used by
+                default. Defaults to {}.
+            rollout_len (int, optional): Number of environment steps to
+                perform as part of the step method. Defaults to 1.
+            warmup_len (int, optional): Number of steps to perform with
+                the agent before regular rollouts begin. Defaults to
+                10_000.
+            eval_env (gym.Env | None, optional): An optional separate
+                environment to be used for evaluation, must not be a
+                VectorEnv. Defaults to None.
+            extra_specs (dict | None, optional):  Additional entries to
+                add to the replay buffer. Values must correspond to the
+                shape. Defaults to None. Defaults to None.
+            buffer (BaseBuffer | None, optional): Can pass a buffer
+                which stores data and is randomly sampled when calling
+                runner.step, if set to None a default TreeBuffer will
+                be used with kwargs equal to those defined in the
+                buffer_kwargs argument. Defaults to None.
+            logger (BaseLogger | None, optional): The logger used
+                during evaluations. If set to None, uses the BaseLogger
+                which prints to terminal and writes to a file in a
+                logs directory. Defaults to None.
+
+        Raises:
+            TypeError: Trying to pass a VectorEnv environment to this
+                runner.
+
+        Returns:
+            Runner: A Runner designed for off-policy algorithms.
+        """
         if isinstance(env, VectorEnv):
             raise TypeError("VectorEnv's not yet compatible with off-policy runner")
 

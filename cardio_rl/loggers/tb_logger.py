@@ -1,3 +1,5 @@
+"""TensorboardLogger class, inherits from BaseLogger."""
+
 import os
 
 from torch.utils.tensorboard import SummaryWriter
@@ -6,17 +8,7 @@ from cardio_rl.loggers import BaseLogger
 
 
 class TensorboardLogger(BaseLogger):
-    """Tensorboard logger that prints to terminal and writes to a file and
-    tensorboard.
-
-    Attributes:
-        file_name (str): The name of the file written to. Combines
-            the provided exp_name with the current time in seconds.
-        _logger (Logger): The python logger used to print to
-            terminal.
-        writer (Summarywriter): The tensorboard Summarywriter used
-            to log metrics.
-    """
+    """The logger used within the runner to track metrics."""
 
     def __init__(
         self,
@@ -25,7 +17,9 @@ class TensorboardLogger(BaseLogger):
         exp_name: str = "exp",
         to_file: bool = True,
     ) -> None:
-        """Tensorboard logger that prints to terminal and writes to a file and
+        """Initialise the TensorboardLogger.
+
+        Tensorboard logger that prints to terminal and writes to a file and
         tensorboard.
 
         Args:
@@ -33,18 +27,21 @@ class TensorboardLogger(BaseLogger):
                 printed. Defaults to None.
             log_dir (str, optional): The directory to store logs in.
                 Defaults to "logs".
-            exp_name (str, optional): The name you want to use for
-                the individual log files. Defaults to "exp".
-            to_file (bool, optional): Whether you want the logs to
-                be printed to a file or not. Defaults to True.
+            exp_name (str, optional): The name you want to use for the
+                individual log files. Defaults to "exp".
+            to_file (bool, optional): Whether you want the logs to be
+                printed to a file or not. Defaults to True.
         """
         super().__init__(cfg, log_dir, exp_name, to_file)
         tb_log_dir = os.path.join(log_dir, self.file_name, "tb_logs")
         self.writer = SummaryWriter(tb_log_dir)
 
     def log(self, metrics: dict) -> None:
-        """Send dictionary of metrics to Tensorboard based on the keys and
-        values.
+        """Send dictionary of metrics to tensorboard.
+
+        Send metrics to the tensorboard Summarywriter via a dictionary
+        with keys corresponding to the metrics tracked. Used for data
+        like loss or evaluation returns.
 
         Args:
             metrics (dict): Dictionary with metrics to be logged.

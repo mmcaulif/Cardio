@@ -1,3 +1,5 @@
+"""Default loggers supplied in Cardio."""
+
 # ruff: noqa
 
 from cardio_rl.loggers.base_logger import BaseLogger
