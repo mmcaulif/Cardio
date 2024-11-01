@@ -1,68 +1,55 @@
-from typing import Optional
+"""Deprecated on policy runner class."""
+
+import warnings
 
 from gymnasium import Env
 
-from cardio_rl import Agent, BaseRunner, Gatherer, VectorGatherer
+from cardio_rl import Agent, Gatherer, VectorGatherer
 from cardio_rl.loggers import BaseLogger
+from cardio_rl.runners.runner import Runner
 from cardio_rl.types import Environment
 
 
-class OnPolicyRunner(BaseRunner):
-    """The runner is the high level orchestrator that deals with the different
-    components and data, it contains a gatherer, your agent and any replay
-    buffer you might have. The runner calls the gatherer's step function as
-    part its own step function, or as part of its built in warmup (for
-    collecting a large amount of initial data with your agent) and burnin (for
-    randomly stepping through an environment, not collecting data, such as for
-    initialising normalisation values) methods. The runner can either be used
-    via its run method (which iteratively calls the runner.step and the
-    agent.update methods) or with each mothod individually with its step method
-    if you'd like more finegrained control.
-
-    Attributes:
-        env (Environment): The gym environment used to collect transitions and
-            train the agent.
-        n_envs (int): The number of environments, only > 1 if env is a VectorEnv.
-        agent (Optional[Agent], optional): The agent stored within the runner, used
-            by the step and run methods. Defaults to None.
-        rollout_len (int, optional): Number of environment steps to perform as part
-            of the step method. Defaults to 1.
-        warmup_len (int, optional): Number of steps to perform with the agent before
-            regular rollouts begin. Fixed to 0 for OnPolicyBuffer.
-        n_step (int, optional): Number of environment steps to store within a single
-            transition. Fixed to 1 for OnPolicyBuffer.
-        eval_env (Optional[gym.Env], optional): An optional separate environment to
-            be used for evaluation, must not be a VectorEnv. Defaults to None.
-        gatherer (Optional[Gatherer], optional): An optional gatherer to be used by
-            the runner. Defaults to None.
-        _initial_time (float): The time in seconds when the runner was initialised.
-    """
-
-    # TODO: use VectorGatherer as the default and explain it, and the differences
+class OnPolicyRunner(Runner):
+    """Construct a Runner for on-policy learning."""
 
     def __init__(
         self,
         env: Environment,
-        agent: Optional[Agent] = None,
+        agent: Agent | None = None,
         rollout_len: int = 1,
-        eval_env: Optional[Env] = None,
-        logger: Optional[BaseLogger] = None,
-        gatherer: Optional[Gatherer] = None,
+        eval_env: Env | None = None,
+        logger: BaseLogger | None = None,
+        gatherer: Gatherer | None = None,
     ) -> None:
-        """Initialises the runner ...TODO...
+        """Construct a Runner for on-policy learning.
+
+        This class is deprecated and only included for backward
+        compatability. Please use the Runner.on_policy class method
+        included in the Runner class.
 
         Args:
-            env (Environment): The gym environment used to collect transitions and
-                train the agent.
-            agent (Optional[Agent], optional): The agent stored within the runner, used
-                by the step and run methods. Defaults to None.
-            rollout_len (int, optional): Number of environment steps to perform as part
-                of the step method. Defaults to 1.
-            eval_env (Optional[gym.Env], optional): An optional separate environment to
-                be used for evaluation, must not be a VectorEnv. Defaults to None.
-            gatherer (Optional[Gatherer], optional): An optional gatherer to be used by
-                the runner. Defaults to None.
+            env (Environment): The gym environment used to collect
+                transitions and train the agent.
+            agent (Agent | None, optional): The agent stored within the
+                runner, used by the step and run methods. If set to
+                None, a random Agent is used. Defaults to None.
+            rollout_len (int, optional): Number of environment steps to
+                perform as part of the step method. Defaults to 1.
+            eval_env (Env | None, optional): An optional separate
+                environment to be used for evaluation, must not be a
+                VectorEnv. Defaults to None.
+            logger (BaseLogger | None, optional): The logger used
+                during evaluations, is set to None uses the BaseLogger
+                which prints to terminal and writes to a file in a
+                logs directory. Defaults to None.
+            gatherer (Gatherer | None, optional): An optional gatherer
+                to be used by the runner. If set to None the
+                VectorGatherer will be used. Defaults to None.
         """
+        warnings.warn(
+            "OnPolicyRunner is deprecated, please use cardio_rl.Runner.on_policy instead"
+        )
         _gatherer = gatherer or VectorGatherer()
         super().__init__(
             env=env,

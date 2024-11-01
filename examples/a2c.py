@@ -94,7 +94,7 @@ def main():
     envs = gym.make_vec("CartPole-v1", num_envs=16)
     eval_env = gym.make("CartPole-v1")
 
-    runner = crl.OnPolicyRunner(
+    runner = crl.Runner.on_policy(
         env=envs,
         agent=A2C(),
         rollout_len=16,

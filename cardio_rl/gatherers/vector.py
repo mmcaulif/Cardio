@@ -1,3 +1,5 @@
+"""Vectorised Environment Transition gatherer."""
+
 import itertools
 
 import numpy as np
@@ -8,40 +10,36 @@ from cardio_rl.types import Transition
 
 
 class VectorGatherer(Gatherer):
-    """A modified gatherer that is used for parallel vectorised environments.
-    The step buffer is unused and instead enviornment transitions are passed
-    directly into the transition buffer. The step method is the only modified
-    method from the parent class and its mainly removing code related to
-    terminal episodes and step-to-transition processing for n-step transitions.
-    The VectorGatherer is currently incompatible with n-step transitions and it
-    is likely to stay this way as they are not frequently used in on-policy
-    strategies (and introduce a lot of engineering difficulties).
+    """A modified gatherer for vectorised environments."""
 
-    Attributes:
-        n_step (int, optional): Number of environment steps to store
-            per-transition. Defaults to 1.
-        transition_buffer (deque): Double ended queue used to store processed transitions. Used directly in the VectorGatherer.
-        step_buffer (deque): Double ended queue used to store individual environment transitions. Skipped in the VectorGatherer.
-        state (np.ndarray): The current state of the environment.
-    """
+    # TODO: in this method, check if a non-vector env has been used
+    # and if so, wrap it in a dummy vector wrapper
+    #
+    # def init_env(self, env: Environment):
+    #     ...
 
     def step(
         self,
         agent: Agent,
         length: int,
     ) -> list[Transition]:
-        """A simplified version of the defautl gatherer's step method that
+        """Step through the environments with an agent.
+
+        A simplified version of the default gatherer's step method that
         removes the use of the step buffer and accounts for vectorised
-        environments auto-reset functionality.
+        environments auto-reset functionality. The VectorGatherer is
+        currently incompatible with n-step transitions and it is likely
+        to stay this way as they are not frequently used in on-policy
+        strategies (and introduce a lot of engineering difficulties).
 
         Args:
             agent (Agent): The agent to step through environment with.
-            length (int): The length of the rollout. If set to -1
-                it performs one episode.
+            length (int): The length of the rollout. If set to -1 it
+                performs one episode.
 
         Returns:
-            list[Transition]: The contents of the transition buffer
-                as a list.
+            list[Transition]: The contents of the transition buffer as
+                a list.
         """
         iterable = iter(range(length)) if length > 0 else itertools.count()
         for _ in iterable:
