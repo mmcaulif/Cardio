@@ -47,5 +47,5 @@ repos:
     rev: master
     hooks:
       - id: docformatter
-  #       additional_dependencies: [tomli]
-  #       args: [--in-place --config] #  ./pyproject.toml]
+        additional_dependencies: [tomli]
+        args: [--in-place, --config, ./pyproject.toml]
