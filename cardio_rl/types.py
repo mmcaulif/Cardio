@@ -1,7 +1,9 @@
+"""Canonical types used in Cardio."""
+
 from typing import TypeAlias
 
 from gymnasium import Env
-from gymnasium.experimental.vector import VectorEnv
+from gymnasium.vector import VectorEnv
 from numpy.typing import NDArray
 
 Transition: TypeAlias = dict[str, NDArray]

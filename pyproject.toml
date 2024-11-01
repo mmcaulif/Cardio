@@ -31,7 +31,19 @@ pre-commit = "^4.0.1"
 isort = "^5.13.2"
 pytest = "^8.3.3"
 
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.lint]
+extend-select = [
+        "D",    # pydocstyle
+        "I",    # isort
+]
+exclude = ["tests/*", "examples/*", "cardio_rl/buffers/prioritised_buffer.py"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.docformatter]
+post-description-newline = true
