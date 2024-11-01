@@ -4,8 +4,9 @@ import warnings
 
 from gymnasium import Env
 
-from cardio_rl import Agent, Gatherer, Runner, VectorGatherer
+from cardio_rl import Agent, Gatherer, VectorGatherer
 from cardio_rl.loggers import BaseLogger
+from cardio_rl.runners.runner import Runner
 from cardio_rl.types import Environment
 
 

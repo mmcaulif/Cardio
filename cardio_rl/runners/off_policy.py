@@ -5,9 +5,10 @@ import warnings
 from gymnasium import Env
 from gymnasium.experimental.vector import VectorEnv
 
-from cardio_rl import Agent, Gatherer, Runner
+from cardio_rl import Agent, Gatherer
 from cardio_rl.buffers import BaseBuffer, TreeBuffer
 from cardio_rl.loggers import BaseLogger
+from cardio_rl.runners.runner import Runner
 from cardio_rl.types import Environment
 
 
