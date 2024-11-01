@@ -5,16 +5,18 @@
 1. [x] add custom templates for issues and PR's: look at other repo's for inspo and give credit
 1. [x] Trajectory replay buffer:
 * implement n-steps using trajectory buffer like FlashBax
-1. [ ] Moved on-policy and-off policy runners to class methods
+1. [ ] Move on-policy and-off policy runners to class methods
 1. [ ] Use jax agents for examples (removing torch as a requirement)
   * [ ] Fix jax seed issue when seed = 0
   * [ ] Consistent implementations
-1. [ ] Update readme in accordance
 1. [ ] SB3 runner functionality:
   * [ ] Make a eval_agent function similar to Sb3, allow it to return list and std dev
   * [ ] Option to turn on or off logging verbosity and progress bar
   * [ ] Runner logging bug fixes (number of env steps with vecenv* and number of training steps performed)
-1. [ ] Use pyproject.toml for precommit configuration
+1. [x] Use pyproject.toml for precommit configuration
+  * https://docformatter.readthedocs.io/en/latest/usage.html#use-with-pre-commit
+1. [ ] Update readme in accordance with changes
+1. [x] Use ruff with pyproject.toml for more functionality https://docs.astral.sh/ruff/linter/#rule-selection
 
 *might be fixed
 
@@ -25,6 +27,9 @@ Runner class methods todo list:
 1. [x] Rename BaseRunner to Runner
 
 # for v0.1.2
+1. [ ] Nox
+1. [ ] UV?
+1. [ ] Add agent smoke tests and fakes (similar to toy env)
 1. [ ] Implement seeding for reproducability.
 1. [ ] Gatherer should return episodes and steps completed
 1. [ ] Outline speed, profiling and optimisation roadmap/comparisons
@@ -41,6 +46,7 @@ Runner class methods todo list:
 # Post v0.1.2
 * [ ] Benchmarking of Sprinter
 * [ ] Documentation + white paper
+* [ ] Profiling/logging dashboard like PufferLib
 
 ## Specific tasks
 * [ ] QOL Runner and Gatherer changes
