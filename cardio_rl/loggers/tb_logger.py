@@ -33,7 +33,7 @@ class TensorboardLogger(BaseLogger):
                 printed to a file or not. Defaults to True.
         """
         super().__init__(cfg, log_dir, exp_name, to_file)
-        tb_log_dir = os.path.join(log_dir, self.file_name, "tb_logs")
+        tb_log_dir = os.path.join(log_dir, self.id, "tb_logs")
         self.writer = SummaryWriter(tb_log_dir)
 
     def log(self, metrics: dict) -> None:

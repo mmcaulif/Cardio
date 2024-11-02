@@ -7,6 +7,12 @@ from typing import Any
 
 from tqdm.contrib.logging import logging_redirect_tqdm
 
+logging.basicConfig(
+    format="%(asctime)s: %(message)s",
+    datefmt=" %I:%M:%S %p",
+    level=logging.INFO,
+)
+
 
 class BaseLogger:
     """The logger used within the runner to track metrics."""
@@ -32,30 +38,25 @@ class BaseLogger:
             to_file (bool, optional): Whether you want the logs to be
                 printed to a file or not. Defaults to True.
         """
-        self.file_name = f"{exp_name}_{int(time.time())}"
+        self.id = f"{exp_name}_{int(time.time())}"
+        self.logger = logging.getLogger()
+
+        if to_file:
+            dir = os.path.join(log_dir, self.id)
+
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+
+            file_path = os.path.join(dir, "terminal.log")
+            file_handler = logging.FileHandler(file_path)
+            file_handler.setFormatter(
+                logging.Formatter("%(asctime)s: %(message)s", "%I:%M:%S %p")
+            )
+            self.logger.addHandler(file_handler)
+            self.terminal(f"Logging to: {file_path}")
 
         if cfg is not None:
             self.terminal(f"Config provided: {cfg}\n")
-
-        if not os.path.exists(os.path.join(log_dir, self.file_name)):
-            os.makedirs(os.path.join(log_dir, self.file_name))
-
-        if to_file:
-            logging.basicConfig(
-                filename=os.path.join(log_dir, self.file_name, "terminal.log"),
-                filemode="w",
-                format="%(asctime)s: %(message)s",
-                datefmt=" %I:%M:%S %p",
-                level=logging.INFO,
-            )
-        else:
-            logging.basicConfig(
-                format="%(asctime)s: %(message)s",
-                datefmt=" %I:%M:%S %p",
-                level=logging.INFO,
-            )
-
-        self.logger = logging.getLogger()
 
     def terminal(self, data: Any):
         """Print data to the terminal.
