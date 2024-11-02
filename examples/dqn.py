@@ -1,29 +1,52 @@
 import copy
+import logging
+from functools import partial
+from typing import Optional
 
+import distrax  # type: ignore
+import flax.linen as nn
 import gymnasium as gym
 import jax
+import jax.numpy as jnp
 import numpy as np
-import torch as th
-import torch.nn as nn
-import torch.nn.functional as F
+import optax  # type: ignore
+import rlax  # type: ignore
+from flax.training.train_state import TrainState
 
 import cardio_rl as crl
 
 
+def _step(train_state: TrainState, state: np.ndarray, epsilon, key):
+    q_values = train_state.apply_fn(train_state.params, state)
+    action = distrax.EpsilonGreedy(q_values, epsilon).sample(seed=key)
+    return action
+
+
+def _update(train_state: TrainState, targ_params, s, a, r, s_p, d, gamma):
+    def loss_fn(params, apply_fn, s, a, r, s_p, d):
+        q = jax.vmap(apply_fn, in_axes=(None, 0))(params, s)
+        q_p = jax.vmap(apply_fn, in_axes=(None, 0))(targ_params, s_p)
+        discount = gamma * (1 - d)
+        error = jax.vmap(rlax.q_learning)(q, a, r, discount, q_p)
+        mse = jnp.mean(rlax.l2_loss(error))
+        return mse
+
+    a = jnp.squeeze(a, -1)
+    r = jnp.squeeze(r, -1)
+    d = jnp.squeeze(d, -1)
+    grads = jax.grad(loss_fn)(train_state.params, train_state.apply_fn, s, a, r, s_p, d)
+    train_state = train_state.apply_gradients(grads=grads)
+    return train_state
+
+
 class Q_critic(nn.Module):
-    def __init__(self, state_dim, action_dim):
-        super(Q_critic, self).__init__()
+    action_dim: int
 
-        self.net = nn.Sequential(
-            nn.Linear(state_dim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, action_dim),
-        )
-
-    def forward(self, state):
-        q = self.net(state)
+    @nn.compact
+    def __call__(self, state):
+        z = nn.relu(nn.Dense(64)(state))
+        z = nn.relu(nn.Dense(64)(z))
+        q = nn.Dense(self.action_dim)(z)
         return q
 
 
@@ -34,78 +57,80 @@ class DQN(crl.Agent):
         critic: nn.Module,
         gamma: float = 0.99,
         targ_freq: int = 1_000,
-        optim_kwargs: dict = {"lr": 1e-4},
+        optim_kwargs: dict = {"learning_rate": 1e-4},
         init_eps: float = 0.9,
         min_eps: float = 0.05,
         schedule_len: int = 5000,
         use_rmsprop: bool = False,
+        seed: Optional[int] = None,
     ):
-        self.env = env
-        self.critic = critic
-        self.targ_critic = copy.deepcopy(critic)
-        self.gamma = gamma
-        self.targ_freq = targ_freq
-        self.update_count = 0
+        seed = np.random.randint(0, int(2e16)) if seed is None else seed
+        logging.info(f"Seed: {seed}")
+        self.key = jax.random.PRNGKey(seed)
+        self.key, init_key = jax.random.split(self.key)
 
-        if not use_rmsprop:
-            self.optimizer = th.optim.Adam(self.critic.parameters(), **optim_kwargs)
+        self.env = env
+
+        dummy = jnp.zeros(env.observation_space.shape)
+        params = critic.init(init_key, dummy)
+        self.targ_params = copy.deepcopy(params)
+        self.targ_freq = targ_freq
+
+        if use_rmsprop:
+            optimizer = optax.rmsprop(**optim_kwargs)
         else:
-            # TODO: fix mypy crying about return type
-            self.optimizer = th.optim.RMSprop(self.critic.parameters(), **optim_kwargs)
+            optimizer = optax.adam(**optim_kwargs)
+
+        self.ts = TrainState.create(apply_fn=critic.apply, params=params, tx=optimizer)
 
         self.eps = init_eps
         self.min_eps = min_eps
         self.ann_coeff = self.min_eps ** (1 / schedule_len)
 
+        self._step = jax.jit(_step)
+        self._update = jax.jit(partial(_update, gamma=gamma))
+
     def update(self, batches):
-        data = jax.tree.map(th.from_numpy, batches)
-        s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
+        self.ts = self._update(
+            self.ts,
+            self.targ_params,
+            batches["s"],
+            batches["a"],
+            batches["r"],
+            batches["s_p"],
+            batches["d"],
+        )
 
-        q = self.critic(s).gather(-1, a)
-        q_p = self.targ_critic(s_p).max(dim=-1, keepdim=True).values
-        y = r + self.gamma * q_p * ~d
-
-        loss = F.mse_loss(q, y.detach())
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-        self.update_count += 1
-        if self.update_count % self.targ_freq == 0:
-            self.targ_critic.load_state_dict(self.critic.state_dict())
+        if self.ts.step % self.targ_freq == 0:
+            self.targ_params = self.ts.params
 
         return {}
 
     def step(self, state):
-        if np.random.rand() > self.eps:
-            th_state = th.from_numpy(state)
-            action = self.critic(th_state).argmax().numpy(force=True)
-        else:
-            action = self.env.action_space.sample()
-
+        self.key, act_key = jax.random.split(self.key)
+        action = self._step(self.ts, state, self.eps, act_key)
+        action = np.asarray(action)
         self.eps = max(self.min_eps, self.eps * self.ann_coeff)
-        return action, {}
+        return action.squeeze(), {}
 
     def eval_step(self, state: np.ndarray):
-        th_state = th.from_numpy(state)
-        action = self.critic(th_state).argmax().numpy(force=True)
-        return action
+        self.key, act_key = jax.random.split(self.key)
+        action = self._step(self.ts, state, 0.001, act_key)
+        action = np.asarray(action)
+        return action.squeeze()
 
 
 def main():
     env = gym.make("CartPole-v1")
-    # runner = crl.OffPolicyRunner(
-    #     env=env,
-    #     agent=DQN(env, Q_critic(4, 2)),
-    #     rollout_len=4,
-    #     batch_size=32,
-    # )
+
     runner = crl.Runner.off_policy(
         env=env,
-        agent=DQN(env, Q_critic(4, 2)),
+        agent=DQN(env, Q_critic(action_dim=2)),
+        buffer_kwargs={"batch_size": 32},
         rollout_len=4,
+        logger=crl.loggers.BaseLogger(to_file=False),
     )
-    runner.run(rollouts=50_000, eval_freq=1_250)
+    runner.run(rollouts=12_500, eval_freq=1_250)
 
 
 if __name__ == "__main__":
