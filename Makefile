@@ -5,7 +5,7 @@ precommit_setup:
 	pre-commit install -t commit-msg
 
 .PHONY: precommit
-precommit_run:
+precommit:
 	pre-commit run --all-files
 
 .PHONY: setup

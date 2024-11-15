@@ -1,5 +1,3 @@
-from typing import Optional
-
 import gymnasium as gym
 import numpy as np
 from gymnasium import Env
@@ -77,19 +75,18 @@ class PrioritisedBuffer(TreeBuffer):
     that are then used to calculate probabilities for categorical sampling of
     indices. Includes a couple of.
 
-    important implementation details outlined in the paper, such as:
-        * Using a sumtree for efficient time complexity.
-        * Stratified sampling using uniform distribution between 0 and sum of probabilities.
+    important implementation details outlined in the paper, such as:     * Using a
+    sumtree for efficient time complexity.     * Stratified sampling using uniform
+    distribution between 0 and sum of probabilities.
 
-    This specific implementation is most similar to the one in Dopamine, but... TODO: finish
+    This specific implementation is most similar to the one in Dopamine, but... TODO:
+    finish
 
     Internal keys: s, a, r, d, or one of the extra specs provided.
 
-    Attributes:
-        pos: Moving record of the current position to store transitions.
-        capacity: Maximum size of buffer.
-        full: Is the replay buffer full or not.
-        table: The main dictionary containing transitions.
+    Attributes:     pos: Moving record of the current position to store transitions.
+    capacity: Maximum size of buffer.     full: Is the replay buffer full or not. table:
+    The main dictionary containing transitions.
     """
 
     def __init__(
@@ -97,6 +94,7 @@ class PrioritisedBuffer(TreeBuffer):
         env: Env,
         capacity: int = 1_000_000,
         extra_specs: dict = {},
+        batch_size: int = 32,
         n_steps: int = 1,
         alpha: float = 0.5,
         beta: float = 1.0,  # Fixed schedule from dopamine
@@ -107,7 +105,7 @@ class PrioritisedBuffer(TreeBuffer):
         self.beta = beta
         self.eps = eps
         self.max_p = 1.0
-        super().__init__(env, capacity, extra_specs, n_steps)
+        super().__init__(env, capacity, extra_specs, batch_size, n_steps)
 
     def store(self, data: Transition, num: int):
         p = np.full(num, self.max_p**0.5)
@@ -115,19 +113,20 @@ class PrioritisedBuffer(TreeBuffer):
         self.sumtree.update(idxs, p)
         return idxs
 
-    def sample(
+    def _sample(
         self,
-        batch_size: Optional[int] = None,
-        sample_indxs: Optional[np.ndarray] = None,
+        batch_size: int | None = None,
+        sample_indxs: np.ndarray | None = None,
     ):
-        sample_indxs = self.sumtree.sample(batch_size)
-        data = super().sample(sample_indxs=sample_indxs)
+        if sample_indxs is None:
+            sample_indxs = self.sumtree.sample(batch_size)
+
+        data = super()._sample(sample_indxs=sample_indxs)
 
         probs = self.sumtree.data[sample_indxs] / self.sumtree.total
         probs = np.expand_dims(probs, -1)
         data.update({"p": probs})
-
-        w = (1 / (self.len * probs)) ** self.beta
+        w = (1 / (len(self) * probs)) ** self.beta
         w = w / np.max(w)
         data.update({"w": w})
         return data
@@ -143,9 +142,9 @@ class PrioritisedBuffer(TreeBuffer):
 
 def main():
     env = gym.make("CartPole-v1")
-    buffer = PrioritisedBuffer(env, capacity=10)
+    buffer = PrioritisedBuffer(env, capacity=10, batch_size=2)
 
-    print(buffer("p"))
+    print(buffer.sumtree.data)
 
     s, _ = env.reset()
 
@@ -169,8 +168,8 @@ def main():
 
         s = s_p
 
-    print(buffer("p"))
-    print(buffer.sample(2)["idxs"])
+    print(buffer.sumtree.data)
+    print(buffer.sample()["idxs"])
 
 
 if __name__ == "__main__":
