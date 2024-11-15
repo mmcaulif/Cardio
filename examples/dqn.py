@@ -69,9 +69,7 @@ class DQN(crl.Agent):
         self.key = jax.random.PRNGKey(seed)
         self.key, init_key = jax.random.split(self.key)
 
-        self.env = env
-
-        dummy = jnp.zeros(env.observation_space.shape)
+        dummy = env.observation_space.sample()
         params = critic.init(init_key, dummy)
         self.targ_params = copy.deepcopy(params)
         self.targ_freq = targ_freq
@@ -128,7 +126,6 @@ def main():
         agent=DQN(env, Q_critic(action_dim=2)),
         buffer_kwargs={"batch_size": 32},
         rollout_len=4,
-        logger=crl.loggers.BaseLogger(to_file=False),
     )
     runner.run(rollouts=12_500, eval_freq=1_250)
 

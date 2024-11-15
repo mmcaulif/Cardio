@@ -5,7 +5,7 @@
 1. [x] add custom templates for issues and PR's: look at other repo's for inspo and give credit
 1. [x] Trajectory replay buffer:
 * implement n-steps using trajectory buffer like FlashBax
-1. [ ] Move on-policy and-off policy runners to class methods
+1. [x] Move on-policy and-off policy runners to class methods
 1. [ ] Use jax agents for examples (removing torch as a requirement)
   * [ ] Fix jax seed issue when seed = 0
   * [ ] Consistent implementations
@@ -27,17 +27,17 @@ Runner class methods todo list:
 1. [x] Rename BaseRunner to Runner
 
 # for v0.1.2
+1. [ ] Implement seeding for reproducability.
+1. [ ] Add agent smoke tests and fakes (similar to toy env)
 1. [ ] Nox
 1. [ ] UV?
-1. [ ] Add agent smoke tests and fakes (similar to toy env)
-1. [ ] Implement seeding for reproducability.
 1. [ ] Gatherer should return episodes and steps completed
 1. [ ] Outline speed, profiling and optimisation roadmap/comparisons
   * [ ] Add function timers like in RidL
   * [ ] Compare with SB3/SBX
 1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement).
 1. [ ] Mixed replay buffer
-1. [ ] Agents can return metrics to be logged? e.g. Loss
+<!-- 1. [ ] Agents can return metrics to be logged? e.g. Loss -->
 1. [ ] Properly document Prioritised Buffer Implementation details
 
 * Send repo to Pablo Samuel Castro
