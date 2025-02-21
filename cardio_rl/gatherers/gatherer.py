@@ -50,11 +50,14 @@ class Gatherer:
         self.env = env
         self.state, _ = self.env.reset()
 
+        self.r = 0.0
+        self.ep_steps = 0
+
     def step(
         self,
         agent: Agent,
         length: int,
-    ) -> list[Transition]:
+    ) -> tuple[list[Transition], list[float], int]:
         """Step through the environment with an agent.
 
         For a given length of time, step through the environment adding
@@ -75,10 +78,14 @@ class Gatherer:
             list[Transition]: The contents of the transition buffer as
                 a list.
         """
+        episode = 0
+        ep_rew = []
+
         iterable = iter(range(length)) if length > 0 else itertools.count()
         for _ in iterable:
+            self.ep_steps += 1
             a, ext = agent.step(self.state)
-            next_state, r, term, trun, _ = self.env.step(a)
+            next_state, r, term, trun, info = self.env.step(a)
             done = term or trun
 
             transition = {"s": self.state, "a": a, "r": r, "s_p": next_state, "d": done}
@@ -103,6 +110,8 @@ class Gatherer:
 
             self.state = next_state
             if done:
+                ep_rew.append(info["episode"]["r"][0])
+                episode += 1
                 if self.n_step > 1:
                     self._flush_step_buffer()
                 self.state, _ = self.env.reset()
@@ -115,7 +124,7 @@ class Gatherer:
         # Process the transition buffer
         transitions = list(self.transition_buffer)
         self.transition_buffer.clear()
-        return transitions
+        return transitions, ep_rew, episode
 
     def reset(self) -> None:
         """Reset by clearing both buffers and reset the environment."""
