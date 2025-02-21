@@ -6,22 +6,22 @@
 1. [x] Trajectory replay buffer:
 * implement n-steps using trajectory buffer like FlashBax
 1. [x] Move on-policy and-off policy runners to class methods
-1. [ ] Use jax agents for examples (removing torch as a requirement)
-  * [ ] Fix jax seed issue when seed = 0
+1. [ ] Use jax agents for examples
+  * [x] Fix jax seed issue when seed = 0
   * [ ] Consistent implementations
+  * [ ] Torch can't be removed yet due to use of torch's tensorboard summary writer
 1. [ ] SB3 runner functionality:
   * [ ] Make a eval_agent function similar to Sb3, allow it to return list and std dev
   * [ ] Option to turn on or off logging verbosity and progress bar
-  * [ ] Runner logging bug fixes (number of env steps with vecenv* and number of training steps performed)
+  * [x] Runner logging bug fixes (number of env steps with vecenv* and number of training steps performed)
 1. [x] Use pyproject.toml for precommit configuration
   * https://docformatter.readthedocs.io/en/latest/usage.html#use-with-pre-commit
 1. [ ] Update readme in accordance with changes
 1. [x] Use ruff with pyproject.toml for more functionality https://docs.astral.sh/ruff/linter/#rule-selection
-1. [ ] Combined replay buffer
+1. [ ] Mixed replay buffer
 1. [ ] Ensure GH actions works with poetry!
-1. [ ] Add pickle dump for episodic reward
-
-*might be fixed
+1. [ ] Add pickle dump for episodic reward (like in stream_rl)
+1. [x] Gatherer should return episodes and steps completed
 
 Runner class methods todo list:
 1. [x] make buffer an argument in BaseRunner
@@ -34,12 +34,10 @@ Runner class methods todo list:
 1. [ ] Add agent smoke tests and fakes (similar to toy env)
 1. [ ] Nox
 1. [ ] UV?
-1. [ ] Gatherer should return episodes and steps completed
 1. [ ] Outline speed, profiling and optimisation roadmap/comparisons
   * [ ] Add function timers like in RidL
   * [ ] Compare with SB3/SBX
 1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement).
-1. [ ] Mixed replay buffer
 <!-- 1. [ ] Agents can return metrics to be logged? e.g. Loss -->
 1. [ ] Properly document Prioritised Buffer Implementation details
 
@@ -50,6 +48,7 @@ Runner class methods todo list:
 * [ ] Benchmarking of Sprinter
 * [ ] Documentation + white paper
 * [ ] Profiling/logging dashboard like PufferLib
+* [ ] Ray based vectorised experimenting runner
 
 ## Specific tasks
 * [ ] QOL Runner and Gatherer changes
@@ -65,7 +64,7 @@ __Focus on getting some form of Cardio as a finished deliverable__
 
 * [ ] Start using Astral UV
 
-* [ ] Docker file
+* [x] Docker file
 
 * [ ] Other replay buffers:
   * [x] trajectory
