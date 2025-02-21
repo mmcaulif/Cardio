@@ -1,4 +1,4 @@
-# General to do list in advance of an initial 0.0.1 release
+# General to do list in advance of an initial 0.1.0 release
 
 # for v0.1.1
 1. [x] Integrated loggers: WandB, Neptune, Tensorboard etc.
@@ -6,21 +6,20 @@
 1. [x] Trajectory replay buffer:
 * implement n-steps using trajectory buffer like FlashBax
 1. [x] Move on-policy and-off policy runners to class methods
-1. [ ] Use jax agents for examples
+1. [x] Use jax agents for examples
   * [x] Fix jax seed issue when seed = 0
-  * [ ] Consistent implementations
-  * [ ] Torch can't be removed yet due to use of torch's tensorboard summary writer
+  * [x] Consistent implementations
 1. [ ] SB3 runner functionality:
-  * [ ] Make a eval_agent function similar to Sb3, allow it to return list and std dev
+  * [x] Make a eval_agent function similar to Sb3, allow it to return list and std dev
   * [ ] Option to turn on or off logging verbosity and progress bar
-  * [x] Runner logging bug fixes (number of env steps with vecenv* and number of training steps performed)
+  * [x] Runner logging bug fixes (number of env steps with vecenv and number of training steps performed)
 1. [x] Use pyproject.toml for precommit configuration
   * https://docformatter.readthedocs.io/en/latest/usage.html#use-with-pre-commit
 1. [ ] Update readme in accordance with changes
 1. [x] Use ruff with pyproject.toml for more functionality https://docs.astral.sh/ruff/linter/#rule-selection
 1. [ ] Mixed replay buffer
 1. [ ] Ensure GH actions works with poetry!
-1. [ ] Add pickle dump for episodic reward (like in stream_rl)
+1. [ ] Add pickle dump for episodic reward somewhere (like in stream_rl)
 1. [x] Gatherer should return episodes and steps completed
 
 Runner class methods todo list:
