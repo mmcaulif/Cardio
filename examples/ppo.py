@@ -10,9 +10,9 @@ import flax.linen as nn
 import jax.numpy as jnp
 import optax  # type: ignore
 from flax.training.train_state import TrainState
+from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 
 import cardio_rl as crl  # type: ignore
-from cardio_rl.types import Transition
 
 
 class Actor(nn.Module):
@@ -212,13 +212,12 @@ class PPO(crl.Agent):
 
 def main():
     env_fns = [lambda: gym.make("CartPole-v1")] * 16
-    envs = gym.vector.SyncVectorEnv(env_fns)
-
-    eval_env = gym.make("CartPole-v1")
+    envs = gym.vector.AsyncVectorEnv(env_fns)
+    eval_env = RecordEpisodeStatistics(gym.make("CartPole-v1"))
 
     runner = crl.Runner.on_policy(
         env=envs,
-        agent=PPO(envs),
+        agent=PPO(envs),  # TODO: optimise algorithm with jax scan
         rollout_len=2048,
         eval_env=eval_env,
     )

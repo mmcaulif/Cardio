@@ -89,11 +89,11 @@ class Runner:
         if isinstance(env, VectorEnv) and n_step > 1:
             raise TypeError("VectorEnv's not yet compatible with n_step > 1")
 
-        if not isinstance(env, RecordEpisodeStatistics):
-            env = RecordEpisodeStatistics(env)
-
         self.env = env
-        self.n_envs = 1 if not isinstance(env, VectorEnv) else env.num_envs
+        self.n_envs = 1 if not isinstance(self.env, VectorEnv) else self.env.num_envs
+
+        if not isinstance(self.env, RecordEpisodeStatistics):
+            self.env = RecordEpisodeStatistics(env)
 
         self.agent = agent
         self.rollout_len = rollout_len

@@ -17,6 +17,9 @@
   * https://docformatter.readthedocs.io/en/latest/usage.html#use-with-pre-commit
 1. [ ] Update readme in accordance with changes
 1. [x] Use ruff with pyproject.toml for more functionality https://docs.astral.sh/ruff/linter/#rule-selection
+1. [ ] Combined replay buffer
+1. [ ] Ensure GH actions works with poetry!
+1. [ ] Add pickle dump for episodic reward
 
 *might be fixed
 
