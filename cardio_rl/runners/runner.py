@@ -89,7 +89,7 @@ class Runner:
         if isinstance(env, VectorEnv) and n_step > 1:
             raise TypeError("VectorEnv's not yet compatible with n_step > 1")
 
-        if isinstance(env, RecordEpisodeStatistics):
+        if not isinstance(env, RecordEpisodeStatistics):
             env = RecordEpisodeStatistics(env)
 
         self.env = env
@@ -248,7 +248,7 @@ class Runner:
         if self.eval_env is None:
             eval_env = copy.deepcopy(self.env)
         else:
-            eval_env = self.eval_env
+            eval_env = self.eval_env  # type: ignore
 
         agent = agent or self.agent
         avg_r = 0.0
