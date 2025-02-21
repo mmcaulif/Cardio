@@ -11,7 +11,7 @@ import jax
 import numpy as np
 from gymnasium import Env
 from gymnasium.vector import VectorEnv
-from gymnasium.wrappers import record_episode_statistics
+from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 from tqdm import trange
 
 import cardio_rl as crl
@@ -19,8 +19,6 @@ from cardio_rl import Agent, Gatherer
 from cardio_rl.buffers.base_buffer import BaseBuffer
 from cardio_rl.loggers import BaseLogger
 from cardio_rl.types import Environment, Transition
-
-# TODO: see if warmup and burnin need to be unique methods, also assess if data the transform argument is necessary at all
 
 
 class Runner:
@@ -92,18 +90,23 @@ class Runner:
             raise TypeError("VectorEnv's not yet compatible with n_step > 1")
 
         self.env = env
-        self.n_envs = 1 if not isinstance(env, VectorEnv) else env.num_envs
+        self.n_envs = 1 if not isinstance(self.env, VectorEnv) else self.env.num_envs
+
+        if not isinstance(self.env, RecordEpisodeStatistics):
+            self.env = RecordEpisodeStatistics(env)
 
         self.agent = agent
         self.rollout_len = rollout_len
         self.warmup_len = warmup_len
         self.gatherer = gatherer or Gatherer(n_step=n_step)
         self.n_step = n_step
-        self.eval_env = eval_env or copy.deepcopy(env)
-        self.eval_env = record_episode_statistics.RecordEpisodeStatistics(self.eval_env)  # type: ignore
+        self.eval_env = eval_env
         self.buffer = buffer
 
         self._initial_time = time.time()
+        self.train_rew = 0.0
+        self.total_episodes = 0
+        self.rollout_ep_completed = 0
 
         self.logger = logger or crl.loggers.BaseLogger()
 
@@ -171,7 +174,15 @@ class Runner:
             Transition: stacked Transitions from environment.
             int: number of Transitions collected
         """
-        rollout_transitions = self.gatherer.step(agent, steps)
+        rollout_transitions, ep_rew, ep_completed = self.gatherer.step(agent, steps)
+
+        if ep_completed > 0:
+            for _ep_rew in ep_rew:
+                self.train_rew += _ep_rew
+
+            self.rollout_ep_completed += ep_completed
+            self.total_episodes += ep_completed
+
         num_transitions = len(rollout_transitions)
         if num_transitions:
             rollout_transitions = self.transform_batch(rollout_transitions, transform)  # type: ignore
@@ -207,7 +218,7 @@ class Runner:
             self.rollout_len, agent, transform
         )
 
-        if self.buffer:
+        if self.buffer is not None:
             if num_transitions:
                 self.buffer.store(rollout_transitions, num_transitions)
             return self.buffer.sample()
@@ -234,16 +245,21 @@ class Runner:
             float: Average of the total episodic return received over
                 the evaluation episodes.
         """
+        if self.eval_env is None:
+            eval_env = copy.deepcopy(self.env)
+        else:
+            eval_env = self.eval_env  # type: ignore
+
         agent = agent or self.agent
         avg_r = 0.0
         avg_l = 0.0
         sum_t = 0.0
         for _ in range(episodes):
-            s, _ = self.eval_env.reset()
+            s, _ = eval_env.reset()
             while True:
                 # TODO: fix below mypy issue
                 a = agent.eval_step(s)  # type: ignore
-                s_p, _, term, trun, info = self.eval_env.step(a)
+                s_p, _, term, trun, info = eval_env.step(a)
                 done = term or trun
                 s = s_p
                 if done:
@@ -261,19 +277,34 @@ class Runner:
         metrics = {
             "Timesteps": env_steps,
             "Training steps": rollouts,
-            # "Episodes": self.episodes,    # TODO: implement this
             "Avg eval returns": round(avg_r, 2),
             "Avg eval episode length": avg_l,
             "Time passed": curr_time,
             "Evaluation time": round(sum_t, 4),
             "Steps per second": int(env_steps / curr_time),
         }
+        if self.rollout_ep_completed > 0:
+            # Logic needed for initial evaluation
+            metrics.update(
+                {
+                    "Training episodes": self.total_episodes,
+                    "Avg training returns": round(
+                        self.train_rew / self.rollout_ep_completed, 2
+                    ),
+                }
+            )
+            self.train_rew = 0.0
+            self.rollout_ep_completed = 0
         self.logger.log(metrics)
 
         return avg_r
 
     def run(
-        self, rollouts: int, eval_freq: int = 1_000, eval_episodes: int = 10
+        self,
+        rollouts: int,
+        eval_freq: int = 1_000,
+        eval_episodes: int = 10,
+        tqdm: bool = True,
     ) -> float:
         """Primary method to train an agent.
 
@@ -291,6 +322,7 @@ class Runner:
                 evaluations.
             eval_episodes (int): How many episodes to perform during
                 evaluation.
+            tqdm (bool): Whether to use a tqdm-style loading bar.
 
         Returns:
             float: Average episodic returns from the final evaluation
@@ -301,7 +333,8 @@ class Runner:
             0, eval_episodes, self.agent
         )  # TODO: have this before the warmup?
 
-        for t in trange(rollouts):
+        _disable = not tqdm
+        for t in trange(rollouts, disable=_disable):
             data = self.step()
             updated_data = self.agent.update(data)  # type: ignore
             if updated_data:

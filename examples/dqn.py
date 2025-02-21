@@ -12,17 +12,18 @@ import numpy as np
 import optax  # type: ignore
 import rlax  # type: ignore
 from flax.training.train_state import TrainState
+from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 
 import cardio_rl as crl
 
 
-def _step(train_state: TrainState, state: np.ndarray, epsilon, key):
-    q_values = train_state.apply_fn(train_state.params, state)
+def _step(ts: TrainState, state: np.ndarray, epsilon, key):
+    q_values = ts.apply_fn(ts.params, state)
     action = distrax.EpsilonGreedy(q_values, epsilon).sample(seed=key)
     return action
 
 
-def _update(train_state: TrainState, targ_params, s, a, r, s_p, d, gamma):
+def _update(ts: TrainState, targ_params, s, a, r, s_p, d, gamma):
     def loss_fn(params, apply_fn, s, a, r, s_p, d):
         q = jax.vmap(apply_fn, in_axes=(None, 0))(params, s)
         q_p = jax.vmap(apply_fn, in_axes=(None, 0))(targ_params, s_p)
@@ -34,9 +35,9 @@ def _update(train_state: TrainState, targ_params, s, a, r, s_p, d, gamma):
     a = jnp.squeeze(a, -1)
     r = jnp.squeeze(r, -1)
     d = jnp.squeeze(d, -1)
-    grads = jax.grad(loss_fn)(train_state.params, train_state.apply_fn, s, a, r, s_p, d)
-    train_state = train_state.apply_gradients(grads=grads)
-    return train_state
+    grads = jax.grad(loss_fn)(ts.params, ts.apply_fn, s, a, r, s_p, d)
+    new_ts = ts.apply_gradients(grads=grads)
+    return new_ts
 
 
 class Q_critic(nn.Module):
@@ -69,9 +70,7 @@ class DQN(crl.Agent):
         self.key = jax.random.PRNGKey(seed)
         self.key, init_key = jax.random.split(self.key)
 
-        self.env = env
-
-        dummy = jnp.zeros(env.observation_space.shape)
+        dummy = env.observation_space.sample()
         params = critic.init(init_key, dummy)
         self.targ_params = copy.deepcopy(params)
         self.targ_freq = targ_freq
@@ -121,16 +120,15 @@ class DQN(crl.Agent):
 
 
 def main():
-    env = gym.make("CartPole-v1")
+    env = RecordEpisodeStatistics(gym.make("CartPole-v1"))
 
     runner = crl.Runner.off_policy(
         env=env,
         agent=DQN(env, Q_critic(action_dim=2)),
         buffer_kwargs={"batch_size": 32},
         rollout_len=4,
-        logger=crl.loggers.BaseLogger(to_file=False),
     )
-    runner.run(rollouts=12_500, eval_freq=1_250)
+    runner.run(rollouts=125_000, eval_freq=12_500)
 
 
 if __name__ == "__main__":
