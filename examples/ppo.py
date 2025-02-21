@@ -15,6 +15,59 @@ from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 import cardio_rl as crl  # type: ignore
 
 
+def _step(train_state: TrainState, state: np.ndarray, key):
+    logits = train_state.apply_fn(train_state.params, state)
+    dist = distrax.Categorical(logits)
+    action = dist.sample(seed=key)
+    log_prob = dist.log_prob(action)
+    return action, log_prob
+
+
+def _update(
+    actor_ts: TrainState,
+    critic_ts: TrainState,
+    s,
+    a,
+    returns,
+    adv,
+    old_log_probs,
+    ent_coeff,
+):
+    adv = (adv - adv.mean()) / (adv.std() + 1e-8)  # Normalise adv
+
+    def actor_loss(params):
+        logits = actor_ts.apply_fn(params, s)
+
+        dist = distrax.Categorical(logits)
+        log_probs = dist.log_prob(a)
+        entropy = dist.entropy()
+
+        # ratio between old and new policy, should be one at the first iteration
+        ratio = jnp.exp(log_probs - jax.lax.stop_gradient(old_log_probs))
+
+        # clipped surrogate loss
+        policy_loss_1 = adv * ratio
+        policy_loss_2 = adv * jnp.clip(ratio, 1 - 0.2, 1 + 0.2)
+        policy_loss = -jnp.minimum(policy_loss_1, policy_loss_2).mean()
+
+        entropy_loss = -jnp.mean(entropy)
+
+        loss = policy_loss + ent_coeff * entropy_loss
+        return loss
+
+    grads = jax.grad(actor_loss)(actor_ts.params)
+    actor_ts = actor_ts.apply_gradients(grads=grads)
+
+    def critic_loss(params):
+        v = critic_ts.apply_fn(params, s)
+        return ((returns - v) ** 2).mean()
+
+    grads = jax.grad(critic_loss)(critic_ts.params)
+    critic_ts = critic_ts.apply_gradients(grads=grads)
+
+    return actor_ts, critic_ts
+
+
 class Actor(nn.Module):
     act_dim: int
 
@@ -84,61 +137,10 @@ class PPO(crl.Agent):
             ),
         )
 
-        def _step(train_state: TrainState, state: np.ndarray, key):
-            logits = train_state.apply_fn(train_state.params, state)
-            dist = distrax.Categorical(logits)
-            action = dist.sample(seed=key)
-            log_prob = dist.log_prob(action)
-            return action, log_prob
-
         self._step = jax.jit(_step)
         self._eval_step = jax.jit(actor.apply)
 
-    @staticmethod
-    @partial(jax.jit, static_argnames=["ent_coeff"])
-    def _update(
-        actor_ts: TrainState,
-        critic_ts: TrainState,
-        s,
-        a,
-        returns,
-        adv,
-        old_log_probs,
-        ent_coeff,
-    ):
-        adv = (adv - adv.mean()) / (adv.std() + 1e-8)  # Normalise adv
-
-        def actor_loss(params):
-            logits = actor_ts.apply_fn(params, s)
-
-            dist = distrax.Categorical(logits)
-            log_probs = dist.log_prob(a)
-            entropy = dist.entropy()
-
-            # ratio between old and new policy, should be one at the first iteration
-            ratio = jnp.exp(log_probs - jax.lax.stop_gradient(old_log_probs))
-
-            # clipped surrogate loss
-            policy_loss_1 = adv * ratio
-            policy_loss_2 = adv * jnp.clip(ratio, 1 - 0.2, 1 + 0.2)
-            policy_loss = -jnp.minimum(policy_loss_1, policy_loss_2).mean()
-
-            entropy_loss = -jnp.mean(entropy)
-
-            loss = policy_loss + ent_coeff * entropy_loss
-            return loss
-
-        grads = jax.grad(actor_loss)(actor_ts.params)
-        actor_ts = actor_ts.apply_gradients(grads=grads)
-
-        def critic_loss(params):
-            v = critic_ts.apply_fn(params, s)
-            return ((returns - v) ** 2).mean()
-
-        grads = jax.grad(critic_loss)(critic_ts.params)
-        critic_ts = critic_ts.apply_gradients(grads=grads)
-
-        return actor_ts, critic_ts
+        self._update = jax.jit(partial(_update, ent_coeff=ent_coeff))
 
     def update(self, batches):
         v = self.critic_ts.apply_fn(self.critic_ts.params, batches["s"])
@@ -193,7 +195,6 @@ class PPO(crl.Agent):
                     batches["returns"][mb_idxs],
                     batches["gae"][mb_idxs],
                     batches["log_prob"][mb_idxs],
-                    self.ent_coeff,
                 )
                 start_idx += self.batch_size
 

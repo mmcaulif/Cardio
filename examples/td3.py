@@ -14,6 +14,65 @@ import rlax  # type: ignore
 import cardio_rl as crl  # type: ignore
 
 
+def _step(train_state: TrainState, state: np.ndarray, key):
+    action = train_state.apply_fn(train_state.params, state)
+    noise = jax.random.normal(key, action.shape) * 0.2
+    noise = jnp.clip(noise, min=-0.5, max=0.5)
+    action = jnp.clip(action + noise, min=-2.0, max=2.0)
+    return action
+
+
+def _update(critic_ts, actor_ts, s, a, r, s_p, d, gamma, t, key):
+    def critic_loss_fn(params, critic_ts, actor_ts, key):
+        a_p = actor_ts.apply_fn(
+            actor_ts.params, s_p
+        )  # TODO: does TD3 use actor target parameters?
+        noise = jax.random.normal(key, a_p.shape) * 0.2
+        noise = jnp.clip(noise, min=-0.5, max=0.5)
+        a_p = jnp.clip(a_p + noise, min=-2.0, max=2.0)
+
+        q_p1, qp2 = critic_ts.apply_fn(critic_ts.target_params, s_p, a_p)
+
+        q_p = jnp.minimum(q_p1, qp2)
+
+        y = r + gamma * q_p * (1.0 - d)
+
+        q1, q2 = critic_ts.apply_fn(params, s, a)
+        c_loss = jnp.mean(rlax.l2_loss(q1 - y)) + jnp.mean(rlax.l2_loss(q2 - y))
+        return c_loss
+
+    def actor_loss_fn(params, critic_ts, actor_ts):
+        a = actor_ts.apply_fn(params, s)
+        q1, _ = critic_ts.apply_fn(critic_ts.params, s, a)
+        return -jnp.mean(q1)
+
+    key, update_key = jax.random.split(key)
+    c_grads = jax.grad(critic_loss_fn)(
+        critic_ts.params, critic_ts, actor_ts, update_key
+    )
+    new_critic_ts = critic_ts.apply_gradients(grads=c_grads)
+
+    a_grads = jax.grad(actor_loss_fn)(actor_ts.params, critic_ts, actor_ts)
+    new_actor_ts = actor_ts.apply_gradients(grads=a_grads)
+
+    new_actor_ts = jax.lax.cond(
+        jnp.mod(t, 2) == 0, lambda _: new_actor_ts, lambda _: actor_ts, None
+    )
+
+    new_critic_ts = jax.lax.cond(
+        jnp.mod(t, 2) == 0,
+        lambda _: new_critic_ts.replace(
+            target_params=optax.incremental_update(
+                new_critic_ts.params, new_critic_ts.target_params, 0.005
+            )
+        ),
+        lambda _: new_critic_ts,
+        None,
+    )
+
+    return new_critic_ts, new_actor_ts, key
+
+
 class TargetTrainState(TrainState):
     target_params: Any
 
@@ -59,7 +118,6 @@ class TD3(crl.Agent):
         self.key = jax.random.PRNGKey(self.seed)
 
         self.env = env
-
         self.gamma = gamma
 
         actor = Actor(act_dim=1, scale=2.0)
@@ -86,54 +144,23 @@ class TD3(crl.Agent):
 
         self.update_count = 0
 
-        def _step(train_state: TrainState, state: np.ndarray, key):
-            action = train_state.apply_fn(train_state.params, state)
-            noise = jax.random.normal(key, action.shape) * 0.2
-            noise = jnp.clip(noise, min=-0.5, max=0.5)
-            action = jnp.clip(action + noise, min=-2.0, max=2.0)
-            return action
-
         self._step = jax.jit(_step)
         self._eval_step = jax.jit(actor.apply)
+        self._update = jax.jit(partial(_update, gamma=gamma))
 
-    def update(self, batch):
-        s, a, r, s_p, d = batch["s"], batch["a"], batch["r"], batch["s_p"], batch["d"]
-
-        @jax.grad
-        def loss(params, critic_train_state, actor_train_state, key):
-            a_p = actor_train_state.apply_fn(actor_train_state.params, s_p)
-            noise = jax.random.normal(key, a_p.shape) * 0.2
-            noise = jnp.clip(noise, min=-0.5, max=0.5)
-            a_p = jnp.clip(a_p + noise, min=-2.0, max=2.0)
-
-            q_p1, qp2 = critic_train_state.apply_fn(
-                critic_train_state.target_params, s_p, a_p
-            )
-
-            q_p = jnp.minimum(q_p1, qp2)
-
-            y = r + 0.99 * q_p * ~d
-
-            q1, q2 = critic_train_state.apply_fn(params, s, a)
-            c_loss = jnp.mean(rlax.l2_loss(q1 - y)) + jnp.mean(rlax.l2_loss(q2 - y))
-            return c_loss
-
-        self.key, update_key = jax.random.split(self.key)
-
-        c_grads = loss(self.critic_ts.params, self.critic_ts, self.actor_ts, update_key)
-
-        self.critic_ts = self.critic_ts.apply_gradients(grads=c_grads)
-
+    def update(self, batches):
+        self.critic_ts, self.actor_ts, self.key = self._update(
+            self.critic_ts,
+            self.actor_ts,
+            batches["s"],
+            batches["a"],
+            batches["r"],
+            batches["s_p"],
+            batches["d"],
+            t=self.critic_ts.step,
+            key=self.key,
+        )
         self.update_count += 1
-        if self.update_count % 2 == 0:
-            pass
-            # q1, q2 = self.critic(s, self.actor(s_p))
-            # policy_loss = -((q1 + q2) * 0.5).mean()
-
-            # self.a_optimizer.zero_grad()
-            # policy_loss.backward()
-            # self.a_optimizer.step()
-
         return {}
 
     def step(self, state):
@@ -150,7 +177,7 @@ def main():
     env = gym.make("Pendulum-v1")
     runner = crl.Runner.off_policy(
         env=env,
-        agent=TD3(env),
+        agent=TD3(env, gamma=0.98),
         buffer_kwargs={"batch_size": 256},
         rollout_len=1,
     )
