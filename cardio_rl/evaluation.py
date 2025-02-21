@@ -5,7 +5,7 @@ import time
 from gymnasium import Env  # type: ignore
 from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 
-from cardio_rl import Agent  # type: ignore
+from cardio_rl.agent import Agent  # type: ignore
 
 
 def evaluate_agent(
