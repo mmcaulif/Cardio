@@ -12,6 +12,7 @@ import numpy as np
 import optax  # type: ignore
 import rlax  # type: ignore
 from flax.training.train_state import TrainState
+from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 
 import cardio_rl as crl
 
@@ -119,7 +120,7 @@ class DQN(crl.Agent):
 
 
 def main():
-    env = gym.make("CartPole-v1")
+    env = RecordEpisodeStatistics(gym.make("CartPole-v1"))
 
     runner = crl.Runner.off_policy(
         env=env,
@@ -127,7 +128,7 @@ def main():
         buffer_kwargs={"batch_size": 32},
         rollout_len=4,
     )
-    runner.run(rollouts=12_500, eval_freq=1_250)
+    runner.run(rollouts=125_000, eval_freq=12_500)
 
 
 if __name__ == "__main__":
