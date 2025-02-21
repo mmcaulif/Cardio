@@ -6,7 +6,7 @@ import numpy as np
 from cardio_rl.buffers.tree_buffer import TreeBuffer
 
 
-class CombinedBuffer(TreeBuffer):
+class MixedBuffer(TreeBuffer):
     """Buffer that stores transitions in a pytree."""
 
     def _sample(
