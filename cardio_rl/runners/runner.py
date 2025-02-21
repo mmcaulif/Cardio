@@ -11,6 +11,7 @@ import jax
 import numpy as np
 from gymnasium import Env
 from gymnasium.vector import VectorEnv
+from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 from tqdm import trange
 
 import cardio_rl as crl
@@ -18,8 +19,6 @@ from cardio_rl import Agent, Gatherer
 from cardio_rl.buffers.base_buffer import BaseBuffer
 from cardio_rl.loggers import BaseLogger
 from cardio_rl.types import Environment, Transition
-
-# TODO: see if warmup and burnin need to be unique methods, also assess if data the transform argument is necessary at all
 
 
 class Runner:
@@ -89,6 +88,9 @@ class Runner:
         """
         if isinstance(env, VectorEnv) and n_step > 1:
             raise TypeError("VectorEnv's not yet compatible with n_step > 1")
+
+        if isinstance(env, RecordEpisodeStatistics):
+            env = RecordEpisodeStatistics(env)
 
         self.env = env
         self.n_envs = 1 if not isinstance(env, VectorEnv) else env.num_envs
