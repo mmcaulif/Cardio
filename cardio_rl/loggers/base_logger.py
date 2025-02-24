@@ -2,6 +2,7 @@
 
 import logging
 import os
+import pickle
 import time
 from typing import Any
 
@@ -83,3 +84,18 @@ class BaseLogger:
         """
         with logging_redirect_tqdm():
             self.logger.info(metrics)
+
+    def dump(
+        self, returns: list[float], term_time_steps: list[int], env_name: str
+    ) -> None:
+        """Dump train data to file.
+
+        Save training returns and episode ends to a pickle file.
+
+        Args:
+            returns (list[float]): _description_
+            term_time_steps (list[int]): _description_
+            env_name (str): _description_
+        """
+        with open(os.path.join(self.id, "returns.pkl"), "wb") as f:
+            pickle.dump((returns, term_time_steps, env_name), f)
