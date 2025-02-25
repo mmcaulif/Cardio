@@ -128,7 +128,7 @@ def main():
         buffer_kwargs={"batch_size": 32},
         rollout_len=4,
     )
-    runner.run(rollouts=125_000, eval_freq=12_500)
+    runner.run(rollouts=122_500, eval_freq=12_500)
 
 
 if __name__ == "__main__":

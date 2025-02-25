@@ -5,6 +5,7 @@ from collections import deque
 from typing import Deque
 
 import numpy as np
+from gymnasium.vector import VectorEnv
 
 from cardio_rl.agent import Agent
 from cardio_rl.types import Environment, Transition
@@ -49,6 +50,11 @@ class Gatherer:
         """
         self.env = env
         self.state, _ = self.env.reset()
+        self.n_envs = (
+            1
+            if not isinstance(self.env.unwrapped, VectorEnv)
+            else self.env.unwrapped.num_envs
+        )  # type: ignore
 
         self.t = 0
         self.ep_steps = 0
