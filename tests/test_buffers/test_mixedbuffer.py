@@ -6,7 +6,7 @@ from cardio_rl.buffers.mixed_buffer import MixedBuffer
 from cardio_rl.toy_env import ToyEnv
 
 
-class TestTreeBuffer:
+class TestMixedBuffer:
     @pytest.mark.parametrize(
         "warmup, rollout_len, capacity",
         [
@@ -15,7 +15,7 @@ class TestTreeBuffer:
             (8, 8, 10),
         ],
     )
-    def test_init_shape(self, warmup, rollout_len, capacity):
+    def test_latest_transition_returned(self, warmup, rollout_len, capacity):
         env = ToyEnv()
         runner = crl.Runner.off_policy(
             env=env,
