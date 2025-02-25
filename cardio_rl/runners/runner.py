@@ -17,6 +17,7 @@ from tqdm import trange
 import cardio_rl as crl
 from cardio_rl import Agent, Gatherer
 from cardio_rl.buffers.base_buffer import BaseBuffer
+from cardio_rl.evaluation import evaluate_agent
 from cardio_rl.loggers import BaseLogger
 from cardio_rl.types import Environment, Transition
 
@@ -229,7 +230,9 @@ class Runner:
 
         return rollout_transitions
 
-    def eval(self, rollouts: int, episodes: int, agent: Agent | None = None) -> float:
+    def eval(
+        self, rollouts: int, episodes: int, agent: Agent | None = None
+    ) -> tuple[float, float]:
         """Evaluate an agent's performance.
 
         Step through the eval_env for a given number of episodes using
@@ -255,40 +258,27 @@ class Runner:
             eval_env = self.eval_env  # type: ignore
 
         agent = agent or self.agent
-        avg_r = 0.0
-        avg_l = 0.0
-        sum_t = 0.0
-        for _ in range(episodes):
-            s, _ = eval_env.reset()
-            while True:
-                # TODO: fix below mypy issue
-                a = agent.eval_step(s)  # type: ignore
-                s_p, _, term, trun, info = eval_env.step(a)
-                done = term or trun
-                s = s_p
-                if done:
-                    avg_r += info["episode"]["r"]
-                    avg_l += info["episode"]["l"]
-                    sum_t += info["episode"]["t"]
-                    break
+        assert agent is not None
 
-        avg_r = float(avg_r / episodes)
-        avg_l = float(avg_l / episodes)
-        sum_t = float(sum_t)
+        eval_returns, eval_t = evaluate_agent(
+            eval_env, agent, episodes, return_episode_rewards=True
+        )
+
+        mean_returns = np.array(eval_returns).mean().item()
+        std_returns = np.array(eval_returns).std().item()
 
         env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
         curr_time = round(time.time() - self._initial_time, 2)
         metrics = {
             "Timesteps": env_steps,
             "Training steps": rollouts,
-            "Avg eval returns": round(avg_r, 2),
-            "Avg eval episode length": avg_l,
+            "Avg eval return": round(mean_returns, 2),
+            "Std eval return": round(std_returns, 2),
             "Time passed": curr_time,
-            "Evaluation time": round(sum_t, 4),
+            "Evaluation time": round(eval_t, 4),
             "Steps per second": int(env_steps / curr_time),
         }
         if self.rollout_ep_completed > 0:
-            # Logic needed for initial evaluation
             metrics.update(
                 {
                     "Training episodes": self.total_episodes,
@@ -299,9 +289,9 @@ class Runner:
             )
             self.rollout_train_rew.clear()
             self.rollout_ep_completed = 0
-
+                  
         self.logger.log(metrics)
-        return avg_r
+        return mean_returns, std_returns
 
     def run(
         self,
@@ -309,7 +299,7 @@ class Runner:
         eval_freq: int = 1_000,
         eval_episodes: int = 10,
         tqdm: bool = True,
-    ) -> float:
+    ) -> tuple[float, float]:
         """Primary method to train an agent.
 
         Iteratively run runner.step() for self.rollout_len and pass the
@@ -347,9 +337,9 @@ class Runner:
                 self.eval(t, eval_episodes, self.agent)
 
         self.logger.terminal("Performing final evaluation")
-        avg_returns = self.eval(t, eval_episodes, self.agent)
+        avg_returns, std_returns = self.eval(t, eval_episodes, self.agent)
         self.logger.dump(self.train_rew, self.t_completed, self.env.spec.id)  # type: ignore
-        return avg_returns
+        return avg_returns, std_returns
 
     def transform_batch(
         self, batch: list[Transition], transform: Callable | None = None
