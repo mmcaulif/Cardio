@@ -172,7 +172,7 @@ class BaseBuffer:
                         [self.a[idx : idx + self.trajectory] for idx in sample_indxs]
                     ),
                     "r": np.stack(
-                        [self.d[idx : idx + self.trajectory] for idx in sample_indxs]
+                        [self.r[idx : idx + self.trajectory] for idx in sample_indxs]
                     ),
                     "s_p": np.stack(
                         [self.s_p[idx : idx + self.trajectory] for idx in sample_indxs]
