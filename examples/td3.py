@@ -174,6 +174,8 @@ class TD3(crl.Agent):
 
 
 def main():
+    np.random.seed(42)
+
     env = gym.make("Pendulum-v1")
     runner = crl.Runner.off_policy(
         env=env,

@@ -120,6 +120,8 @@ class DQN(crl.Agent):
 
 
 def main():
+    np.random.seed(42)
+
     env = RecordEpisodeStatistics(gym.make("CartPole-v1"))
 
     runner = crl.Runner.off_policy(
