@@ -141,6 +141,8 @@ class Gatherer:
         """Reset by clearing both buffers and reset the environment."""
         self.step_buffer.clear()
         self.transition_buffer.clear()
+        self.t = 0
+        self.ep_steps = 0
         self.state, _ = self.env.reset(seed=np.random.randint(np.iinfo(np.int32).max))
 
     def _flush_step_buffer(self) -> None:
