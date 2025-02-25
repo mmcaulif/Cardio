@@ -22,7 +22,7 @@ class VectorGatherer(Gatherer):
         self,
         agent: Agent,
         length: int,
-    ) -> tuple[list[Transition], list[float], int]:
+    ) -> tuple[list[Transition], list[float], list[int], int]:
         """Step through the environments with an agent.
 
         A simplified version of the default gatherer's step method that
@@ -61,4 +61,4 @@ class VectorGatherer(Gatherer):
         # Process the transition buffer
         transitions = list(self.transition_buffer)
         self.transition_buffer.clear()
-        return transitions, [], 0
+        return transitions, [], [], 0

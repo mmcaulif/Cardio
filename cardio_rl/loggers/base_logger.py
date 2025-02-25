@@ -40,10 +40,11 @@ class BaseLogger:
                 printed to a file or not. Defaults to True.
         """
         self.id = f"{exp_name}_{int(time.time())}"
+        self.log_dir = log_dir
         self.logger = logging.getLogger()
 
         if to_file:
-            dir = os.path.join(log_dir, self.id)
+            dir = os.path.join(self.log_dir, self.id)
 
             if not os.path.exists(dir):
                 os.makedirs(dir)
@@ -97,5 +98,5 @@ class BaseLogger:
             term_time_steps (list[int]): _description_
             env_name (str): _description_
         """
-        with open(os.path.join(self.id, "returns.pkl"), "wb") as f:
+        with open(os.path.join(self.log_dir, self.id, "returns.pkl"), "wb") as f:
             pickle.dump((returns, term_time_steps, env_name), f)

@@ -104,7 +104,9 @@ class Runner:
         self.buffer = buffer
 
         self._initial_time = time.time()
-        self.train_rew = 0.0
+        self.train_rew: list[float] = []
+        self.rollout_train_rew: list[float] = []
+        self.t_completed: list[int] = []
         self.total_episodes = 0
         self.rollout_ep_completed = 0
 
@@ -174,12 +176,14 @@ class Runner:
             Transition: stacked Transitions from environment.
             int: number of Transitions collected
         """
-        rollout_transitions, ep_rew, ep_completed = self.gatherer.step(agent, steps)
+        rollout_transitions, ep_rew, t_completed, ep_completed = self.gatherer.step(
+            agent, steps
+        )
 
         if ep_completed > 0:
-            for _ep_rew in ep_rew:
-                self.train_rew += _ep_rew
-
+            self.train_rew += ep_rew
+            self.rollout_train_rew += ep_rew
+            self.t_completed += t_completed
             self.rollout_ep_completed += ep_completed
             self.total_episodes += ep_completed
 
@@ -289,14 +293,14 @@ class Runner:
                 {
                     "Training episodes": self.total_episodes,
                     "Avg training returns": round(
-                        self.train_rew / self.rollout_ep_completed, 2
+                        np.mean(self.rollout_train_rew).item(), 2
                     ),
                 }
             )
-            self.train_rew = 0.0
+            self.rollout_train_rew.clear()
             self.rollout_ep_completed = 0
-        self.logger.log(metrics)
 
+        self.logger.log(metrics)
         return avg_r
 
     def run(
@@ -344,6 +348,7 @@ class Runner:
 
         self.logger.terminal("Performing final evaluation")
         avg_returns = self.eval(t, eval_episodes, self.agent)
+        self.logger.dump(self.train_rew, self.t_completed, self.env.spec.id)  # type: ignore
         return avg_returns
 
     def transform_batch(
