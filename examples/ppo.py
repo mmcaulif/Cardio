@@ -212,6 +212,8 @@ class PPO(crl.Agent):
 
 
 def main():
+    np.random.seed(42)
+
     env_fns = [lambda: gym.make("CartPole-v1")] * 16
     envs = gym.vector.AsyncVectorEnv(env_fns)
     eval_env = RecordEpisodeStatistics(gym.make("CartPole-v1"))

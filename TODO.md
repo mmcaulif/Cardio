@@ -9,18 +9,19 @@
 1. [x] Use jax agents for examples
   * [x] Fix jax seed issue when seed = 0
   * [x] Consistent implementations
-1. [ ] SB3 runner functionality:
+1. [x] SB3 runner functionality:
   * [x] Make a eval_agent function similar to Sb3, allow it to return list and std dev
-  * [ ] Option to turn on or off logging verbosity and progress bar
+  * [x] Option to turn on or off logging verbosity and progress bar
   * [x] Runner logging bug fixes (number of env steps with vecenv and number of training steps performed)
 1. [x] Use pyproject.toml for precommit configuration
   * https://docformatter.readthedocs.io/en/latest/usage.html#use-with-pre-commit
 1. [ ] Update readme in accordance with changes
 1. [x] Use ruff with pyproject.toml for more functionality https://docs.astral.sh/ruff/linter/#rule-selection
-1. [ ] Mixed replay buffer
-1. [ ] Ensure GH actions works with poetry!
-1. [ ] Add pickle dump for episodic reward somewhere (like in stream_rl)
+1. [x] Mixed replay buffer
+1. [x] Ensure GH actions works with poetry!
+1. [x] Add pickle dump for episodic reward somewhere (like in stream_rl)
 1. [x] Gatherer should return episodes and steps completed
+1. [ ] Implement seeding for reproducability.
 
 Runner class methods todo list:
 1. [x] make buffer an argument in BaseRunner
@@ -29,7 +30,6 @@ Runner class methods todo list:
 1. [x] Rename BaseRunner to Runner
 
 # for v0.1.2
-1. [ ] Implement seeding for reproducability.
 1. [ ] Add agent smoke tests and fakes (similar to toy env)
 1. [ ] Nox
 1. [ ] UV?

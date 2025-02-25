@@ -49,7 +49,7 @@ class Gatherer:
                 The gymnasium environment used within the gatherer.
         """
         self.env = env
-        self.state, _ = self.env.reset()
+        self.state, _ = self.env.reset(seed=np.random.randint(np.iinfo(np.int32).max))
         self.n_envs = (
             1
             if not isinstance(self.env.unwrapped, VectorEnv)
@@ -123,7 +123,9 @@ class Gatherer:
                 episodes_done += 1
                 if self.n_step > 1:
                     self._flush_step_buffer()
-                self.state, _ = self.env.reset()
+                self.state, _ = self.env.reset(
+                    seed=np.random.randint(np.iinfo(np.int32).max)
+                )
                 self.step_buffer.clear()
                 agent.terminal()
                 # For evaluation and/or reinforce
@@ -139,7 +141,7 @@ class Gatherer:
         """Reset by clearing both buffers and reset the environment."""
         self.step_buffer.clear()
         self.transition_buffer.clear()
-        self.state, _ = self.env.reset()
+        self.state, _ = self.env.reset(seed=np.random.randint(np.iinfo(np.int32).max))
 
     def _flush_step_buffer(self) -> None:
         """Empty the step buffer at the end of episodes.
