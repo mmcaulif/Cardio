@@ -2,6 +2,7 @@
 
 import logging
 import os
+import pickle
 import time
 from typing import Any
 
@@ -39,10 +40,11 @@ class BaseLogger:
                 printed to a file or not. Defaults to True.
         """
         self.id = f"{exp_name}_{int(time.time())}"
+        self.log_dir = log_dir
         self.logger = logging.getLogger()
 
         if to_file:
-            dir = os.path.join(log_dir, self.id)
+            dir = os.path.join(self.log_dir, self.id)
 
             if not os.path.exists(dir):
                 os.makedirs(dir)
@@ -83,3 +85,18 @@ class BaseLogger:
         """
         with logging_redirect_tqdm():
             self.logger.info(metrics)
+
+    def dump(
+        self, returns: list[float], term_time_steps: list[int], env_name: str
+    ) -> None:
+        """Dump train data to file.
+
+        Save training returns and episode ends to a pickle file.
+
+        Args:
+            returns (list[float]): _description_
+            term_time_steps (list[int]): _description_
+            env_name (str): _description_
+        """
+        with open(os.path.join(self.log_dir, self.id, "returns.pkl"), "wb") as f:
+            pickle.dump((returns, term_time_steps, env_name), f)

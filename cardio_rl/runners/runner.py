@@ -91,7 +91,6 @@ class Runner:
             raise TypeError("VectorEnv's not yet compatible with n_step > 1")
 
         self.env = env
-        self.n_envs = 1 if not isinstance(self.env, VectorEnv) else self.env.num_envs
 
         if not isinstance(self.env, RecordEpisodeStatistics):
             self.env = RecordEpisodeStatistics(env)
@@ -105,7 +104,9 @@ class Runner:
         self.buffer = buffer
 
         self._initial_time = time.time()
-        self.train_rew = 0.0
+        self.train_rew: list[float] = []
+        self.rollout_train_rew: list[float] = []
+        self.t_completed: list[int] = []
         self.total_episodes = 0
         self.rollout_ep_completed = 0
 
@@ -175,12 +176,14 @@ class Runner:
             Transition: stacked Transitions from environment.
             int: number of Transitions collected
         """
-        rollout_transitions, ep_rew, ep_completed = self.gatherer.step(agent, steps)
+        rollout_transitions, ep_rew, t_completed, ep_completed = self.gatherer.step(
+            agent, steps
+        )
 
         if ep_completed > 0:
-            for _ep_rew in ep_rew:
-                self.train_rew += _ep_rew
-
+            self.train_rew += ep_rew
+            self.rollout_train_rew += ep_rew
+            self.t_completed += t_completed
             self.rollout_ep_completed += ep_completed
             self.total_episodes += ep_completed
 
@@ -226,9 +229,7 @@ class Runner:
 
         return rollout_transitions
 
-    def eval(
-        self, rollouts: int, episodes: int, agent: Agent | None = None
-    ) -> tuple[float, float]:
+    def eval(self, episodes: int, agent: Agent | None = None) -> tuple[float, float]:
         """Evaluate an agent's performance.
 
         Step through the eval_env for a given number of episodes using
@@ -236,8 +237,6 @@ class Runner:
         the average over all episodes.
 
         Args:
-            rollouts (int): The number of rollouts performed so far by
-                the runner.
             episodes (int): The number of episodes to perform with the
                 agent.
             agent (Agent | None, optional): Can optionally pass a
@@ -263,28 +262,31 @@ class Runner:
         mean_returns = np.array(eval_returns).mean().item()
         std_returns = np.array(eval_returns).std().item()
 
-        env_steps = (self.n_envs * rollouts * self.rollout_len) + self.warmup_len
+        train_steps = (self.gatherer.t - self.warmup_len) // (
+            self.rollout_len * self.gatherer.n_envs
+        )
         curr_time = round(time.time() - self._initial_time, 2)
         metrics = {
-            "Timesteps": env_steps,
-            "Training steps": rollouts,
+            "Timesteps": self.gatherer.t,
+            "Update steps": train_steps,
             "Avg eval return": round(mean_returns, 2),
             "Std eval return": round(std_returns, 2),
             "Time passed": curr_time,
             "Evaluation time": round(eval_t, 4),
-            "Steps per second": int(env_steps / curr_time),
+            "Steps per second": round(self.gatherer.t / curr_time, 4),
         }
         if self.rollout_ep_completed > 0:
             metrics.update(
                 {
                     "Training episodes": self.total_episodes,
-                    "Avg training return": round(
-                        self.train_rew / self.rollout_ep_completed, 2
+                    "Avg training returns": round(
+                        np.mean(self.rollout_train_rew).item(), 2
                     ),
                 }
             )
-            self.train_rew = 0.0
+            self.rollout_train_rew.clear()
             self.rollout_ep_completed = 0
+
         self.logger.log(metrics)
         return mean_returns, std_returns
 
@@ -318,21 +320,20 @@ class Runner:
                 step.
         """
         self.logger.terminal("Performing initial evaluation")
-        _ = self.eval(
-            0, eval_episodes, self.agent
-        )  # TODO: have this before the warmup?
+        _ = self.eval(eval_episodes, self.agent)  # Have this before burn-in
 
         _disable = not tqdm
-        for t in trange(rollouts, disable=_disable):
+        for n in trange(rollouts, disable=_disable):
+            if n % eval_freq == 0 and n > 0:
+                self.eval(eval_episodes, self.agent)
             data = self.step()
             updated_data = self.agent.update(data)  # type: ignore
             if updated_data:
                 self.update(updated_data)
-            if t % eval_freq == 0 and t > 0:
-                self.eval(t, eval_episodes, self.agent)
 
         self.logger.terminal("Performing final evaluation")
-        avg_returns, std_returns = self.eval(t, eval_episodes, self.agent)
+        avg_returns, std_returns = self.eval(eval_episodes, self.agent)
+        self.logger.dump(self.train_rew, self.t_completed, self.env.spec.id)  # type: ignore
         return avg_returns, std_returns
 
     def transform_batch(

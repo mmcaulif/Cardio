@@ -12,17 +12,11 @@ from cardio_rl.types import Transition
 class VectorGatherer(Gatherer):
     """A modified gatherer for vectorised environments."""
 
-    # TODO: in this method, check if a non-vector env has been used
-    # and if so, wrap it in a dummy vector wrapper
-    #
-    # def init_env(self, env: Environment):
-    #     ...
-
     def step(
         self,
         agent: Agent,
         length: int,
-    ) -> tuple[list[Transition], list[float], int]:
+    ) -> tuple[list[Transition], list[float], list[int], int]:
         """Step through the environments with an agent.
 
         A simplified version of the default gatherer's step method that
@@ -43,9 +37,10 @@ class VectorGatherer(Gatherer):
         """
         iterable = iter(range(length)) if length > 0 else itertools.count()
         for _ in iterable:
+            self.t += self.n_envs
             a, ext = agent.step(self.state)
-            next_state, r, d, t, _ = self.env.step(a)
-            done = np.logical_or(d, t)
+            next_state, r, term, trun, _ = self.env.step(a)
+            done = np.logical_or(term, trun)
 
             transition = {"s": self.state, "a": a, "r": r, "s_p": next_state, "d": done}
             ext = agent.view(transition, ext)
@@ -61,4 +56,4 @@ class VectorGatherer(Gatherer):
         # Process the transition buffer
         transitions = list(self.transition_buffer)
         self.transition_buffer.clear()
-        return transitions, [], 0
+        return transitions, [], [], 0
