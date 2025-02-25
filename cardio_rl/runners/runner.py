@@ -33,6 +33,7 @@ class Runner:
         warmup_len: int = 0,
         n_step: int = 1,
         eval_env: Env | None = None,
+        burnin_len: int = 0,
         buffer: BaseBuffer | None = None,
         logger: BaseLogger | None = None,
         gatherer: Gatherer | None = None,
@@ -48,15 +49,13 @@ class Runner:
         extra specifications from the agent. The runner calls the
         gatherer's step function as part its own step function, or as
         part of its built in warmup (for collecting a large amount of
-        initial data with your agent) and burnin* (for randomly stepping
+        initial data with your agent) and burnin (for randomly stepping
         through an environment, not collecting data, such as for
         initialising normalisation values) methods. The runner can
         either be used via its run method (which iteratively calls the
         runner.step and the agent.update methods) or with each mothod
         individually with its step method if you'd like more
         finegrained control.
-
-        *not implemented yet...
 
         Args:
             env (Environment): The gym environment used to collect
@@ -73,6 +72,9 @@ class Runner:
             eval_env (gym.Env | None, optional): An optional separate
                 environment to be used for evaluation, must not be a
                 VectorEnv. Defaults to None.
+            burnin_len (int, optional): Number of untracked environment
+                steps to take before warmup, such as to initialise
+                normalisation. Defaults to 0.
             buffer (BaseBuffer | None, optional): Can pass a buffer
                 which stores data and is randomly sampled when calling
                 runner.step. Defaults to None.
@@ -114,10 +116,9 @@ class Runner:
 
         # Initialise components
         self.gatherer.init_env(self.env)
-        self.burn_in_len = 0
-        if self.burn_in_len:
-            self._burn_in()  # TODO: implement argument
-        self.gatherer.reset()
+        self.burnin_len = burnin_len
+        if self.burnin_len > 0:
+            self._burn_in()
 
         if self.warmup_len > 0:
             self._warm_start()
@@ -129,7 +130,9 @@ class Runner:
         initialise observation normalisation. Gatherer is reset
         afterwards.
         """
-        self._rollout(self.burn_in_len, Agent(self.env))
+        self.gatherer.step(crl.Agent(self.env), self.burnin_len)
+        self.gatherer.reset()
+        self.logger.terminal("### Burn in finished ###")
 
     def _warm_start(self) -> tuple[Transition, int]:
         """Step through environment with an agent.
@@ -408,6 +411,7 @@ class Runner:
         agent: Agent | None = None,
         rollout_len: int = 1,
         eval_env: Env | None = None,
+        burnin_len: int = 0,
         logger: BaseLogger | None = None,
     ) -> Runner:
         """Construct a Runner for on-policy learning.
@@ -425,6 +429,9 @@ class Runner:
             eval_env (Env | None, optional): An optional separate
                 environment to be used for evaluation, must not be a
                 VectorEnv. Defaults to None.
+            burnin_len (int, optional): Number of untracked environment
+                steps to take before warmup, such as to initialise
+                normalisation. Defaults to 0.
             logger (BaseLogger | None, optional): The logger used
                 during evaluations, is set to None uses the BaseLogger
                 which prints to terminal and writes to a file in a
@@ -443,6 +450,7 @@ class Runner:
             warmup_len=0,
             n_step=1,
             eval_env=eval_env,
+            burnin_len=burnin_len,
             logger=logger,
             gatherer=gatherer,
         )
@@ -456,6 +464,7 @@ class Runner:
         rollout_len: int = 1,
         warmup_len: int = 10_000,
         eval_env: Env | None = None,
+        burnin_len: int = 0,
         extra_specs: dict | None = None,
         buffer: BaseBuffer | None = None,
         logger: BaseLogger | None = None,
@@ -482,6 +491,9 @@ class Runner:
             eval_env (gym.Env | None, optional): An optional separate
                 environment to be used for evaluation, must not be a
                 VectorEnv. Defaults to None.
+            burnin_len (int, optional): Number of untracked environment
+                steps to take before warmup, such as to initialise
+                normalisation. Defaults to 0.
             extra_specs (dict | None, optional):  Additional entries to
                 add to the replay buffer. Values must correspond to the
                 shape. Defaults to None. Defaults to None.
@@ -522,6 +534,7 @@ class Runner:
             warmup_len=warmup_len,
             n_step=buffer.n_steps,
             eval_env=eval_env,
+            burnin_len=burnin_len,
             buffer=buffer,
             logger=logger,
         )
