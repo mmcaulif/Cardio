@@ -3,11 +3,13 @@
 
 <div align="center">
 
+<!-- [![Tests](https://github.com/mmcaulif/Cardio/actions?workflow=Cardio-Tests)](https://github.com/mmcaulif/Cardio//workflows/Cardio-Tests/badge.svg) -->
+
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Pythonver](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://www.python.org/doc/versions/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://github.com/mmcaulif/Cardio/blob/main/LICENSE.txt)
 [![Docformatter](https://img.shields.io/badge/%20formatter-docformatter-fedcba.svg)](https://github.com/PyCQA/docformatter)
-[![Style](https://img.shields.io/badge/%20style-google-3666d6.svg)](https://google.github.io/styleguide/pyguide.html#s3.8-comments-and-docstrings)
-[![License](https://img.shields.io/badge/python-3.10-blue)](https://github.com/mmcaulif/Cardio/blob/main/LICENSE.txt)
+<!-- [![Style](https://img.shields.io/badge/%20style-google-3666d6.svg)](https://google.github.io/styleguide/pyguide.html#s3.8-comments-and-docstrings) -->
+[![Pythonver](https://img.shields.io/pypi/pyversions/cardio-rl)](https://www.python.org/doc/versions/)
 
 </div>
 
@@ -29,36 +31,24 @@ To achieve the desired structure and API, Cardio makes some concessions with the
 Secondly, taking a modular approach leaves us less immediately extensible than the likes of [CleanRL](https://github.com/vwxyzjn/cleanrl), despite the features in place to make the environment loops transparent, there is inevitably going to be edge cases where Cardio is not the best choice.
 
 ## Installation
-> **NOTE**: Jax is a major requirement for runner internally, the installation process will be updated soon to make a better distinction between setting up Cardio using Jax for GPU's, CPU's or TPU's. For now please manually install whichever Jax version suits your environment best. By default we just show for cpu but swapping "cpu" out for "gpu" should work all the same.
+> **NOTE**: Jax is a major requirement for runner internally, the installation process will be updated soon to make a better distinction between setting up Cardio using Jax for GPU's, CPU's or TPU's.
 
-Prerequisites (to be expanded):
-* Python == 3.10
-
-
-Via pip with Jax cpu:
+Via pip
 ```bash
-pip install cardio-rl[cpu]
+pip install cardio-rl
 ```
 
-To install is from source via:
+Or from github:
 ```bash
 git clone https://github.com/mmcaulif/Cardio.git
 cd cardio
-pip install .[cpu]
-```
-
-Alternatively you can install all requirements e.g. for testing, experimenting and development:
-```bash
-pip install -e .[dev,exp,cpu]
-```
-
-Or use the provided makefile (which also sets up the precommit hooks):
-```bash
-make install_cpu
+poetry install
 ```
 
 ## Usage
-Below is a simple exampls (using the CartPole environment) leveraging Cardio's off-policy runner to help write a simple implementation of the core deep RL, Deep Q-Networks. It will be assumed that you have an beginners understanding of deep RL and this section just serves to demonstrate how Cardio might fit into different algorithm implementations.
+Below is a simple example leveraging Cardio's off-policy runner to help write a simple implementation of a core deep RL algorithm, Deep Q-Networks, for the Cartpole environment.
+
+It will be assumed that you have an beginners understanding of deep RL and this section just serves to demonstrate how different algorithm might fit into Cardio.
 
 ### DQN
 In this algorithm our agent performs a fixed number of environment steps (aka a rollout) and saves the transitions experienced in a replay buffer for performing update steps. Once the rollout is done, we sample from the replay buffer and pass the sampled transitions to the agents update method. To implement our agent we will use the provided Cardio Agent class and override the init, update and step methods:
@@ -124,31 +114,23 @@ class DQN(crl.Agent):
         return action, {}
 ```
 
-Next we instantiate our runner. When we instantiate a runner we will pass it our environment, our agent, rollout length, and the batch size, but there also other arguments you may want to tweak.
+Next we instantiate our runner. When we instantiate a runner we will pass it our environment, our agent, rollout length, and the keyword agrs for the buffer (in this case, the batch size).
 
 ```python
 env = gym.make("CartPole-v1")
-runner = crl.OffPolicyRunner(
+runner = crl.Runner.off_policy(
     env=env,
     agent=DQN(env, Q_critic(4, 2)),
     rollout_len=4,
-    batch_size=32,
+    buffer_kwargs={"batch_size": 32}
 )
 ```
 
-And finally, to run 50,000 rollouts (in this case, 50,000 x 4 environment steps) and perform an agent update after each one, we just use the run method:
+And finally, to run 50,000 rollouts (in this case, 50,000 x 4 = 200,000 environment steps) and perform an agent update after each one, we just use the run method:
 
 ```python
 runner.run(rollouts=50_000, eval_freq=1_250)
 ```
-
-
-### Sprinter
- components are likely to be better suited to Cardio's sibling repo, [Sprinter](https://github.com/mmcaulif/Sprinter) acts as an extension of Cardio, applying the library to create a zoo of different algortihm implementations, and providing simple boilerplate code examples for research focussed tasks such as hyperparameter optimisation or benchmarking, and intended to be cloned/forked and built on as opposed to pip installed.
-
-Sprinter is further behind in its development and currently just acts as a collection of modern algorithm implementations using Jax/Rlax/Flax/Optax.
-
-If you are looking for some more practical examples of Cardio in use (or just an assortment of Jax algorithm implementations),  components are likely to be better suited to Cardio's sibling repo, [Sprinter](https://github.com/mmcaulif/Sprinter) should be all you need.
 
 
 ## Under the hood
@@ -196,16 +178,14 @@ The runner is the high level orchestrator that deals with the different componen
 The main development goal for Cardio will be to make it as fast, easy to use, and extensible as possible. The aim is not to include many RL features or to cater to every domain. Far down the line I could imagine trying to incorporate async runners but that can get messy quickly. However, if you notice any bugs, or have any suggestions or feature requests, user input is greatly appreciated!
 
 Some tentative tasks right now are:
-* [ ] Integrated loggers (WandB, Neptune, Tensorboard etc.)
-* [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement too).
-* [ ] Implement seeding for reproducability.
+* [x] Integrated loggers (WandB, Neptune, Tensorboard etc.)
+* [x] Implement seeding for reproducability.
 * [ ] Widespread and rigorous testing!
-* [ ] Properly document Prioritised Buffer Implementation details
-* [ ] Explore alternatives to jax.tree.map
+* [ ] Asynchronous features
 
 A wider goal is to perform profiling and squash any immediate performance bottlenecks. Wrapping an environment in a Cardio runner should introduce as little overhead as possible.
 
-Any RL components are likely to be better suited to Cardio's sibling repo, [Sprinter](https://github.com/mmcaulif/Sprinter).
+Any RL components (like neural network layers) are likely to be better suited to Cardio's sibling repo, [Sprinter](https://github.com/mmcaulif/Sprinter).
 
 ## Contributing
 <p align="center">

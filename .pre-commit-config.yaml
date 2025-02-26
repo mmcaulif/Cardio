@@ -1,4 +1,4 @@
-default_stages: [ "commit", "commit-msg", "push" ]
+default_stages: [ "pre-commit", "commit-msg", "pre-push" ]
 default_language_version:
   python: python
 
@@ -10,30 +10,21 @@ repos:
     - id: end-of-file-fixer
     - id: trailing-whitespace
 
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.13.2
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.7
     hooks:
-      - id: isort
-        name: "Import sorter"
-        args:
-          - "--settings-file pyproject.toml"
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.12.0
+    rev: v1.15.0
     hooks:
       - id: mypy
         name: "Static type checker"
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.7.0
-    hooks:
-      - id: ruff
-        args: [ --fix ]
-      - id: ruff-format
-
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.18.0
+    rev: v9.21.0
     hooks:
       - id: commitlint
         name: "Commit linter"
@@ -42,9 +33,10 @@ repos:
         additional_dependencies:
           - "@commitlint/config-angular"
 
+  # Docformatter is broken with pre-commit 4.0: https://github.com/PyCQA/docformatter/issues/293
   - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.5
+    rev: master
     hooks:
       - id: docformatter
-        # additional_dependencies: [tomli]
-        # args: [--in-place --config] #  ./pyproject.toml]
+        additional_dependencies: [tomli]
+        args: [--in-place, --config, ./pyproject.toml]

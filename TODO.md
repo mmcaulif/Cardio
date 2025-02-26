@@ -1,24 +1,53 @@
-# General to do list in advance of an initial 0.0.1 release
+# General to do list in advance of an initial 0.1.0 release
 
-## Primary goals
-1. [ ] Testing (rigorous testing of gatherer and runner)
-  * [ ] Parameterised testing
-1. [x] clean up repo but be sure to keep WIP features in a branch
-1. [x] decouple the actions into seperate files per action (?)
-1. [x] add gatherer pseudocode to readme
-1. [ ] finish readme and docstrings
-  * [ ] contributing
-  * [x] examples, include code snippets
-  * [ ] development
-  * [x] write a better description
-  * [x] add some emoji's for fun
-1. [ ] add custom templates for issues and PR's
-  * look at other repo's for inspo and give credit
-1. [ ] Final review and draft of Readme
-1. [ ] Move Jax agents, architectures and loss functions to separate library (sprinters)
-  * Make sure the implementations are consistent (i.e. update functions outside of class)
+# for v0.1.1
+1. [x] Integrated loggers: WandB, Neptune, Tensorboard etc.
+1. [x] add custom templates for issues and PR's: look at other repo's for inspo and give credit
+1. [x] Trajectory replay buffer:
+* implement n-steps using trajectory buffer like FlashBax
+1. [x] Move on-policy and-off policy runners to class methods
+1. [x] Use jax agents for examples
+  * [x] Fix jax seed issue when seed = 0
+  * [x] Consistent implementations
+1. [x] SB3 runner functionality:
+  * [x] Make a eval_agent function similar to Sb3, allow it to return list and std dev
+  * [x] Option to turn on or off logging verbosity and progress bar
+  * [x] Runner logging bug fixes (number of env steps with vecenv and number of training steps performed)
+1. [x] Use pyproject.toml for precommit configuration
+  * https://docformatter.readthedocs.io/en/latest/usage.html#use-with-pre-commit
+1. [ ] Update readme in accordance with changes
+1. [x] Use ruff with pyproject.toml for more functionality https://docs.astral.sh/ruff/linter/#rule-selection
+1. [x] Mixed replay buffer
+1. [x] Ensure GH actions works with poetry!
+1. [x] Add pickle dump for episodic reward somewhere (like in stream_rl)
+1. [x] Gatherer should return episodes and steps completed
+1. [ ] Implement seeding for reproducability.
 
-Once done with the 0.1.0 version, send to different people for feedback
+Runner class methods todo list:
+1. [x] make buffer an argument in BaseRunner
+1. [x] add off_policy update function to base runner
+1. [x] Add n_batches and batch size argument to Buffers, rework off_policy buffer
+1. [x] Rename BaseRunner to Runner
+
+# for v0.1.2
+1. [ ] Add agent smoke tests and fakes (similar to toy env)
+1. [ ] Nox
+1. [ ] UV?
+1. [ ] Outline speed, profiling and optimisation roadmap/comparisons
+  * [ ] Add function timers like in RidL
+  * [ ] Compare with SB3/SBX
+1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement).
+<!-- 1. [ ] Agents can return metrics to be logged? e.g. Loss -->
+1. [ ] Properly document Prioritised Buffer Implementation details
+
+* Send repo to Pablo Samuel Castro
+  * Follow up!
+
+# Post v0.1.2
+* [ ] Benchmarking of Sprinter
+* [ ] Documentation + white paper
+* [ ] Profiling/logging dashboard like PufferLib
+* [ ] Ray based vectorised experimenting runner
 
 ## Specific tasks
 * [ ] QOL Runner and Gatherer changes
@@ -27,33 +56,17 @@ Once done with the 0.1.0 version, send to different people for feedback
     * an agent will need to be initially supplied for warmup but allow for it afterwards
   * [ ] Make it so if an agent isnt passed initially, the warmup will use a random policy (Need to check this works as intended)
 
-* [ ] Make library presentable
-  * [ ] Doc strings for Runner, Gatherer and other components to make it easier to understand!!!
-    * Use google style docstrings
-  * [ ] Readme and docs, look at stoix for inspo
-    * [x] Pseudocode for gatherer internals
-
-* [ ] Improve logging
-  * [x] Current time spent
-  * [x] Env steps per second
-  * [x] Move logging from gatherer (will still need to maintain some logging in gatherer like episodes etc.)
-  * [ ] Rich logging, make it pretty and formatted well!!!
-  * [x] Explore if logging could be done outside the gatherer (as its very nested)
-  * [x] Figure out a way to make logging extensible and customisable
-
 __Focus on getting some form of Cardio as a finished deliverable__
 
 ## Post alpha release
 * [ ] Extensive testing!!!
 
-* [ ] Integrated loggers: WandB, Neptune, Tensorboard etc.
-
 * [ ] Start using Astral UV
 
-* [ ] Docker file
+* [x] Docker file
 
 * [ ] Other replay buffers:
-  * [ ] trajectory
+  * [x] trajectory
   * [x] prioritised
   * [ ] mixed
   * [x] simple/base
@@ -62,20 +75,26 @@ __Focus on getting some form of Cardio as a finished deliverable__
   * Will need to make this as quick as possible, use scans for updating over multiple batches
     and XLA environment with scan for evaluation.
 
-* [ ] Outline benchmarking roadmap
-  * [ ] Make seperate repo
-
-* [ ] Outline speed, profiling and optimisation roadmap
-
-* [ ] Make seperate repo for research/experimenting template
-
 * [ ] Add a system design diagram to readme
 
 # Done
+1. [x] Final review and draft of Readme
+1. [x] Move Jax agents, architectures and loss functions to separate library (sprinters)
+  * Make sure the implementations are consistent (i.e. update functions outside of class)
+
+1. [x] clean up repo but be sure to keep WIP features in a branch
+1. [x] decouple the actions into seperate files per action (?)
+1. [x] add gatherer pseudocode to readme
+1. [x] finish readme and docstrings
+  * [x] contributing
+  * [x] examples, include code snippets
+  * [x] development
+  * [x] write a better description
+  * [x] add some emoji's for fun
 
 * [x] Pip package with github actions for releases
 
-* [ ] MinAtar and Atari examples
+* [x] MinAtar and Atari examples
   * [x] MinAtar: Seems to work seamlessly so far, need to write a network for it and train DQN
     * MinAtar DQN appears to match performance from paper in initial benchmarks of Freeway!
   * [x] Atari: inital DER runs are good

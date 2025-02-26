@@ -1,136 +1,187 @@
-import copy
-
+from functools import partial
+import logging
+from typing import Any, Optional
 import gymnasium as gym
 import jax
-import torch as th
-import torch.nn as nn
-import torch.nn.functional as F
+import numpy as np
 
-import cardio_rl as crl
+import flax.linen as nn
+import jax.numpy as jnp
+import optax  # type: ignore
+from flax.training.train_state import TrainState
+import rlax  # type: ignore
 
-
-class Q_critic(nn.Module):
-    def __init__(self, state_dim, action_dim):
-        super(Q_critic, self).__init__()
-
-        self.net1 = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 400),
-            nn.ReLU(),
-            nn.Linear(400, 300),
-            nn.ReLU(),
-            nn.Linear(300, 1),
-        )
-
-        self.net2 = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 400),
-            nn.ReLU(),
-            nn.Linear(400, 300),
-            nn.ReLU(),
-            nn.Linear(300, 1),
-        )
-
-    def forward(self, state, action):
-        sa = th.concat([state, action], dim=-1)
-        return self.net1(sa), self.net2(sa)
-
-    def q1(self, state, action):
-        sa = th.concat([state, action], dim=-1)
-        return self.net1(sa)
+import cardio_rl as crl  # type: ignore
 
 
-class Policy(nn.Module):
-    def __init__(self, state_dim, action_dim, scale=1.0):
-        super(Policy, self).__init__()
-        self.scale = scale
-        self.net = nn.Sequential(
-            nn.Linear(state_dim, 400),
-            nn.ReLU(),
-            nn.Linear(400, 300),
-            nn.ReLU(),
-            nn.Linear(300, action_dim),
-            nn.Tanh(),
-        )
+def _step(train_state: TrainState, state: np.ndarray, key):
+    action = train_state.apply_fn(train_state.params, state)
+    noise = jax.random.normal(key, action.shape) * 0.2
+    noise = jnp.clip(noise, min=-0.5, max=0.5)
+    action = jnp.clip(action + noise, min=-2.0, max=2.0)
+    return action
 
-    def forward(self, state):
-        a = self.net(state)
-        return th.mul(a, self.scale)
+
+def _update(critic_ts, actor_ts, s, a, r, s_p, d, gamma, t, key):
+    def critic_loss_fn(params, critic_ts, actor_ts, key):
+        a_p = actor_ts.apply_fn(
+            actor_ts.params, s_p
+        )  # TODO: does TD3 use actor target parameters?
+        noise = jax.random.normal(key, a_p.shape) * 0.2
+        noise = jnp.clip(noise, min=-0.5, max=0.5)
+        a_p = jnp.clip(a_p + noise, min=-2.0, max=2.0)
+
+        q_p1, qp2 = critic_ts.apply_fn(critic_ts.target_params, s_p, a_p)
+
+        q_p = jnp.minimum(q_p1, qp2)
+
+        y = r + gamma * q_p * (1.0 - d)
+
+        q1, q2 = critic_ts.apply_fn(params, s, a)
+        c_loss = jnp.mean(rlax.l2_loss(q1 - y)) + jnp.mean(rlax.l2_loss(q2 - y))
+        return c_loss
+
+    def actor_loss_fn(params, critic_ts, actor_ts):
+        a = actor_ts.apply_fn(params, s)
+        q1, _ = critic_ts.apply_fn(critic_ts.params, s, a)
+        return -jnp.mean(q1)
+
+    key, update_key = jax.random.split(key)
+    c_grads = jax.grad(critic_loss_fn)(
+        critic_ts.params, critic_ts, actor_ts, update_key
+    )
+    new_critic_ts = critic_ts.apply_gradients(grads=c_grads)
+
+    a_grads = jax.grad(actor_loss_fn)(actor_ts.params, critic_ts, actor_ts)
+    new_actor_ts = actor_ts.apply_gradients(grads=a_grads)
+
+    new_actor_ts = jax.lax.cond(
+        jnp.mod(t, 2) == 0, lambda _: new_actor_ts, lambda _: actor_ts, None
+    )
+
+    new_critic_ts = jax.lax.cond(
+        jnp.mod(t, 2) == 0,
+        lambda _: new_critic_ts.replace(
+            target_params=optax.incremental_update(
+                new_critic_ts.params, new_critic_ts.target_params, 0.005
+            )
+        ),
+        lambda _: new_critic_ts,
+        None,
+    )
+
+    return new_critic_ts, new_actor_ts, key
+
+
+class TargetTrainState(TrainState):
+    target_params: Any
+
+
+class Critic(nn.Module):
+    @nn.compact
+    def __call__(self, state, action):
+        sa = jnp.concat([state, action], axis=-1)
+
+        z_1 = nn.relu(nn.Dense(400)(sa))
+        z_1 = nn.relu(nn.Dense(300)(z_1))
+        q1 = nn.Dense(1)(z_1)
+
+        z_2 = nn.relu(nn.Dense(400)(sa))
+        z_2 = nn.relu(nn.Dense(300)(z_2))
+        q2 = nn.Dense(1)(z_2)
+
+        return q1, q2
+
+
+class Actor(nn.Module):
+    act_dim: int
+    scale: float = 1.0
+
+    @nn.compact
+    def __call__(self, state):
+        z_pi = nn.tanh(nn.Dense(400)(state))
+        z_pi = nn.tanh(nn.Dense(300)(z_pi))
+        logits = nn.tanh(nn.Dense(self.act_dim)(z_pi)) * self.scale
+        return logits
 
 
 class TD3(crl.Agent):
-    def __init__(self, env: gym.Env):
+    def __init__(
+        self,
+        env: gym.Env,
+        gamma: float = 0.99,
+        optim_kwargs: dict = {"learning_rate": 1e-3},
+        seed: Optional[int] = None,
+    ):
+        self.seed = np.random.randint(0, int(2e16)) if seed is None else seed
+        logging.info(f"Seed: {self.seed}")
+        self.key = jax.random.PRNGKey(self.seed)
+
         self.env = env
-        self.critic = Q_critic(3, 1)
-        self.actor = Policy(3, 1)
-        self.targ_critic = copy.deepcopy(self.critic)
-        self.targ_actor = copy.deepcopy(self.actor)
-        self.c_optimizer = th.optim.Adam(self.critic.parameters(), lr=1e-3)
-        self.a_optimizer = th.optim.Adam(self.actor.parameters(), lr=1e-3)
+        self.gamma = gamma
+
+        actor = Actor(act_dim=1, scale=2.0)
+        critic = Critic()
+
+        s_dummy = jnp.zeros(env.observation_space.shape)
+        a_dummy = jnp.zeros([1])
+
+        self.key, actor_key, critic_key = jax.random.split(self.key, 3)
+
+        self.actor_ts = TargetTrainState.create(
+            apply_fn=actor.apply,
+            params=actor.init(actor_key, s_dummy),
+            target_params=actor.init(actor_key, s_dummy),
+            tx=optax.adam(**optim_kwargs),
+        )
+
+        self.critic_ts = TargetTrainState.create(
+            apply_fn=critic.apply,
+            params=critic.init(critic_key, s_dummy, a_dummy),
+            target_params=critic.init(critic_key, s_dummy, a_dummy),
+            tx=optax.adam(**optim_kwargs),
+        )
+
         self.update_count = 0
 
-    def update(self, batch):
-        data = jax.tree.map(th.from_numpy, batch)
-        s, a, r, s_p, d = data["s"], data["a"], data["r"], data["s_p"], data["d"]
+        self._step = jax.jit(_step)
+        self._eval_step = jax.jit(actor.apply)
+        self._update = jax.jit(partial(_update, gamma=gamma))
 
-        a_p = self.targ_actor(s_p)
-        noise = th.normal(mean=th.zeros_like(a_p), std=0.2).clamp(-0.5, 0.5)
-        a_p = (a_p + noise).clamp(-1.0, 1.0)
-
-        q_p1, qp2 = self.targ_critic(s_p, a_p)
-        q_p = th.min(q_p1, qp2)
-        y = r + 0.98 * q_p * ~d
-
-        q1, q2 = self.critic(s, a)
-
-        loss = F.mse_loss(q1, y.detach()) + F.mse_loss(q2, y.detach())
-        self.c_optimizer.zero_grad()
-        loss.backward()
-        self.c_optimizer.step()
-
+    def update(self, batches):
+        self.critic_ts, self.actor_ts, self.key = self._update(
+            self.critic_ts,
+            self.actor_ts,
+            batches["s"],
+            batches["a"],
+            batches["r"],
+            batches["s_p"],
+            batches["d"],
+            t=self.critic_ts.step,
+            key=self.key,
+        )
         self.update_count += 1
-        if self.update_count % 2 == 0:
-            q1, q2 = self.critic(s, self.actor(s_p))
-            policy_loss = -((q1 + q2) * 0.5).mean()
-
-            self.a_optimizer.zero_grad()
-            policy_loss.backward()
-            self.a_optimizer.step()
-
-            for targ_params, params in zip(
-                self.targ_critic.parameters(), self.critic.parameters()
-            ):
-                targ_params.data.copy_(
-                    params.data * 0.005 + targ_params.data * (1.0 - 0.005)
-                )
-
-            for targ_params, params in zip(
-                self.targ_actor.parameters(), self.actor.parameters()
-            ):
-                targ_params.data.copy_(
-                    params.data * 0.005 + targ_params.data * (1.0 - 0.005)
-                )
-
         return {}
 
     def step(self, state):
-        th_state = th.from_numpy(state)
-        action = self.actor(th_state)
-        noise = th.normal(mean=th.zeros_like(action), std=0.1).clamp(-0.5, 0.5)
-        action = (action + noise).clamp(-1.0, 1.0)
-        return action.numpy(force=True), {}
+        self.key, act_key = jax.random.split(self.key)
+        action = self._step(self.actor_ts, state, act_key)
+        return np.asarray(action), {}
 
     def eval_step(self, state):
-        th_state = th.from_numpy(state)
-        action = self.actor(th_state).numpy(force=True)
-        return action
+        action = self._eval_step(self.actor_ts.params, state)
+        return np.asarray(action)
 
 
 def main():
+    np.random.seed(42)
+
     env = gym.make("Pendulum-v1")
-    runner = crl.OffPolicyRunner(
+    runner = crl.Runner.off_policy(
         env=env,
-        agent=TD3(env),
+        agent=TD3(env, gamma=0.98),
+        buffer_kwargs={"batch_size": 256},
         rollout_len=1,
-        batch_size=256,
     )
     runner.run(rollouts=190_000)
 
