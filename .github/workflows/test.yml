@@ -1,6 +1,6 @@
 name: Cardio Tests
 run-name: ${{ github.actor }}
-on: [pull_request, push]
+on: [pull_request]
 jobs:
   testing:
     runs-on: ubuntu-latest
