@@ -23,10 +23,18 @@ tensorboard = "^2.18.0"
 jax = ">=0.4.25, <0.4.30"
 jaxlib = ">=0.4.25, <0.4.30"
 torch = ">=1.12.1"
+
+[tool.poetry.group.agents]
+optional = true
+
+[tool.poetry.group.agents.dependencies]
 distrax = "0.1.5"
 rlax = "0.1.6"
 flax = "0.8.3"
 optax = "0.2.2"
+
+[tool.poetry.group.dev]
+optional = true
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.7.0"
