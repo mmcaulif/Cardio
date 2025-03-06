@@ -111,6 +111,7 @@ class Runner:
         self.t_completed: list[int] = []
         self.total_episodes = 0
         self.rollout_ep_completed = 0
+        self.agent_metrics: list[dict] = []
 
         self.logger = logger or crl.loggers.BaseLogger()
 
@@ -290,6 +291,15 @@ class Runner:
             self.rollout_train_rew.clear()
             self.rollout_ep_completed = 0
 
+        if self.agent_metrics:
+            stacked_agent_metrics = crl.tree.stack(self.agent_metrics)
+            avg_agent_metrics = jax.tree.map(np.mean, stacked_agent_metrics)
+            avg_agent_metrics = jax.tree.map(
+                lambda val: round(val, 2), avg_agent_metrics
+            )
+            metrics.update(avg_agent_metrics)
+            self.agent_metrics.clear()
+
         self.logger.log(metrics)
         return mean_returns, std_returns
 
@@ -330,7 +340,10 @@ class Runner:
             if n % eval_freq == 0 and n > 0:
                 self.eval(eval_episodes, self.agent)
             data = self.step()
-            updated_data = self.agent.update(data)  # type: ignore
+            agent_metrics, updated_data = self.agent.update(data)  # type: ignore
+
+            if agent_metrics:
+                self.agent_metrics.append(agent_metrics)
             if updated_data:
                 self.update(updated_data)
 

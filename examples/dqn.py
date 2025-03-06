@@ -35,9 +35,9 @@ def _update(ts: TrainState, targ_params, s, a, r, s_p, d, gamma):
     a = jnp.squeeze(a, -1)
     r = jnp.squeeze(r, -1)
     d = jnp.squeeze(d, -1)
-    grads = jax.grad(loss_fn)(ts.params, ts.apply_fn, s, a, r, s_p, d)
+    loss, grads = jax.value_and_grad(loss_fn)(ts.params, ts.apply_fn, s, a, r, s_p, d)
     new_ts = ts.apply_gradients(grads=grads)
-    return new_ts
+    return new_ts, loss
 
 
 class Q_critic(nn.Module):
@@ -90,7 +90,7 @@ class DQN(crl.Agent):
         self._update = jax.jit(partial(_update, gamma=gamma))
 
     def update(self, batches):
-        self.ts = self._update(
+        self.ts, loss = self._update(
             self.ts,
             self.targ_params,
             batches["s"],
@@ -103,7 +103,7 @@ class DQN(crl.Agent):
         if self.ts.step % self.targ_freq == 0:
             self.targ_params = self.ts.params
 
-        return {}
+        return {"mse_loss": loss}, {}
 
     def step(self, state):
         self.key, act_key = jax.random.split(self.key)
