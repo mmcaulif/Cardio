@@ -36,6 +36,7 @@ def evaluate_agent(
             done = term or trun
             s = s_p
             if done:
+                agent.eval_terminal()
                 avg_r.append(info["episode"]["r"])
                 break
 

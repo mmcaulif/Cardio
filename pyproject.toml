@@ -57,7 +57,7 @@ extend-select = [
         "D",    # pydocstyle
         "I",    # isort
 ]
-exclude = ["tests/*", "examples/*", "cardio_rl/buffers/prioritised_buffer.py"]
+exclude = ["tests/*", "examples/*", "drqn_tutorial.py", "cardio_rl/buffers/prioritised_buffer.py"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

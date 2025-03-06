@@ -87,6 +87,10 @@ class Agent:
         del data
         return {}
 
-    def terminal(self):
+    def terminal(self) -> None:
         """Called at the end of every episode."""
+        pass
+
+    def eval_terminal(self) -> None:
+        """Called at the end of every evaluation episode."""
         pass

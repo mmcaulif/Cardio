@@ -255,11 +255,11 @@ class Runner:
         else:
             eval_env = self.eval_env  # type: ignore
 
-        agent = agent or self.agent
-        assert agent is not None
+        eval_agent = agent or copy.deepcopy(self.agent)
+        assert eval_agent is not None
 
         eval_returns, eval_t = evaluate_agent(
-            eval_env, agent, episodes, return_episode_rewards=True
+            eval_env, eval_agent, episodes, return_episode_rewards=True
         )
 
         mean_returns = np.array(eval_returns).mean().item()
