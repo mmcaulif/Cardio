@@ -14,6 +14,7 @@
 1. [ ] Outline speed, profiling and optimisation roadmap/comparisons
   * [ ] Add function timers and debug mode like in RidL
   * [ ] Compare speed with SB3/SBX
+1. Remove deprecated Runner classes
 
 * Follow up with Pablo Samuel Castro
 

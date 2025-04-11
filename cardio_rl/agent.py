@@ -52,8 +52,8 @@ class Agent:
             state (np.ndarray): The observation the agent sees.
 
         Returns:
-        tuple[Any, dict]: The action taken for the given
-            state and extras to store.
+            tuple[Any, dict]: The action taken for the given
+                state and extras to store.
         """
         del state
         return self.env.action_space.sample(), {}
@@ -72,20 +72,23 @@ class Agent:
         a, _ = self.step(state)
         return a
 
-    def update(self, data: Transition | list[Transition]) -> dict:
+    def update(self, data: Transition | list[Transition]) -> tuple[dict, dict]:
         """Perform any updates given a batch of transitions.
 
         When using the off-policy runner, the agent can return values
         and indices to be overriden in the buffer.
 
-        Args: data (Transition | list[Transition]): Transition data used
-            by the agent to update any internal decision making.
+        Args:
+            data (Transition | list[Transition]): Transition data used
+                by the agent to update any internal decision making.
 
-        Returns: dict: Indices and corresponding values to override.
-            Must return the indices as elements under the "idxs" key.
+        Returns:
+            dict: Metrics to store and aggregate from the agent.
+            dict: Indices and corresponding values to override. Must
+                return the indices as elements under the "idxs" key.
         """
         del data
-        return {}
+        return {}, {}
 
     def terminal(self):
         """Called at the end of every episode."""

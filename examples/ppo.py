@@ -33,7 +33,7 @@ def _update(
     old_log_probs,
     ent_coeff,
 ):
-    adv = (adv - adv.mean()) / (adv.std() + 1e-8)  # Normalise adv
+    adv = (adv - adv.mean()) / (adv.std() + 1e-8)
 
     def actor_loss(params):
         logits = actor_ts.apply_fn(params, s)
@@ -42,10 +42,8 @@ def _update(
         log_probs = dist.log_prob(a)
         entropy = dist.entropy()
 
-        # ratio between old and new policy, should be one at the first iteration
         ratio = jnp.exp(log_probs - jax.lax.stop_gradient(old_log_probs))
 
-        # clipped surrogate loss
         policy_loss_1 = adv * ratio
         policy_loss_2 = adv * jnp.clip(ratio, 1 - 0.2, 1 + 0.2)
         policy_loss = -jnp.minimum(policy_loss_1, policy_loss_2).mean()
@@ -53,19 +51,25 @@ def _update(
         entropy_loss = -jnp.mean(entropy)
 
         loss = policy_loss + ent_coeff * entropy_loss
-        return loss
+        return loss, {"Policy loss": policy_loss, "Entropy": -entropy_loss}
 
-    grads = jax.grad(actor_loss)(actor_ts.params)
+    grads, metrics = jax.grad(actor_loss, has_aux=True)(actor_ts.params)
     actor_ts = actor_ts.apply_gradients(grads=grads)
 
     def critic_loss(params):
         v = critic_ts.apply_fn(params, s)
-        return ((returns - v) ** 2).mean()
+        error = returns - v
+        loss = jnp.mean(error**2)
+        return loss, {
+            "Critic loss": loss,
+            "Td-error mean": jnp.mean(error),
+            "Td-error std": jnp.std(error),
+        }
 
-    grads = jax.grad(critic_loss)(critic_ts.params)
+    grads, critic_metrics = jax.grad(critic_loss, has_aux=True)(critic_ts.params)
     critic_ts = critic_ts.apply_gradients(grads=grads)
-
-    return actor_ts, critic_ts
+    metrics.update(critic_metrics)
+    return actor_ts, critic_ts, metrics
 
 
 class Actor(nn.Module):
@@ -114,7 +118,7 @@ class PPO(crl.Agent):
         self.batch_size = batch_size
         self.ent_coeff = ent_coeff
 
-        actor = Actor(act_dim=2)
+        actor = Actor(act_dim=4)
         critic = Critic()
 
         dummy = jnp.zeros(env.observation_space.shape)
@@ -182,12 +186,14 @@ class PPO(crl.Agent):
         idxs = np.arange(len(batches["s"]))
         num_mb = len(batches["s"]) // self.batch_size
 
+        metrics = []
+
         for _ in range(self.epochs):
             np.random.shuffle(idxs)
             start_idx = 0
-            for n in range(num_mb):
+            for _ in range(num_mb):
                 mb_idxs = idxs[start_idx : start_idx + self.batch_size]
-                self.actor_ts, self.critic_ts = self._update(
+                self.actor_ts, self.critic_ts, per_update_metrics = self._update(
                     self.actor_ts,
                     self.critic_ts,
                     batches["s"][mb_idxs],
@@ -196,9 +202,12 @@ class PPO(crl.Agent):
                     batches["gae"][mb_idxs],
                     batches["log_prob"][mb_idxs],
                 )
+                metrics.append(per_update_metrics)
                 start_idx += self.batch_size
 
-        return {}
+        metrics = crl.tree.stack(metrics)
+        metrics = jax.tree.map(jnp.mean, metrics)
+        return metrics, {}
 
     def step(self, state):
         self.key, act_key = jax.random.split(self.key)
@@ -212,15 +221,19 @@ class PPO(crl.Agent):
 
 
 def main():
-    np.random.seed(42)
+    SEED = 169
 
-    env_fns = [lambda: gym.make("CartPole-v1")] * 16
+    np.random.seed(SEED)
+
+    env_name = "LunarLander-v2"
+
+    env_fns = [lambda: gym.make(env_name)] * 16
     envs = gym.vector.AsyncVectorEnv(env_fns)
-    eval_env = RecordEpisodeStatistics(gym.make("CartPole-v1"))
+    eval_env = gym.make(env_name)
 
     runner = crl.Runner.on_policy(
         env=envs,
-        agent=PPO(envs),  # TODO: optimise algorithm with jax scan
+        agent=PPO(envs, seed=SEED),  # TODO: optimise algorithm with jax scan
         rollout_len=2048,
         eval_env=eval_env,
     )
