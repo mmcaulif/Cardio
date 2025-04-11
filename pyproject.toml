@@ -64,3 +64,6 @@ convention = "google"
 
 [tool.docformatter]
 post-description-newline = true
+
+[tool.mypy]
+ignore_missing_imports = true

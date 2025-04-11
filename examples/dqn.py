@@ -3,16 +3,15 @@ import logging
 from functools import partial
 from typing import Optional
 
-import distrax  # type: ignore
+import distrax
 import flax.linen as nn
 import gymnasium as gym
 import jax
 import jax.numpy as jnp
 import numpy as np
-import optax  # type: ignore
-import rlax  # type: ignore
+import optax
+import rlax
 from flax.training.train_state import TrainState
-from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 
 import cardio_rl as crl
 

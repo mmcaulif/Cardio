@@ -7,11 +7,11 @@ import numpy as np
 
 import flax.linen as nn
 import jax.numpy as jnp
-import optax  # type: ignore
+import optax
 from flax.training.train_state import TrainState
-import rlax  # type: ignore
+import rlax
 
-import cardio_rl as crl  # type: ignore
+import cardio_rl as crl
 
 
 def _step(train_state: TrainState, state: np.ndarray, key):

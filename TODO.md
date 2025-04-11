@@ -1,12 +1,12 @@
 # General to do list in advance of an initial 0.1.0 release
 
 # for v0.1.2
-1. [ ] Add optional dependencies
+1. [x] Add optional dependencies
 1. [ ] Loosen dependency versions
 1. [ ] Add agent smoke tests and fakes (similar to toy env)
 1. [ ] Nox integration
 1. [ ] Verify GymnasiumAtariWrapper works as intended and remove SB3 wrapper (removing SB3 as a requirement).
-1. [ ] Allow agents to return metrics from update method to be logged? e.g. Loss
+1. [x] Allow agents to return metrics from update method to be logged? e.g. Loss
 1. [ ] Add recurrent DQN tutorial notebook
 1. [ ] Add a system design diagram to readme
 1. [ ] Get rid of sprinter and move back to Cardio
