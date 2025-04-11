@@ -18,6 +18,10 @@ import torch.nn.functional as F
 
 import cardio_rl as crl
 
+from gymnasium.wrappers.transform_observation import TransformObservation
+from popgym.wrappers import PreviousAction, Antialias, Flatten
+from popgym.envs.position_only_cartpole import PositionOnlyCartPole
+
 
 class Q_critic(nn.Module):
     def __init__(self, state_dim, action_dim):
@@ -41,7 +45,7 @@ class DRQN(crl.Agent):
         env: gym.Env,
         critic: nn.Module,
         gamma: float = 0.99,
-        targ_freq: int = 1_000,
+        tau: float = 0.005,
         optim_kwargs: dict = {"lr": 3e-4},
         init_eps: float = 0.9,
         min_eps: float = 0.05,
@@ -53,7 +57,7 @@ class DRQN(crl.Agent):
         self.hidden = th.zeros([1, 32])
         self.eval_hidden = th.zeros([1, 32])
         self.gamma = gamma
-        self.targ_freq = targ_freq
+        self.tau = tau
         self.update_count = 0
         self.optimizer = th.optim.Adam(self.critic.parameters(), **optim_kwargs)
 
@@ -90,7 +94,7 @@ class DRQN(crl.Agent):
             self.targ_critic.parameters(), self.critic.parameters()
         ):
             targ_params.data.copy_(
-                params.data * 0.005 + targ_params.data * (1.0 - 0.005)
+                params.data * self.tau + targ_params.data * (1.0 - self.tau)
             )
 
         return {}
@@ -122,18 +126,40 @@ class DRQN(crl.Agent):
 
 
 def main():
-    env = gym.make("CartPole-v1")
+    env = PositionOnlyCartPole(
+        max_episode_length=200
+    )  # Easy = 200, Medium = 400, Hard = 600
+    env = PreviousAction(env)
+    env = Antialias(env)
+    env = Flatten(env)
+    env = TransformObservation(
+        env, lambda x: x.astype(np.float32)
+    )  # Cast down from float64 to float32
 
-    agent = DRQN(env, Q_critic(4, 2), schedule_len=100_000)
+    agent = DRQN(
+        env=env,
+        targ_freq=1_000,
+        optim_kwargs={"lr": 3e-4},
+        critic=Q_critic(
+            state_dim=env.observation_space.shape[0],
+            action_dim=env.action_space.n,
+        ),
+        schedule_len=50_000,
+    )
+
+    logger = crl.loggers.BaseLogger(to_file=False)
+
+    buffer = crl.buffers.TreeBuffer(env=env, batch_size=16, trajectory=6)
 
     runner = crl.Runner.off_policy(
         env=env,
         agent=agent,
         rollout_len=4,
         warmup_len=10_000,
-        buffer_kwargs={"batch_size": 16, "trajectory": 6},
+        buffer=buffer,
+        logger=logger,
     )
-    runner.run(rollouts=125_000, eval_freq=5_000)
+    runner.run(rollouts=50_000, eval_freq=5_000)
 
 
 if __name__ == "__main__":
