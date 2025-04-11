@@ -30,11 +30,12 @@ def _update(ts: TrainState, targ_params, s, a, r, s_p, d, gamma):
         discount = gamma * (1 - d)
         error = jax.vmap(rlax.q_learning)(q, a, r, discount, q_p)
         mse = jnp.mean(rlax.l2_loss(error))
-        return mse, {
+        metrics = {
             "Loss": mse,
             "Td-error mean": jnp.mean(error),
             "Td-error std": jnp.std(error),
         }
+        return mse, metrics
 
     a = jnp.squeeze(a, -1)
     r = jnp.squeeze(r, -1)
@@ -109,7 +110,7 @@ class DQN(crl.Agent):
         if self.ts.step % self.targ_freq == 0:
             self.targ_params = self.ts.params
 
-        return metrics  # , {}
+        return metrics, {}
 
     def step(self, state):
         self.key, act_key = jax.random.split(self.key)

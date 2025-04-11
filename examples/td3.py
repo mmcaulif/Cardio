@@ -38,21 +38,30 @@ def _update(critic_ts, actor_ts, s, a, r, s_p, d, gamma, t, key):
         y = r + gamma * q_p * (1.0 - d)
 
         q1, q2 = critic_ts.apply_fn(params, s, a)
-        c_loss = jnp.mean(rlax.l2_loss(q1 - y)) + jnp.mean(rlax.l2_loss(q2 - y))
-        return c_loss
+        loss = jnp.mean(rlax.l2_loss(q1 - y)) + jnp.mean(rlax.l2_loss(q2 - y))
+        metrics = {
+            "Critic loss": loss,
+        }
+        return loss, metrics
 
     def actor_loss_fn(params, critic_ts, actor_ts):
         a = actor_ts.apply_fn(params, s)
         q1, _ = critic_ts.apply_fn(critic_ts.params, s, a)
-        return -jnp.mean(q1)
+        loss = -jnp.mean(q1)
+        metrics = {
+            "Policy loss": loss,
+        }
+        return loss, metrics
 
     key, update_key = jax.random.split(key)
-    c_grads = jax.grad(critic_loss_fn)(
+    c_grads, metrics = jax.grad(critic_loss_fn, has_aux=True)(
         critic_ts.params, critic_ts, actor_ts, update_key
     )
     new_critic_ts = critic_ts.apply_gradients(grads=c_grads)
 
-    a_grads = jax.grad(actor_loss_fn)(actor_ts.params, critic_ts, actor_ts)
+    a_grads, policy_metrics = jax.grad(actor_loss_fn, has_aux=True)(
+        actor_ts.params, critic_ts, actor_ts
+    )
     new_actor_ts = actor_ts.apply_gradients(grads=a_grads)
 
     new_actor_ts = jax.lax.cond(
@@ -70,7 +79,9 @@ def _update(critic_ts, actor_ts, s, a, r, s_p, d, gamma, t, key):
         None,
     )
 
-    return new_critic_ts, new_actor_ts, key
+    metrics.update(policy_metrics)
+
+    return new_critic_ts, new_actor_ts, key, metrics
 
 
 class TargetTrainState(TrainState):
@@ -149,7 +160,7 @@ class TD3(crl.Agent):
         self._update = jax.jit(partial(_update, gamma=gamma))
 
     def update(self, batches):
-        self.critic_ts, self.actor_ts, self.key = self._update(
+        self.critic_ts, self.actor_ts, self.key, metrics = self._update(
             self.critic_ts,
             self.actor_ts,
             batches["s"],
@@ -161,7 +172,7 @@ class TD3(crl.Agent):
             key=self.key,
         )
         self.update_count += 1
-        return {}
+        return metrics, {}
 
     def step(self, state):
         self.key, act_key = jax.random.split(self.key)

@@ -207,7 +207,7 @@ class PPO(crl.Agent):
 
         metrics = crl.tree.stack(metrics)
         metrics = jax.tree.map(jnp.mean, metrics)
-        return metrics
+        return metrics, {}
 
     def step(self, state):
         self.key, act_key = jax.random.split(self.key)
