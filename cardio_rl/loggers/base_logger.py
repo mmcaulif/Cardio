@@ -60,7 +60,7 @@ class BaseLogger:
         if cfg is not None:
             self.terminal(f"Config provided: {cfg}\n")
 
-    def terminal(self, data: Any):
+    def terminal(self, data: Any, verbose: bool = True):
         """Print data to the terminal.
 
         Method used to send data directly to the terminal, shouldn't be
@@ -69,11 +69,14 @@ class BaseLogger:
 
         Args:
             data (Any): Item to be printed.
+            verbose (bool, optional): Whether to print the data or not.
+                Defaults to True.
         """
-        with logging_redirect_tqdm():
-            self.logger.info(data)
+        if verbose:
+            with logging_redirect_tqdm():
+                self.logger.info(data)
 
-    def log(self, metrics: dict):
+    def log(self, metrics: dict, verbose: bool = True):
         """Send dictionary of metrics to logger.
 
         Send metrics to the chosen internal logger via a dictionary
@@ -82,12 +85,18 @@ class BaseLogger:
 
         Args:
             metrics (dict): Dictionary with metrics to be logged.
+            verbose (bool, optional): Whether to print the data or not.
+                Defaults to True.
         """
-        with logging_redirect_tqdm():
-            self.logger.info(metrics)
+        if verbose:
+            with logging_redirect_tqdm():
+                self.logger.info(metrics)
 
     def dump(
-        self, returns: list[float], term_time_steps: list[int], env_name: str
+        self,
+        returns: list[float],
+        term_time_steps: list[int],
+        env_name: str | None = None,
     ) -> None:
         """Dump train data to file.
 

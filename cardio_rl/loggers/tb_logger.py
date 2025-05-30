@@ -42,7 +42,7 @@ if TENSORBOARD:
             tb_log_dir = os.path.join(log_dir, self.id, "tb_logs")
             self.writer = SummaryWriter(tb_log_dir)
 
-        def log(self, metrics: dict) -> None:
+        def log(self, metrics: dict, verbose: bool = True) -> None:
             """Send dictionary of metrics to tensorboard.
 
             Send metrics to the tensorboard Summarywriter via a dictionary
@@ -51,8 +51,10 @@ if TENSORBOARD:
 
             Args:
                 metrics (dict): Dictionary with metrics to be logged.
+                verbose (bool, optional): Whether to print the data or not.
+                    Defaults to True.
             """
-            super().log(metrics)
+            super().log(metrics, verbose)
             steps = metrics.pop("Timesteps")
             for key, value in metrics.items():
                 self.writer.add_scalar(key, value, steps)

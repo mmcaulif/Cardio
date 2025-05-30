@@ -33,6 +33,7 @@ class Runner:
         warmup_len: int = 0,
         n_step: int = 1,
         eval_env: Env | None = None,
+        verbose: bool = True,
         burnin_len: int = 0,
         buffer: BaseBuffer | None = None,
         logger: BaseLogger | None = None,
@@ -72,6 +73,8 @@ class Runner:
             eval_env (gym.Env | None, optional): An optional separate
                 environment to be used for evaluation, must not be a
                 VectorEnv. Defaults to None.
+            verbose (bool, optional): Whether to print the logs to
+                terminal. Defaults to True.
             burnin_len (int, optional): Number of untracked environment
                 steps to take before warmup, such as to initialise
                 normalisation. Defaults to 0.
@@ -103,6 +106,8 @@ class Runner:
         self.gatherer = gatherer or Gatherer(n_step=n_step)
         self.n_step = n_step
         self.eval_env = eval_env
+        self.verbose = verbose
+        self.burnin_len = burnin_len
         self.buffer = buffer
 
         self._initial_time = time.time()
@@ -114,9 +119,12 @@ class Runner:
 
         self.logger = logger or crl.loggers.BaseLogger()
 
-        # Initialise components
+    def init(self) -> None:
+        """_summary_.
+
+        _extended_summary_
+        """
         self.gatherer.init_env(self.env)
-        self.burnin_len = burnin_len
         if self.burnin_len > 0:
             self._burn_in()
 
@@ -132,7 +140,7 @@ class Runner:
         """
         self.gatherer.step(crl.Agent(self.env), self.burnin_len)
         self.gatherer.reset()
-        self.logger.terminal("### Burn in finished ###")
+        self.logger.terminal("### Burn in finished ###", self.verbose)
 
     def _warm_start(self) -> tuple[Transition, int]:
         """Step through environment with an agent.
@@ -146,7 +154,7 @@ class Runner:
         """
         agent = self.agent or crl.Agent(self.env)  # Needs to be ordered like this!
         rollout_transitions, num_transitions = self._rollout(self.warmup_len, agent)
-        self.logger.terminal("### Warm up finished ###")
+        self.logger.terminal("### Warm up finished ###", self.verbose)
         if self.buffer is not None:
             self.buffer.store(rollout_transitions, num_transitions)
         return rollout_transitions, num_transitions
@@ -290,7 +298,7 @@ class Runner:
             self.rollout_train_rew.clear()
             self.rollout_ep_completed = 0
 
-        self.logger.log(metrics)
+        self.logger.log(metrics, self.verbose)
         return mean_returns, std_returns
 
     def run(
@@ -321,8 +329,11 @@ class Runner:
         Returns:
             float: Average episodic returns from the final evaluation
                 step.
+            float: Std of episodic returns from the final evaluation
+                step.
         """
-        self.logger.terminal("Performing initial evaluation")
+        self.init()  # TODO: Move to context manager
+        self.logger.terminal("Performing initial evaluation", self.verbose)
         _ = self.eval(eval_episodes, self.agent)  # Have this before burn-in
 
         _disable = not tqdm
@@ -334,10 +345,20 @@ class Runner:
             if updated_data:
                 self.update(updated_data)
 
-        self.logger.terminal("Performing final evaluation")
+        self.logger.terminal("Performing final evaluation", self.verbose)
         avg_returns, std_returns = self.eval(eval_episodes, self.agent)
-        self.logger.dump(self.train_rew, self.t_completed, self.env.spec.id)  # type: ignore
         return avg_returns, std_returns
+
+    def dump(self, env_name: str | None = None) -> None:
+        """_summary_.
+
+        _extended_summary_
+
+        Args:
+            env_name (str | None, optional): Name of the environment.
+                Defaults to None.
+        """
+        self.logger.dump(self.train_rew, self.t_completed, env_name)  # type: ignore
 
     def transform_batch(
         self, batch: list[Transition], transform: Callable | None = None
@@ -411,6 +432,7 @@ class Runner:
         agent: Agent | None = None,
         rollout_len: int = 1,
         eval_env: Env | None = None,
+        verbose: bool = True,
         burnin_len: int = 0,
         logger: BaseLogger | None = None,
     ) -> Runner:
@@ -429,6 +451,8 @@ class Runner:
             eval_env (Env | None, optional): An optional separate
                 environment to be used for evaluation, must not be a
                 VectorEnv. Defaults to None.
+            verbose (bool, optional): Whether to print the logs to
+                terminal. Defaults to True.
             burnin_len (int, optional): Number of untracked environment
                 steps to take before warmup, such as to initialise
                 normalisation. Defaults to 0.
@@ -450,6 +474,7 @@ class Runner:
             warmup_len=0,
             n_step=1,
             eval_env=eval_env,
+            verbose=verbose,
             burnin_len=burnin_len,
             logger=logger,
             gatherer=gatherer,
@@ -464,6 +489,7 @@ class Runner:
         rollout_len: int = 1,
         warmup_len: int = 10_000,
         eval_env: Env | None = None,
+        verbose: bool = True,
         burnin_len: int = 0,
         extra_specs: dict | None = None,
         buffer: BaseBuffer | None = None,
@@ -491,6 +517,8 @@ class Runner:
             eval_env (gym.Env | None, optional): An optional separate
                 environment to be used for evaluation, must not be a
                 VectorEnv. Defaults to None.
+            verbose (bool, optional): Whether to print the logs to
+                terminal. Defaults to True.
             burnin_len (int, optional): Number of untracked environment
                 steps to take before warmup, such as to initialise
                 normalisation. Defaults to 0.
@@ -518,9 +546,10 @@ class Runner:
             raise TypeError("VectorEnv's not yet compatible with off-policy runner")
 
         if buffer is not None:
-            warnings.warn(
-                "Provided a buffer, ignoring the extra_specs and buffer_kwargs arguments"
-            )
+            if verbose:
+                warnings.warn(
+                    "Provided a buffer, ignoring the extra_specs and buffer_kwargs arguments"
+                )
             buffer = buffer
         else:
             buffer = crl.buffers.TreeBuffer(
@@ -534,6 +563,7 @@ class Runner:
             warmup_len=warmup_len,
             n_step=buffer.n_steps,
             eval_env=eval_env,
+            verbose=verbose,
             burnin_len=burnin_len,
             buffer=buffer,
             logger=logger,

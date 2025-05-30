@@ -56,17 +56,19 @@ if WANDB:
                 config=cfg,
             )
 
-        def log(self, metrics: dict) -> None:
-            """Send dictionary of metrics to Weights and Biases.
+        def log(self, metrics: dict, verbose: bool = True) -> None:
+            """Send dictionary of metrics to tensorboard.
 
-            Send metrics to wandb.log directly via a dictionary with keys
-            corresponding to the metrics tracked. Used for data like loss
-            or evaluation returns.
+            Send metrics to the tensorboard Summarywriter via a dictionary
+            with keys corresponding to the metrics tracked. Used for data
+            like loss or evaluation returns.
 
             Args:
                 metrics (dict): Dictionary with metrics to be logged.
+                verbose (bool, optional): Whether to print the data or not.
+                    Defaults to True.
             """
-            super().log(metrics)
+            super().log(metrics, verbose)
             steps = metrics.pop("Timesteps")
             wandb.log(metrics, step=steps)
 
