@@ -1,15 +1,15 @@
-"""TreeBuffer class, main experience replay buffer used in Cardio."""
+"""Buffer that stores transitions in a pytree."""
 
 import functools
 
 import jax
 import numpy as np
 
-from cardio_rl.buffers.tree_buffer import TreeBuffer
+from cardio_rl.buffers.eff_buffer import TreeBuffer
 from cardio_rl.types import Environment, Transition
 
 
-class EffBuffer(TreeBuffer):
+class EffMixedBuffer(TreeBuffer):
     """Buffer that stores transitions in a pytree."""
 
     def __init__(
@@ -130,16 +130,18 @@ class EffBuffer(TreeBuffer):
                 transitions sampled from the buffer as well as the
                 indices used (accessed using the "idxs" key).
         """
+        recent_idx = (self.pos - 1) % self.capacity
+
         if batch_size and sample_indxs:
             raise ValueError(
                 "Passing both a batch size and indices to sample method, please only provide one"
             )
 
         if batch_size:
-            print(len(self))
             sample_indxs = np.random.randint(
-                low=0, high=len(self) - (self.trajectory - 1), size=batch_size
+                low=0, high=len(self) - (self.trajectory - 1), size=batch_size - 1
             )
+            sample_indxs = np.concatenate(([recent_idx], sample_indxs))
 
         assert sample_indxs is not None, "No sample indices provided for sampling."
         batch = super()._sample(sample_indxs=sample_indxs)
