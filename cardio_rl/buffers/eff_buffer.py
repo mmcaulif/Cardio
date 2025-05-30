@@ -82,24 +82,6 @@ class EffBuffer(TreeBuffer):
         idxs = super().store(data, num)
         return idxs
 
-        # def _place(arr, x, idx):
-        #     if len(x.shape) == 1:
-        #         x = np.expand_dims(x, -1)
-
-        #     arr[idx] = x
-        #     return arr
-
-        # idxs = np.arange(self.pos, self.pos + num) % self.capacity
-        # place = functools.partial(_place, idx=idxs)
-        # self.table = jax.tree.map(place, self.table, data)
-
-        # self.pos += num
-        # if self.pos >= self.capacity:
-        #     self.full = True
-        #     self.pos = self.pos % self.capacity
-
-        # return idxs
-
     def _sample(
         self,
         batch_size: int | None = None,
@@ -143,17 +125,3 @@ class EffBuffer(TreeBuffer):
         s_p_idxs = (sample_indxs + 1) % self.capacity
         batch.update({"s_p": self.table["s"][s_p_idxs]})
         return batch
-
-        # def get_trajectories(arr):
-        #     if self.trajectory != 1:
-        #         trajectory_samples = np.stack(
-        #             [arr[idx : idx + self.trajectory] for idx in sample_indxs]
-        #         )
-        #     else:
-        #         trajectory_samples = arr[sample_indxs]
-
-        #     return trajectory_samples
-
-        # batch: dict = jax.tree.map(lambda arr: get_trajectories(arr), self.table)
-        # batch.update({"idxs": sample_indxs})
-        # return batch
