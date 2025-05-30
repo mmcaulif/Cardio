@@ -79,7 +79,7 @@ class TreeBuffer(BaseBuffer):
         self.full = False
 
         self.table: dict = {
-            "s": np.zeros((capacity, *obs_dims), dtype=np.float32),  # type: ignore
+            "s": np.zeros((capacity, *obs_dims), dtype=obs_space.dtype),  # type: ignore
             "a": np.zeros(
                 (
                     capacity,
@@ -88,8 +88,8 @@ class TreeBuffer(BaseBuffer):
                 dtype=act_space.dtype,
             ),
             "r": np.zeros((capacity, n_steps), dtype=np.float32),
-            "s_p": np.zeros((capacity, *obs_dims), dtype=np.float32),  # type: ignore
-            "d": np.zeros((capacity, 1), dtype=np.float32),
+            "s_p": np.zeros((capacity, *obs_dims), dtype=obs_space.dtype),  # type: ignore
+            "d": np.zeros((capacity, 1), dtype=np.int8),
         }
 
         if extra_specs is not None:
@@ -99,6 +99,15 @@ class TreeBuffer(BaseBuffer):
                 extras.update({key: np.zeros(shape)})
 
             self.table.update(extras)
+
+    @property
+    def nbytes(self) -> int:
+        """Get the total number of bytes used by the buffer.
+
+        Returns:
+            int: The total number of bytes used by the buffer.
+        """
+        return sum(arr.nbytes for arr in self.table.values())
 
     def store(self, data: Transition, num: int) -> np.ndarray:
         """Store the given transitions in the replay buffer.

@@ -13,7 +13,11 @@ class AtariWrapper(gym.Wrapper):
     """Wrapper for Atari preprocessing."""
 
     def __init__(
-        self, env: gym.Env, action_repeat_probability: float = 0.0, eval: bool = False
+        self,
+        env: gym.Env,
+        action_repeat_probability: float = 0.0,
+        rescale: bool = False,
+        eval: bool = False,
     ):
         """Wrap environment with the traditional Atari wrappers.
 
@@ -26,6 +30,9 @@ class AtariWrapper(gym.Wrapper):
             env (gym.Env): The instantiated gymnasium environment.
             action_repeat_probability (float, optional): Probaility of
                 a sticky action. Defaults to 0.0.
+            rescale (bool, optional): If set to true, the observation
+                will be rescaled to [0, 1] instead of [0, 255]. Defaults
+                to False.
             eval (bool, optional): If set to true, rewards are not
                 clipped and episodes do not end on life loss. Defaults
                 to False.
@@ -43,9 +50,15 @@ class AtariWrapper(gym.Wrapper):
             )
 
         env = FrameStack(env, num_stack=4)
+        self.rescale = rescale
         super().__init__(env)
 
-        self.observation_space: Box = Box(low=0.0, high=1.0, shape=(84, 84, 4))
+        if self.rescale:
+            self.observation_space = Box(low=0.0, high=1.0, shape=(84, 84, 4))
+        else:
+            self.observation_space = Box(
+                low=0, high=255, shape=(84, 84, 4), dtype=np.uint8
+            )
 
     def step(self, a: np.ndarray):
         """Step through the environment.
@@ -96,4 +109,7 @@ class AtariWrapper(gym.Wrapper):
         Returns:
             np.ndarray: The processed observation for the agent.
         """
-        return np.array(x).squeeze(-1).transpose(1, 2, 0) / 255.0
+        if self.rescale:
+            return np.array(x).squeeze(-1).transpose(1, 2, 0) / 255.0
+
+        return np.array(x).squeeze(-1).transpose(1, 2, 0)
