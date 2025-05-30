@@ -238,4 +238,4 @@ class TreeBuffer(BaseBuffer):
         if include_empty:
             return self.table[key]
 
-        return self.table[key][: self.pos]
+        return self.table[key][: len(self)]
