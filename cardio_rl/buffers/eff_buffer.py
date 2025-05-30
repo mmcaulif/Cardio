@@ -136,10 +136,15 @@ class EffBuffer(TreeBuffer):
             )
 
         if batch_size:
-            print(len(self))
             sample_indxs = np.random.randint(
                 low=0, high=len(self) - (self.trajectory - 1), size=batch_size
             )
+
+        # Transitions sampled from the efficient buffer are relatively consistent
+        # with the only differences between the EffBuffer and TreeBuffer being that
+        # terminal transitions are non-overlapping, and the next state is always
+        # the next state in the buffer, not the next state in the environment. This
+        # is generally OK for most applications.
 
         assert sample_indxs is not None, "No sample indices provided for sampling."
         batch = super()._sample(sample_indxs=sample_indxs)
