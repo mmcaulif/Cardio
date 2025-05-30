@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import time
-import warnings
 from typing import Callable
 
 import jax
@@ -539,9 +538,6 @@ class Runner:
             raise TypeError("VectorEnv's not yet compatible with off-policy runner")
 
         if buffer is not None:
-            warnings.warn(
-                "Provided a buffer, ignoring the extra_specs and buffer_kwargs arguments"
-            )
             buffer = buffer
         else:
             buffer = crl.buffers.TreeBuffer(
