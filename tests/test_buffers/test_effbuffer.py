@@ -1,11 +1,45 @@
+import jax
+import jax.numpy as jnp
+import numpy as np
 import pytest
 
 import cardio_rl as crl
 from cardio_rl.buffers.eff_buffer import EffBuffer
+from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.toy_env import ToyEnv
 
 
 class TestEffBuffer:
+    # @pytest.mark.parametrize("seed", [(101), (42), (10), (123456)])
+    # def test_sample_consistency(self, seed):
+    #     np.random.seed(seed)
+    #     env = ToyEnv()
+    #     buffer_1 = TreeBuffer(env, capacity=1000, batch_size=2)
+    #     buffer_2 = EffBuffer(env, capacity=1000, batch_size=2)
+    #     s, _ = env.reset()
+
+    #     for _ in range(100):
+    #         a = env.action_space.sample()
+    #         s_p, r, d, t, _ = env.step(a)
+    #         transition = {
+    #             "s": s,
+    #             "a": a,
+    #             "r": r,
+    #             "s_p": s_p,
+    #             "d": d,
+    #         }
+    #         expanded_transition = crl.tree.stack([transition])
+    #         buffer_1.store(expanded_transition, 1)
+    #         buffer_2.store(expanded_transition, 1)
+    #         s = s_p
+    #         if d or t:
+    #             s, _ = env.reset()
+
+    #     sample1 = buffer_1.sample()
+    #     sample2 = buffer_2.sample(sample_indxs=sample1["idxs"])
+
+    #     assert jax.tree_util.tree_all(jax.tree.map(jnp.allclose, sample1, sample2))
+
     @pytest.mark.parametrize("capacity", [(10_000), (100_000), (10), (123456)])
     def test_init_shape(self, capacity):
         env = ToyEnv()
