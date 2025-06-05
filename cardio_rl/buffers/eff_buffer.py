@@ -4,13 +4,12 @@ import functools
 
 import jax
 import numpy as np
-from gymnasium import spaces
 
-from cardio_rl.buffers.base_buffer import BaseBuffer
+from cardio_rl.buffers.tree_buffer import TreeBuffer
 from cardio_rl.types import Environment, Transition
 
 
-class TreeBuffer(BaseBuffer):
+class EffBuffer(TreeBuffer):
     """Buffer that stores transitions in a pytree."""
 
     def __init__(
@@ -20,7 +19,6 @@ class TreeBuffer(BaseBuffer):
         extra_specs: dict | None = None,
         batch_size: int = 32,
         n_steps: int = 1,
-        trajectory: int = 1,
         n_batches: int = 1,
     ):
         """Initialise the tree buffer with any additional entries.
@@ -53,61 +51,20 @@ class TreeBuffer(BaseBuffer):
                 transition represents, sampled transitions take the
                 form: {s_t, a_t, r_t+r_(t+1)+...+r_(t+n), s_(t+n),
                 d_(t+n)}. Defaults to 1.
-            trajectory (int, optional): How many sequential transitions
-                to take per sample index. Defaults to 1.
             n_batches (int, optional): How many batches of batch_size
                 samples to do at sample time, requires a batch_size
                 be provided. Defaults to 1.
         """
-        obs_space = env.observation_space
-        obs_dims = obs_space.shape
-
-        act_space = env.action_space
-
-        if isinstance(act_space, spaces.Box):
-            act_dim = int(np.prod(act_space.shape))
-        elif isinstance(act_space, spaces.Discrete):
-            act_dim = 1
-
-        self.pos = 0
-        self.capacity = capacity
-        self.batch_size = batch_size
-        self.n_steps = n_steps
-        self.trajectory = trajectory
-        self.n_batches = n_batches
-
-        self.full = False
-
-        self.table: dict = {
-            "s": np.zeros((capacity, *obs_dims), dtype=obs_space.dtype),  # type: ignore
-            "a": np.zeros(
-                (
-                    capacity,
-                    act_dim,
-                ),
-                dtype=act_space.dtype,
-            ),
-            "r": np.zeros((capacity, n_steps), dtype=np.float32),
-            "s_p": np.zeros((capacity, *obs_dims), dtype=obs_space.dtype),  # type: ignore
-            "d": np.zeros((capacity, 1), dtype=np.int8),
-        }
-
-        if extra_specs is not None:
-            extras = {}
-            for key, value in extra_specs.items():
-                shape = [capacity] + value
-                extras.update({key: np.zeros(shape)})
-
-            self.table.update(extras)
-
-    @property
-    def nbytes(self) -> int:
-        """Get the total number of bytes used by the buffer.
-
-        Returns:
-            int: The total number of bytes used by the buffer.
-        """
-        return sum(arr.nbytes for arr in self.table.values())
+        super().__init__(
+            env=env,
+            capacity=capacity,
+            extra_specs=extra_specs,
+            batch_size=batch_size,
+            n_steps=n_steps,
+            trajectory=1,
+            n_batches=n_batches,
+        )
+        self.table.pop("s_p")
 
     def store(self, data: Transition, num: int) -> np.ndarray:
         """Store the given transitions in the replay buffer.
@@ -124,6 +81,7 @@ class TreeBuffer(BaseBuffer):
             np.ndarray: The entire numpy array of the indices used to
                 store the provided data.
         """
+        s_p = data.pop("s_p")  # Remove the next state, not used in EffBuffer
 
         def _place(arr, x, idx):
             if len(x.shape) == 1:
@@ -135,6 +93,8 @@ class TreeBuffer(BaseBuffer):
         idxs = np.arange(self.pos, self.pos + num) % self.capacity
         place = functools.partial(_place, idx=idxs)
         self.table = jax.tree.map(place, self.table, data)
+
+        self.table["s"] = _place(self.table["s"], s_p, (idxs + 1) % self.capacity)
 
         self.pos += num
         if self.pos >= self.capacity:
@@ -180,62 +140,14 @@ class TreeBuffer(BaseBuffer):
                 low=0, high=len(self) - (self.trajectory - 1), size=batch_size
             )
 
-        def get_trajectories(arr):
-            if self.trajectory != 1:
-                trajectory_samples = np.stack(
-                    [arr[idx : idx + self.trajectory] for idx in sample_indxs]
-                )
-            else:
-                trajectory_samples = arr[sample_indxs]
+        # Transitions sampled from the efficient buffer are relatively consistent
+        # with the only differences between the EffBuffer and TreeBuffer being that
+        # terminal transitions are non-overlapping, and the next state is always
+        # the next state in the buffer, not the next state in the environment. This
+        # is generally OK for most applications.
 
-            return trajectory_samples
-
-        batch: dict = jax.tree.map(lambda arr: get_trajectories(arr), self.table)
-        batch.update({"idxs": sample_indxs})
+        assert sample_indxs is not None, "No sample indices provided for sampling."
+        batch = super()._sample(sample_indxs=sample_indxs)
+        s_p_idxs = (sample_indxs + 1) % self.capacity
+        batch.update({"s_p": self.table["s"][s_p_idxs]})
         return batch
-
-    def update(self, data: dict):
-        """Update the data stored in the buffer.
-
-        update specific keys and indices in the internal table with new
-        or updated data, e.g. latest priorities. Only called if the
-        agent's update step returns a non-empty dictionary. Must
-        provide indices via a "idxs" key.
-
-        Args:
-            data (dict): A dictionary containing an "idxs" key with
-                indices to update and keys with the updated values.
-
-        Raises:
-            ValueError: Provided the update method with data but no idxs key.
-        """
-        if "idxs" in data:
-            idxs = data.pop("idxs")
-            for key, val in data.items():
-                if key in self.table:
-                    self.table[key][idxs] = val
-        else:
-            raise ValueError(
-                "Passing data to update the buffer but not supplying indices via an idxs key"
-            )
-
-    def get(self, key: str, include_empty: bool = False) -> np.ndarray:
-        """Get a specific column from the internal table.
-
-        Given a key, return the filled (or entire) column corresponding
-        to the provided key.
-
-        Args:
-            key (str): Key in the internal table: s, a, r, s_p, d, or
-                one provided in the extra specs.
-            include_empty (bool, optional): Whether to return the whole
-                column, or just the elements that have been filled so
-                far. Defaults to False.
-
-        Returns:
-            np.ndarray: The column corresponding to the key argument.
-        """
-        if include_empty:
-            return self.table[key]
-
-        return self.table[key][: len(self)]

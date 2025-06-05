@@ -76,6 +76,21 @@ class BaseBuffer:
         self.s_p = np.zeros((capacity, *obs_dims), dtype=obs_space.dtype)  # type: ignore
         self.d = np.zeros((capacity, 1))
 
+    @property
+    def nbytes(self) -> int:
+        """Get the total number of bytes used by the buffer.
+
+        Returns:
+            int: The total number of bytes used by the buffer.
+        """
+        return (
+            self.s.nbytes
+            + self.a.nbytes
+            + self.r.nbytes
+            + self.s_p.nbytes
+            + self.d.nbytes
+        )
+
     def __len__(self) -> int:
         """Length of the buffer.
 

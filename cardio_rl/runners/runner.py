@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import time
-import warnings
 from typing import Callable
 
 import jax
@@ -103,6 +102,12 @@ class Runner:
         self.gatherer = gatherer or Gatherer(n_step=n_step)
         self.n_step = n_step
         self.eval_env = eval_env
+
+        if self.eval_env is not None and not isinstance(
+            self.eval_env, RecordEpisodeStatistics
+        ):
+            self.eval_env = RecordEpisodeStatistics(self.eval_env)
+
         self.buffer = buffer
 
         self._initial_time = time.time()
@@ -111,6 +116,7 @@ class Runner:
         self.t_completed: list[int] = []
         self.total_episodes = 0
         self.rollout_ep_completed = 0
+        self.agent_metrics: list[dict] = []
 
         self.logger = logger or crl.loggers.BaseLogger()
 
@@ -290,6 +296,15 @@ class Runner:
             self.rollout_train_rew.clear()
             self.rollout_ep_completed = 0
 
+        if self.agent_metrics:
+            stacked_agent_metrics = crl.tree.stack(self.agent_metrics)
+            avg_agent_metrics = jax.tree.map(np.mean, stacked_agent_metrics)
+            avg_agent_metrics = jax.tree.map(
+                lambda val: round(val, 4), avg_agent_metrics
+            )
+            metrics.update(avg_agent_metrics)
+            self.agent_metrics.clear()
+
         self.logger.log(metrics)
         return mean_returns, std_returns
 
@@ -323,14 +338,19 @@ class Runner:
                 step.
         """
         self.logger.terminal("Performing initial evaluation")
-        _ = self.eval(eval_episodes, self.agent)  # Have this before burn-in
+        _ = self.eval(
+            eval_episodes, self.agent
+        )  # Have this before burn-in (idk why I thought it should be before burn in...)
 
         _disable = not tqdm
         for n in trange(rollouts, disable=_disable):
             if n % eval_freq == 0 and n > 0:
                 self.eval(eval_episodes, self.agent)
             data = self.step()
-            updated_data = self.agent.update(data)  # type: ignore
+            agent_metrics, updated_data = self.agent.update(data)  # type: ignore
+
+            if agent_metrics:
+                self.agent_metrics.append(agent_metrics)
             if updated_data:
                 self.update(updated_data)
 
@@ -518,9 +538,6 @@ class Runner:
             raise TypeError("VectorEnv's not yet compatible with off-policy runner")
 
         if buffer is not None:
-            warnings.warn(
-                "Provided a buffer, ignoring the extra_specs and buffer_kwargs arguments"
-            )
             buffer = buffer
         else:
             buffer = crl.buffers.TreeBuffer(

@@ -3,5 +3,13 @@
 # ruff: noqa
 
 from cardio_rl.loggers.base_logger import BaseLogger
-from cardio_rl.loggers.tb_logger import TensorboardLogger
-from cardio_rl.loggers.wandb_logger import WandbLogger
+
+try:
+    from cardio_rl.loggers.tb_logger import TensorboardLogger
+except ImportError:
+    pass
+
+try:
+    from cardio_rl.loggers.wandb_logger import WandbLogger
+except ImportError:
+    pass

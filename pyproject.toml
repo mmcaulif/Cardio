@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cardio-rl"
-version = "0.1.1"
+version = "0.1.2"
 description = "Cardio RL. In development..."
 authors = ["Manus McAuliffe <mmcaulif@tcd.ie>"]
 license = "Apache-2.0"
@@ -18,15 +18,28 @@ python = ">=3.10, <3.12"
 numpy = "^1.21.0"
 gymnasium = "^0.28.0"
 tqdm = "^4.66.5"
-wandb = "^0.18.5"
-tensorboard = "^2.18.0"
 jax = ">=0.4.25, <0.4.30"
 jaxlib = ">=0.4.25, <0.4.30"
+
+[tool.poetry.group.logging]
+optional = true
+
+[tool.poetry.group.logging.dependencies]
+wandb = "^0.18.5"
+tensorboard = "^2.18.0"
 torch = ">=1.12.1"
+
+[tool.poetry.group.agents]
+optional = true
+
+[tool.poetry.group.agents.dependencies]
 distrax = "0.1.5"
 rlax = "0.1.6"
 flax = "0.8.3"
 optax = "0.2.2"
+
+[tool.poetry.group.dev]
+optional = true
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.7.0"
@@ -51,3 +64,6 @@ convention = "google"
 
 [tool.docformatter]
 post-description-newline = true
+
+[tool.mypy]
+ignore_missing_imports = true

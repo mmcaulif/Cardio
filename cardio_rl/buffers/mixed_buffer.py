@@ -40,19 +40,3 @@ class MixedBuffer(TreeBuffer):
         batch: dict = jax.tree.map(lambda arr: get_trajectories(arr), self.table)
         batch.update({"idxs": sample_indxs})
         return batch
-
-
-# if __name__ == '__main__':
-#     env = RecordEpisodeStatistics(gym.make('CartPole-v1'))
-#     agent = crl.Agent(env)
-
-#     runner = crl.Runner.off_policy(
-#         env=env,
-#         agent=agent,
-#         rollout_len=32,
-#         warmup_len=0,
-#         buffer=CombinedBuffer(env, batch_size=2)
-#     )
-
-#     data = runner.run(10)
-# print(data['s'])

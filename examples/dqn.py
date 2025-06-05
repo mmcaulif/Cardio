@@ -3,16 +3,15 @@ import logging
 from functools import partial
 from typing import Optional
 
-import distrax  # type: ignore
+import distrax
 import flax.linen as nn
 import gymnasium as gym
 import jax
 import jax.numpy as jnp
 import numpy as np
-import optax  # type: ignore
-import rlax  # type: ignore
+import optax
+import rlax
 from flax.training.train_state import TrainState
-from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 
 import cardio_rl as crl
 
@@ -30,24 +29,31 @@ def _update(ts: TrainState, targ_params, s, a, r, s_p, d, gamma):
         discount = gamma * (1 - d)
         error = jax.vmap(rlax.q_learning)(q, a, r, discount, q_p)
         mse = jnp.mean(rlax.l2_loss(error))
-        return mse
+        metrics = {
+            "Loss": mse,
+            "Td-error mean": jnp.mean(error),
+            "Td-error std": jnp.std(error),
+        }
+        return mse, metrics
 
     a = jnp.squeeze(a, -1)
     r = jnp.squeeze(r, -1)
     d = jnp.squeeze(d, -1)
-    grads = jax.grad(loss_fn)(ts.params, ts.apply_fn, s, a, r, s_p, d)
+    grads, metrics = jax.grad(loss_fn, has_aux=True)(
+        ts.params, ts.apply_fn, s, a, r, s_p, d
+    )
     new_ts = ts.apply_gradients(grads=grads)
-    return new_ts
+    return new_ts, metrics
 
 
 class Q_critic(nn.Module):
-    action_dim: int
+    act_dim: int
 
     @nn.compact
     def __call__(self, state):
         z = nn.relu(nn.Dense(64)(state))
         z = nn.relu(nn.Dense(64)(z))
-        q = nn.Dense(self.action_dim)(z)
+        q = nn.Dense(self.act_dim)(z)
         return q
 
 
@@ -55,7 +61,6 @@ class DQN(crl.Agent):
     def __init__(
         self,
         env: gym.Env,
-        critic: nn.Module,
         gamma: float = 0.99,
         targ_freq: int = 1_000,
         optim_kwargs: dict = {"learning_rate": 1e-4},
@@ -71,6 +76,7 @@ class DQN(crl.Agent):
         self.key, init_key = jax.random.split(self.key)
 
         dummy = env.observation_space.sample()
+        critic = Q_critic(act_dim=env.action_space.n)
         params = critic.init(init_key, dummy)
         self.targ_params = copy.deepcopy(params)
         self.targ_freq = targ_freq
@@ -90,7 +96,7 @@ class DQN(crl.Agent):
         self._update = jax.jit(partial(_update, gamma=gamma))
 
     def update(self, batches):
-        self.ts = self._update(
+        self.ts, metrics = self._update(
             self.ts,
             self.targ_params,
             batches["s"],
@@ -103,7 +109,7 @@ class DQN(crl.Agent):
         if self.ts.step % self.targ_freq == 0:
             self.targ_params = self.ts.params
 
-        return {}
+        return metrics, {}
 
     def step(self, state):
         self.key, act_key = jax.random.split(self.key)
@@ -120,13 +126,15 @@ class DQN(crl.Agent):
 
 
 def main():
-    np.random.seed(42)
+    SEED = 42
 
-    env = RecordEpisodeStatistics(gym.make("CartPole-v1"))
+    np.random.seed(SEED)
+
+    env = gym.make("CartPole-v1")
 
     runner = crl.Runner.off_policy(
         env=env,
-        agent=DQN(env, Q_critic(action_dim=2)),
+        agent=DQN(env, seed=SEED),
         buffer_kwargs={"batch_size": 32},
         rollout_len=4,
     )
