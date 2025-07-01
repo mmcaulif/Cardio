@@ -1,4 +1,4 @@
-"""Example of performing sequential Monte Carlo search."""
+"""Example of performing Sequential Monte Carlo search."""
 
 import flax.linen as nn
 import gymnax
