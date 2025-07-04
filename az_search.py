@@ -4,7 +4,6 @@
 # MCTX policy imporvement demo: https://github.com/google-deepmind/mctx/blob/main/examples/policy_improvement_demo.py
 # MCTX basic tree search: https://github.com/kenjyoung/mctx_learning_demo/blob/main/basic_tree_search.py
 
-import distrax
 import flax.linen as nn
 import gymnax
 import jax
@@ -68,7 +67,7 @@ def get_search_fn(step_fn, env_params, apply_fn):
             temperature=temperature,
         )
 
-        return policy_output.action_weights
+        return policy_output
 
     return mcts_search
 
@@ -103,13 +102,10 @@ def main():
         search_policy = search_fn(
             pi_logits, val, state, params, key_search, num_simulations=N_SIMS
         )
-        print("Search policy distribution:", search_policy[0])
-
-        dist = distrax.Categorical(logits=search_policy)
-        actions = dist.sample(seed=key_act)
+        print("Search policy distribution:", search_policy.action_weights)
 
         obs, state, rewards, terminals, _ = step_fn(
-            key_step, state, actions, env_params
+            key_step, state, search_policy.action, env_params
         )
 
 
