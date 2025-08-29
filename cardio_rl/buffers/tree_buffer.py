@@ -66,7 +66,7 @@ class TreeBuffer(BaseBuffer):
 
         if isinstance(act_space, spaces.Box):
             act_dim = int(np.prod(act_space.shape))
-        elif isinstance(act_space, spaces.Discrete):
+        else:
             act_dim = 1
 
         self.pos = 0
