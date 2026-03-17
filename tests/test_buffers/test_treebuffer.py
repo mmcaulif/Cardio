@@ -6,6 +6,15 @@ from cardio_rl.toy_env import ToyEnv
 
 
 class TestTreeBuffer:
+    @pytest.mark.parametrize(
+        "discrete, expected_act_dim",
+        [(True, 1), (False, 3)],
+    )
+    def test_action_space_dim(self, discrete, expected_act_dim):
+        env = ToyEnv(discrete=discrete)
+        buffer = TreeBuffer(env)
+        assert buffer.table["a"].shape == (buffer.capacity, expected_act_dim)
+
     @pytest.mark.parametrize("capacity", [(10_000), (100_000), (10), (123456)])
     def test_init_shape(self, capacity):
         env = ToyEnv()
