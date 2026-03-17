@@ -29,14 +29,15 @@ class ToyEnv(gym.Env):
         Raises:
             NotImplementedError: If self.discrete is set to False.
         """
-        if not discrete:
-            raise NotImplementedError("Continuous action space not implemented yet.")
-
         self.maxlen = maxlen
         self.discrete = discrete
         self.t = 0
 
-        self.action_space = spaces.Discrete(2)
+        if discrete:
+            self.action_space = spaces.Discrete(2)
+        else:
+            self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
+
         self.observation_space = spaces.Box(
             0,
             self.maxlen,
@@ -61,7 +62,7 @@ class ToyEnv(gym.Env):
         """
         self.t += 1
         state = np.ones(5) * self.t
-        state[-1] = action
+        state[-1] = action if self.discrete else action[0]
         if self.t == self.maxlen:
             return np.array(state), 1, True, False, {}
 
