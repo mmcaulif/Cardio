@@ -1,14 +1,14 @@
 .PHONY: precommit_setup
 precommit_setup:
-	pre-commit --version
-	pre-commit install
-	pre-commit install -t commit-msg
+	uv run pre-commit --version
+	uv run pre-commit install
+	uv run pre-commit install -t commit-msg
 
 .PHONY: precommit
 precommit:
-	pre-commit run --all-files
+	uv run pre-commit run --all-files
 
 .PHONY: setup
 setup:
-	poetry install --with dev
+	uv sync --group dev
 	make precommit_setup
